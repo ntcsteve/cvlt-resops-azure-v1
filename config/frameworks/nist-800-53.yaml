@@ -1,0 +1,14 @@
+# Framework pack — NIST SP 800-53 Rev 5 (Contingency Planning + related).
+# Maps OUR capabilities (resops/capabilities.py) to 800-53 control ids.
+# INDICATIVE — supports an internal resilience programme, not an attestation.
+id: nist-800-53
+name: "NIST SP 800-53 Rev 5"
+disclaimer: "Indicative NIST 800-53 mapping — supports a resilience programme, not a compliance attestation."
+references:
+  CAP-ASSET-IDENTIFICATION: "CM-8 (system component inventory)"
+  CAP-BACKUP-COVERAGE: "CP-9 (system backup)"
+  CAP-BACKUP-MONITORING: "CP-9, SI-4 (system monitoring)"
+  CAP-RECOVERY-READINESS: "CP-10 (system recovery & reconstitution)"
+  CAP-RESTORE-TESTED: "CP-4 (contingency plan testing), CP-9(1) (test restoration)"
+  CAP-EVIDENCE-TRAIL: "CP-4 (test results), CA-7 (continuous monitoring)"
+  CAP-GOVERNED-CHANGE: "CM-3 (change control), CA-5 (plan of action & milestones)"

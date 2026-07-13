@@ -1,0 +1,194 @@
+# Workshop - Resilience Operations on Azure and Commvault
+
+> A hands-on workshop + toolkit - prove your Azure workloads are recoverable, and gate promotion on it, **the ResOps way.**
+
+Your backups are green, but **when did you last actually recover from one?**
+
+DevOps turned infrastructure, delivery, and reliability into reconciled, gated loops - provisioned as code, checked in CI, watched for drift. **Recoverability is the loop that's still run on faith.** Resilience Operations (ResOps) closes it with the playbook you already use: declare it as code, prove it with a drill, and gate promotion on the proof.
+
+```
+ resops   the readiness ladder + the promotion gate   READ-ONLY - reads and judges
+ op       drive a workload up the ladder              WRITE - drives the climb
+```
+
+**This workshop, end to end:** a real Azure VM climbs from nothing to **VALIDATED** (recovery proven by an actual restore), the gate flips to **PROMOTE**, and you get a DORA/NIST/APRA evidence report - then you tear it all down. **See it in 2 minutes** (no cloud), then the live workshop runs in two parts: **set up** (once, ~15 min) and **onboard & climb** (~20 min).
+
+## Quick start
+
+Already have an Azure subscription, a Metallic tenant, and a filled `config/workshop.yaml`?
+
+```bash
+source .venv/bin/activate                    # pip install -e . if first time
+op validate  infra/workloads                 # config + IAM + environment — fix blockers before touching anything
+terraform -chdir=infra/workloads apply       # provision the VM
+op climb     infra/workloads                 # protect → backup → restore → VALIDATED (pauses at restore)
+op gate      infra/workloads                 # PROMOTE / HOLD + DORA/NIST/APRA evidence report
+op teardown  infra/workloads                 # always run this — the VM costs money until you do
+```
+
+New here? Start with [See it first](#see-it-first---one-command-no-cloud-no-token) below (zero setup), then follow [Part 1 — Set up](#part-1---set-up-once-15-min).
+
+## See it first - one command, no cloud, no token
+
+```bash
+python3 -m resops config/demo.yaml
+```
+```
+ ●●✗··  PROTECTED  blocked at Detect
+   ✓ discover · ✓ protect · ✗ detect · · recover · · validate
+```
+
+**How to read it:** five dots = the five levels. This workload cleared Discover and Protect (●●), then stalled at Detect (✗) - its last backup wasn't clean, so it can't be trusted to recover. The level *is* the verdict. Canned reads - zero network or token; the same ladder, PROMOTE/HOLD gate, and DORA/NIST/APRA crosswalk a live run produces. Every level maps to something you already do for code.
+
+## The idea
+
+A workload sits on **one level** of a readiness ladder; the level *is* the verdict. You climb by clearing each stage, and the gate ships only what's proven recoverable.
+
+```
+ UNDISCOVERED ─Discover─▸ DISCOVERED ─Protect─▸ PROTECTED ─Detect─▸ MONITORED
+     ─Recover─▸ RECOVERABLE ─Validate─▸ VALIDATED
+```
+
+It's **two reconciliation loops** - and you already run the first:
+
+```
+ Terraform reconciles INFRA          the resops ladder reconciles RECOVERABILITY
+ "does the world match my config?"   "is it ACTUALLY recoverable, per my SLO?"
+ → terraform plan shows config drift → the gate blocks promotion on recoverability drift
+```
+
+`resops` is read-only - share it, drop it in CI, it can't touch your environment. `op` is how you climb; in production the backup schedule does this for you and the gate just confirms it.
+
+### What each stage maps to
+
+Each stage is the step that lifts a workload onto the next level - and each is a practice you already run for code, pointed at recoverability:
+
+| Stage | Question | Level reached | You already do this for code |
+|---|---|---|---|
+| Discover | onboarded for protection? | `DISCOVERED` | service discovery |
+| Protect  | a policy attached? | `PROTECTED` | GitOps drift detection |
+| Detect   | last backup clean? | `MONITORED` | observability / alerting |
+| Recover  | recoverable now (RPO/SLA)? | `RECOVERABLE` | rollback readiness / SLOs |
+| Validate | recovery *proven* by a real restore? | `VALIDATED` | **chaos drill / game day** |
+| Improve  | did the level move since last run? | *(trend)* | regression gate |
+| Continuous Service | safe to ship? | *(gate)* | required CI check |
+
+Improve and Continuous Service aren't levels - they act *on* the state: Improve is the trend across runs (↑ climbed / = held / ↓ regressed) over a hash-chained audit trail; Continuous Service is the gate. There is **no FAIL state** - a read error (timeout/permission) doesn't invent a failure, it leaves you on the level below, named with the reason.
+
+## Do it for real
+
+**What's in the repo:** `config/workshop.yaml` - the one file you fill · `infra/` - the Terraform (workloads + platform) · `resops/` - the read-only engine + the `op` write lane · `config/tiers.yaml` + `config/frameworks/` - policy & the compliance packs.
+
+### Before you start
+
+The demo above needs **nothing**. For the live climb:
+
+- **Azure** - a subscription + `az login`, and a backup service principal (you'll put its object id in `config/workshop.yaml`).
+- **A data-protection tenant** (Commvault SaaS) - with an adopted hypervisor + managed storage pool (Setup step 1), and an access + refresh token.
+- **Tools** - `python3` ≥ 3.9, `terraform`, `az`.
+
+The path is linear: **demo → set up once → onboard → climb → gate → tear down.**
+
+### Part 1 - Set up (once, ~15 min)
+
+**1. Adopt the platform** - your one-time, provider-specific setup, done in the data-protection console (not in code). You're creating two things you set once and every workload reuses: a **hypervisor connection** to your Azure subscription (so the platform can see and protect your VMs) and a **managed storage pool** (where backups land). The read-only token is read-scoped, so this lives in the console, not Terraform. See your provider's console docs for the click-path; you'll copy the resulting ids into `workshop.yaml` next.
+
+✓ **Done when** you can see the hypervisor + storage pool in the console and have their ids.
+
+**2. Fill the `platform:` block of `config/workshop.yaml`** (copy `config/workshop.yaml.example`):
+
+```yaml
+platform:
+  web_service_url: https://<tenant>.metallic.io/commandcenter/api
+  subscription_id:        <azure-subscription-guid>
+  commvault_sp_object_id: <backup-service-principal-object-id>
+  hypervisor: { id: <client-id>, name: <name>, instance_id: <instance-id> }
+  plan_id: <plan-id>
+  storage_pool_name: <managed-pool-name>
+```
+
+> **Where to get `plan_id`:** two options — (a) create a plan in the console (Protect > Plans), then copy its id from the URL; or (b) run `infra/platform/` as Terraform code (`CV_TER_TOKEN` required) and copy from `terraform -chdir=infra/platform output plan_ids`. Either path lands in the same `plan_id` field — pick whichever suits your setup.
+
+**3. Tokens + tools** - copy `.env.example` to `.env` and fill in `CV_ACCESS_TOKEN` + `CV_REFRESH_TOKEN` (Command Center > avatar > Access Tokens > Add); `az login`; `pip install -e .` (puts `op` + `resops` on PATH - use a **venv** to avoid touching your system Python). No install? Run `python3 -m resops …` / `python3 -m resops.operator.op …` instead.
+
+> **`CV_TER_TOKEN`** (also in `.env.example`) is only needed if you run `infra/platform/` to create Commvault plans as Terraform code. If you created your plan manually in the console, leave it blank.
+
+✓ **Done when** `python3 -m resops list` prints your protection groups (token + URL work).
+
+### Part 2 - Onboard & climb (~20 min)
+
+> ⚠️ **Real cloud, real cost.** The live climb creates an Azure VM (and a brief second one during
+> the restore drill) - it costs money until `op teardown`, which the workshop always ends with.
+
+```
+ terraform apply  →  [discover]  →  op climb  →  op gate  →  op teardown
+ provision           one-time       protect→backup→restore   PROMOTE/HOLD
+```
+
+**1. Declare** - the `workload:` block of `config/workshop.yaml` is the whole interface:
+
+```yaml
+workload:
+  name: payments-api            # → VM name, its protection group, and the gate
+  tier: tier1                   # must exist in config/tiers.yaml
+  vm_size: Standard_F1als_v7    # optional
+```
+
+**2. Provision** - creates the VM + network and a restore-staging account, grants least-privilege IAM, and publishes the `workload` contract:
+
+```bash
+terraform -chdir=infra/workloads apply
+```
+✓ **Done when** `terraform -chdir=infra/workloads output workload` shows your VM.
+
+**3. Discover** - tell the platform to scan your subscription so it *sees* the new VM. In production this runs on a schedule; in the workshop you trigger it once in the console (the read-only token can't, by design). Takes a minute or two.
+✓ **Done when** `op preflight infra/workloads` shows `discovered … PASS`.
+
+**4. Climb, gate, tear down:**
+
+```bash
+op preflight infra/workloads   # read-only gate: az · token · hypervisor · discovered · vCPU
+op climb     infra/workloads   # protect → backup → restore → lands at VALIDATED
+op gate      infra/workloads   # the verdict → PROMOTE (0) / HOLD (1) + compliance crosswalk
+op teardown  infra/workloads   # protection group + snapshot, terraform destroy, region NetworkWatcher
+#   op status infra/workloads  # the level, anytime (read-only)
+```
+
+Two things to expect: `op climb` **pauses at the restore step** (in a terminal) so you can look at the recovered VM - press **Enter** to tear that copy down and finish. And `op gate` **exits 1 until you reach `VALIDATED`** - that's a correct HOLD, not an error. Always `op teardown` when done; the VM costs money until you do.
+
+As it climbs, `op status` fills the dots in - and the gate gives the verdict:
+
+```
+ ●●●●●  VALIDATED  ·  recovery proven - job <id>
+ PROMOTE  recoverability proven · exit 0
+```
+
+✓ **Done when** `op gate` prints `PROMOTE · exit 0` - a workload that's *provably* recoverable, with the evidence to show an auditor. (No hardcodes: `op` reads two inputs - the `workload` terraform output and `config/workshop.yaml`; runtime specifics come from the live API.)
+
+🎉 You just proved an Azure workload is recoverable - as code, gated, with audit evidence. **That's ResOps.**
+
+## Why it's real - compliance, by design
+
+The same recovery evidence maps onto **DORA / NIST 800-53 / APRA CPS 230** automatically - that crosswalk is what makes this ResOps, not a backup script. Each capability (asset identification, backup coverage, monitoring, recovery readiness, recovery proof) maps to its control, so a GAP isn't just "a backup failed," it's "DORA Art. 12 unmet." Enable the packs under `gate:`:
+
+```yaml
+gate:
+  frameworks: [dora, nist-800-53, apra-cps230]
+```
+
+Every run writes `evidence/` - `report.md` (a **Controls** column), `bundle.json`, JUnit, and a hash-chained history. **`op gate` exits 0 (PROMOTE) only at `VALIDATED` with fresh proof** (`gate.recovery_proof_max_age_days`, default 7), else exit 1 (HOLD). Wire it as a required CI check so recoverability drift fails the pipeline like a failing test - a ready-to-use workflow ships in [`.github/workflows/resops-gate.yml`](.github/workflows/resops-gate.yml). *(The mapping is indicative - it supports a resilience programme, not a formal attestation.)*
+
+## How it works under the hood
+
+- **Protect by id.** `op protect` adds the VM to its protection group by its Azure `vmId` (free from `terraform output vm_guid`) - a thin, direct write through the API that the read-only ladder can verify, while Terraform owns the Azure resources.
+- **Streaming backups.** A clean path with fewer moving parts - every backup is immediately restorable and teardown stays simple.
+- **Least-privilege IAM.** Terraform grants the backup service principal exactly the roles backup and restore need - nothing more - plus a per-workload staging account for the restore.
+- **Derived, not hand-crafted.** The restore request is built from live reads + the Terraform contract - nothing to capture or maintain by hand.
+- **Clean teardown.** `op teardown` removes the managed snapshot a backup leaves, then `terraform destroy` clears the rest - the resource group goes away cleanly, nothing lingers or costs.
+- **Fresh name each run.** `resops` resolves a workload by name, so give each new one its own codename rather than reusing a retired one.
+- **Tokens & capacity.** `op` refreshes the API token automatically each run (`resops list` refreshes on demand); pick a region/size with spare vCPU - a restore briefly runs a second VM beside the source.
+
+## In production
+
+`infra/platform/` is the platform team's paved road (an adopted hypervisor + storage + a policy per tier from `config/tiers.yaml`); `infra/workloads/` is a PR per app team. You **don't** run `op climb` - recoverability comes from the tier's backup schedule (the RPO you declared), and the gate confirms it on every PR + a daily run. Same muscle as a required test or a security scan: a workload doesn't promote unless it's provably recoverable.
+</content>

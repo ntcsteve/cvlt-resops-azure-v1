@@ -1,0 +1,29 @@
+{
+  "_comment": "Canned reads for the no-cloud demo — the same shape gather() builds from live API GETs. This workload is onboarded and has a plan (clears Discover + Protect) but its last backup FAILED, so the ladder blocks at Detect (state PROTECTED). Edit the values to teach a different rung.",
+  "vm_name": "MetallicPOCWalkThrough",
+  "vmgroup": {
+    "name": "4 VMs March 27th",
+    "content": [
+      {
+        "virtualMachines": [
+          {"name": "MetallicPOCWalkThrough"},
+          {"name": "payments-api-vm01"},
+          {"name": "reporting-vm01"},
+          {"name": "edge-cache-vm01"}
+        ]
+      }
+    ],
+    "summary": {"plan": {"name": "Metallic Standard Protection"}},
+    "vmBackupInfo": {"vmProtectedCount": 1, "vmNotProtectedCount": 3, "vmTotalCount": 4},
+    "lastBackup": {
+      "status": "FAILED",
+      "failureReason": "Backup job failed — could not quiesce guest; VSS snapshot timed out",
+      "jobId": 884412
+    }
+  },
+  "vmgroup_error": "",
+  "vm": null,
+  "vm_error": "",
+  "proof": null,
+  "proof_error": ""
+}

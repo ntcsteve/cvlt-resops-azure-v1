@@ -1,0 +1,19 @@
+# DEMO scenario — no cloud, no token, no tenant. Run with:
+#   python -m resops config/demo.yaml
+#
+# The reads come from a committed fixture (config/demo/protected.json), not the
+# API — so this renders the same ladder/gate/crosswalk a live run would, with zero
+# network. This workload is onboarded and has a plan (clears Discover + Protect)
+# but its last backup FAILED, so it blocks at Detect (state PROTECTED). Edit the
+# fixture to teach a different rung.
+
+workload:
+  vm_name: MetallicPOCWalkThrough
+  fixture: config/demo/protected.json   # canned reads → the no-cloud demo
+
+evidence_dir: evidence/demo             # keep demo runs out of the main audit trail
+
+# Map each GAP to the controls it breaches — so the demo teaches the crosswalk
+# too: an unprotected workload isn't just a GAP, it's DORA Art. 12 / NIST CP-9
+# unmet. See the report's Controls column + the framework table at the bottom.
+frameworks: [dora, nist-800-53, apra-cps230]

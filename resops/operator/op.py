@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+"""
+operator/ — the headless WRITE lane. Codifies the proven ResOps climb so a
+workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
+
+    op preflight <run_dir>  read-only gate: az · token · hypervisor · discovered · vCPU
+    op protect   <run_dir>  create the VSA vmgroup (VM added by its Azure vmId)
+    op backup    <run_dir>  trigger a backup and poll to completion
+    op restore   <run_dir>  derive the restore payload (token-native) + run drill
+    op climb     <run_dir>  preflight -> protect -> backup -> restore, ends on the ladder
+    op status    <run_dir>  show the workload's rung on the ladder (via resops) — read-only
+    op gate      <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
+    op teardown  <run_dir>  CV group + GXMD sweep + terraform destroy
+
+op DRIVES the climb (write); `resops` (the read-only star) SHOWS the ladder + runs
+the gate. status/climb-end/gate all hand the workload to resops.
+
+<run_dir> is the terraform root (normally `infra/workloads`). Two inputs, no hardcodes:
+  • the `workload` output      the CONTRACT (vm_name, vm_guid, rg, location,
+                               vm_size, vnet_name, subnet_id, restore_storage_account)
+  • config/workshop.yaml (platform: block)  the set-once ids (hypervisor{id,name,instance_id}, plan)
+Runtime specifics (subclientId, disk, recovery time) are read from the live API.
+
+NOT here: discovery — the one gated step (403 for this token). Trigger it once in
+the UI (or a scheduled job in prod) between provision and protect.
+"""
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import tempfile
+import time
+
+import yaml
+
+from ._azure import az_json, az_ok
+from .commvault import poll_job
+from . import preflight
+from ._common import CFG, HOST, HYP, REPO, client, contract, find_vm, group_id, write
+from .drills import run_restore
+
+
+_VSA_APP_ID = 106    # Virtual Server Agent application type — fixed across Metallic tenants
+_COMMCELL_ID = 2     # CommCell ID for this Metallic instance (m036)
+
+
+# --------------------------------------------------------------------------- #
+# helpers
+# --------------------------------------------------------------------------- #
+def require_vm(vm_name: str) -> dict:
+    """The VM's /VM record, or stop with the fix if discovery hasn't run."""
+    vm = find_vm(vm_name)
+    if vm is None:
+        raise SystemExit(f"{vm_name} not in /VM — has discovery run? (the one manual step)")
+    return vm
+
+
+# --------------------------------------------------------------------------- #
+# validate helpers
+# --------------------------------------------------------------------------- #
+def _find_placeholders(obj, path: str = "") -> list:
+    """Recursively find unfilled <placeholder> values in the config dict."""
+    if isinstance(obj, str) and obj.startswith("<") and obj.endswith(">"):
+        return [path]
+    if isinstance(obj, dict):
+        out = []
+        for k, v in obj.items():
+            out += _find_placeholders(v, f"{path}.{k}" if path else k)
+        return out
+    if isinstance(obj, list):
+        out = []
+        for i, v in enumerate(obj):
+            out += _find_placeholders(v, f"{path}[{i}]")
+        return out
+    return []
+
+
+def _check_iam(sp: str) -> tuple:
+    """Confirm the Commvault SP has both roles needed for backup and restore."""
+    if not sp or sp.startswith("<"):
+        return True, "IAM check skipped (commvault_sp_object_id not set)"
+    roles = az_json("role", "assignment", "list",
+                    "--assignee", sp,
+                    "--scope", f"/subscriptions/{CFG['subscription_id']}",
+                    "--query", "[].roleDefinitionName") or []
+    needed = {"Contributor", "Storage Blob Data Contributor"}
+    missing = needed - set(roles)
+    if missing:
+        return False, (f"SP {sp[:8]}… missing roles: {', '.join(sorted(missing))}"
+                       f"  → fix: az role assignment create --assignee {sp}"
+                       f" --role \"<role>\" --scope /subscriptions/{CFG['subscription_id']}")
+    return True, f"SP {sp[:8]}… — Contributor + Storage Blob Data Contributor assigned"
+
+
+def _check_rg_clean(rg: str) -> tuple:
+    """Warn if a Recovery Services vault exists in the RG outside Terraform state.
+    RSVs block RG deletion — teardown handles them, but knowing upfront prevents
+    surprises."""
+    vaults = az_json("resource", "list", "-g", rg,
+                     "--resource-type", "Microsoft.RecoveryServices/vaults",
+                     "--query", "[].name") or []
+    if vaults:
+        return False, (f"RG {rg} has RSV(s): {', '.join(vaults)}"
+                       f"  → op teardown will remove them; or delete manually first")
+    return True, f"RG {rg} — no foreign Recovery Services vaults"
+
+
+# --------------------------------------------------------------------------- #
+# protect — create the VSA vmgroup, VM added by its Azure vmId (== strGUID)
+# --------------------------------------------------------------------------- #
+def protect(run_dir: str) -> int:
+    w = contract(run_dir)
+    existing = group_id(w["vm_name"])         # idempotent — re-running never duplicates
+    if existing:
+        print(f"protect: group {existing} already exists — reusing")
+        return existing
+    body = {
+        "name": f"resops-{w['vm_name']}-vg",
+        "plan": {"id": CFG["plan_id"]},
+        "Hypervisor": {"id": HYP["id"]},  # capital H — lowercase 400s
+        "content": {"overwrite": True, "virtualMachines": [
+            {"name": w["vm_name"], "GUID": w["vm_guid"], "type": "VM"}]},
+    }
+    r = write("POST", "v4/VMGroup", json=body)
+    if r.status_code != 200:
+        raise SystemExit(f"protect failed: HTTP {r.status_code} {r.text[:200]}")
+    gid = r.json()["subclientId"]
+    print(f"protected: group {gid}  ({w['vm_name']} by {w['vm_guid']}, IntelliSnap off)")
+    return gid
+
+
+# --------------------------------------------------------------------------- #
+# backup — trigger a full backup on the workload's vmgroup, poll to terminal
+# --------------------------------------------------------------------------- #
+def backup(run_dir: str, gid: int | None = None) -> str:
+    w = contract(run_dir)
+    gid = gid or group_id(w["vm_name"])   # by group, not /VM (which lags after protect)
+    if not gid:
+        raise SystemExit(f"no vmgroup for {w['vm_name']} — run protect first")
+    job = write("POST", f"v4/vmgroup/{gid}/backup", json={"backupLevel": "FULL"}).json()["jobIds"][0]
+    print(f"backup job {job} on group {gid}…")
+    status = poll_job(client, job)
+    print(f"backup {status}")
+    return status
+
+
+# --------------------------------------------------------------------------- #
+# restore — derive the /CreateTask payload token-native, then run the drill
+# --------------------------------------------------------------------------- #
+def _restore_payload(w: dict, subclient_id: int, disk_name: str,
+                     disk_type: str, to_time: int) -> dict:
+    """Build the /CreateTask body. The nested shape is captured verbatim from a
+    proven Command Center restore — keep the structure as-is; only the values
+    pulled from w / args vary. (applicationId 106 = VSA-Azure; commCellId 2 = this
+    CommCell — both fixed for this tenant.)"""
+    name = w["vm_name"]
+    sa = w["restore_storage_account"]
+    return {"taskInfo": {
+        "task": {"taskFlags": {"disabled": False}, "policyType": "DATA_PROTECTION",
+                 "taskType": "IMMEDIATE", "initiatedFrom": "GUI"},
+        "associations": [{"subclientId": subclient_id, "client": {},
+                          "applicationId": _VSA_APP_ID, "_type_": "CLIENT_ENTITY"}],
+        "subTasks": [{"subTask": {"subTaskName": "", "subTaskType": "RESTORE",
+                                  "operationType": "RESTORE"},
+            "options": {"restoreOptions": {
+                "browseOption": {"commCellId": _COMMCELL_ID,
+                    "timeRange": {"fromTime": 0, "toTime": to_time},
+                    "noImage": False, "useExactIndex": False,
+                    "mediaOption": {"copyPrecedence": {"copyPrecedence": 0}},
+                    "listMedia": False, "toTime": to_time, "fromTime": 0,
+                    "showDeletedItems": False},
+                "destination": {"destClient": {"clientId": HYP["id"],
+                                               "clientName": HYP["name"]},
+                                "inPlace": False, "isLegalHold": False},
+                "restoreACLsType": "ACL_DATA",
+                "volumeRstOption": {"volumeLeveRestore": False,
+                    "volumeLevelRestoreType": "VIRTUAL_MACHINE",
+                    "destinationVendor": "AZURE_V2"},
+                "virtualServerRstOption": {"diskLevelVMRestoreOption": {
+                    "powerOnVmAfterRestore": True, "passUnconditionalOverride": False,
+                    "diskOption": "Auto", "advancedRestoreOptions": [{
+                        "guid": w["vm_guid"], "name": name,
+                        "newName": f"{name}-restore", "esxHost": w["resource_group"],
+                        "Datastore": sa, "vmSize": w["vm_size"],
+                        "disks": [{"name": disk_name,
+                                   "newName": f"{name}-restore-osdisk",  # UNIQUE — avoids collision
+                                   "Datastore": sa, "type": disk_type}],
+                        "nics": [{"networkName": w["vnet_name"], "subnetId": w["subnet_id"]}],
+                        "addToFailoverCluster": False, "securityGroups": [{}],
+                        "datacenter": w["location"], "createPublicIP": False,
+                        "restoreAsManagedVM": True, "encryptionOption": {},
+                        "availabilityZones": "", "restoreVMTags": False,
+                        "keyvaultId": "", "extensionRestorePolicy": "RESTORE"}],
+                    "transportMode": "Auto", "useVcloudCredentials": True,
+                    "restoreToDefaultHost": False, "generateNewGuid": False,
+                    "reuseExistingVMClient": False},
+                    "isDiskBrowse": True, "viewType": "DEFAULT",
+                    "vCenterInstance": {"instanceId": HYP["instance_id"],
+                                        "applicationId": _VSA_APP_ID, "clientId": HYP["id"]},
+                    "securityScanOptions": {"runSecurityScan": False}},
+                "fileOption": {"sourceItem": ["\\" + w["vm_guid"]]},
+                "commonOptions": {"overwriteFiles": False, "detectRegularExpression": True,
+                    "unconditionalOverwrite": False, "stripLevelType": "PRESERVE_LEVEL",
+                    "preserveLevel": 1, "stripLevel": 0, "restoreACLs": True,
+                    "isFromBrowseBackup": True, "clusterDBBackedup": False}},
+                "adminOpts": {"updateOption": {"invokeLevel": "NONE"}},
+                "commonOpts": {"notifyUserOnJobCompletion": False}}}]}}
+
+
+def restore(run_dir: str) -> int:
+    w = contract(run_dir)
+    vm = require_vm(w["vm_name"])
+    subclient_id = vm["vmSubClientEntity"]["subclientId"]            # the proven derivation
+    disk = client.get(f"v2/vsa/vm/{w['vm_guid']}/disks").json()["disks"][0]
+    to_time = int(time.time()) + 3600   # +1h clock-skew buffer: CommServ browse needs toTime > server time
+    payload = _restore_payload(w, subclient_id, disk["name"], disk.get("type", "Standard_LRS"), to_time)
+    run_restore.PAYLOAD_PATH.write_text(json.dumps(payload, indent=2))
+    print(f"restore payload derived (subclient {subclient_id}, disk {disk['name']!r}) -> {run_restore.PAYLOAD_PATH}")
+    return run_restore.main(["--cleanup"])
+
+
+def climb(run_dir: str) -> None:
+    preflight.run(run_dir)        # gate first — never act on a shaky environment
+    gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
+    backup(run_dir, gid)
+    restore(run_dir)              # /VM has caught up by now (backup took minutes)
+    print()
+    status(run_dir)               # hand to resops — watch the rung land at VALIDATED
+
+
+# --------------------------------------------------------------------------- #
+# verify bridge — op DRIVES the climb, then hands the workload to `resops` (the
+# read-only star) to render the ladder / run the gate. resops SHOWS + decides.
+# --------------------------------------------------------------------------- #
+def _gate_config_path(run_dir: str) -> str:
+    """A resops config for THIS workload — inherits config/workshop.yaml's `gate`
+    block (frameworks + freshness) and injects the live workload name from the
+    terraform contract. resops resolves the vm group by name (resops-<name>-vg),
+    so there's no hand-copied id to drift. (JSON is valid YAML, so resops reads it.)"""
+    w = contract(run_dir)
+    base = REPO / "config" / "workshop.yaml"
+    wcfg = yaml.safe_load(base.read_text()) if base.exists() else {}
+    wcfg_workload = wcfg.get("workload") or {}
+    cfg = {
+        "gate": wcfg.get("gate", {}),
+        "workload": {"name": w["vm_name"], "tier": wcfg_workload.get("tier")},
+        "target": HOST,
+    }
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+        json.dump(cfg, f)
+        return f.name
+
+
+def _resops(*args: str) -> int:
+    """Run the read-only resops engine (the star) as a subcommand, from the repo."""
+    return subprocess.run([sys.executable, "-m", "resops", *args], cwd=str(REPO)).returncode
+
+
+def status(run_dir: str) -> None:
+    """Show the workload's rung on the ladder + the DevOps lens — anytime, read-only."""
+    _resops("--detail", _gate_config_path(run_dir))
+
+
+def gate(run_dir: str) -> None:
+    """The promotion gate — PROMOTE/HOLD + the compliance crosswalk. exit 0/1."""
+    sys.exit(_resops("gate", _gate_config_path(run_dir)))
+
+
+# --------------------------------------------------------------------------- #
+# teardown helpers
+# --------------------------------------------------------------------------- #
+def _sweep_recovery_vaults(rg: str) -> None:
+    """Remove any Recovery Services vaults from the RG before terraform destroy.
+    Azure blocks RG deletion when an RSV exists — even after everything else is gone.
+    Vaults outside Terraform state (e.g. created manually) cause `terraform destroy`
+    to stall for 10+ minutes. This sweeps them first, cleanly."""
+    vaults = az_json("resource", "list", "-g", rg,
+                     "--resource-type", "Microsoft.RecoveryServices/vaults",
+                     "--query", "[].name") or []
+    if not vaults:
+        return
+    for name in vaults:
+        print(f"  RSV {name!r} not in Terraform state — clearing before destroy")
+        az_ok("backup", "vault", "backup-properties", "set",
+              "-g", rg, "--vault-name", name, "--soft-delete-state", "Disable")
+        containers = az_json("backup", "container", "list",
+                             "-g", rg, "--vault-name", name,
+                             "--backup-management-type", "AzureIaasVM") or []
+        for c in containers:
+            cname = c.get("name", "")
+            for item in (az_json("backup", "item", "list", "-g", rg,
+                                 "--vault-name", name,
+                                 "--backup-management-type", "AzureIaasVM",
+                                 "--container-name", cname) or []):
+                az_ok("backup", "protection", "disable",
+                      "-g", rg, "--vault-name", name,
+                      "--container-name", cname, "--item-name", item.get("name", ""),
+                      "--backup-management-type", "AzureIaasVM",
+                      "--workload-type", "VM", "--delete-backup-data", "true", "--yes")
+        az_ok("backup", "vault", "delete", "-g", rg, "--name", name, "--yes")
+
+
+# --------------------------------------------------------------------------- #
+# teardown — retire the workload cleanly: CV group + GXMD sweep + terraform destroy
+# --------------------------------------------------------------------------- #
+def teardown(run_dir: str) -> None:
+    w = contract(run_dir)
+    gid = group_id(w["vm_name"])
+    if gid:
+        r = write("DELETE", f"v4/VMGroup/{gid}")
+        note = " (pending admin approval)" if r.status_code == 202 else ""
+        print(f"CV group {gid} delete → HTTP {r.status_code}{note}")
+    # Sweep Commvault GXMD snapshots — even streaming backups leave one, and it
+    # blocks the RG delete (it's a snapshot, so `az disk list` won't show it).
+    for res in (az_json("resource", "list", "-g", w["resource_group"],
+                        "--query", "[?contains(name,'GXMD')]") or []):
+        az_json("resource", "delete", "--ids", res["id"])
+        print(f"swept GXMD snapshot: {res['name']}")
+    _sweep_recovery_vaults(w["resource_group"])
+    subprocess.run(["terraform", f"-chdir={run_dir}", "destroy", "-auto-approve"])
+    # Azure auto-creates a region-level NetworkWatcher (in NetworkWatcherRG) the first
+    # time a VNet is made in a region — it's not in our Terraform, so destroy leaves it.
+    # Remove just this region's watcher so the workshop leaves zero residue. Best-effort,
+    # and surgical: we never touch NetworkWatcherRG itself (it's shared across regions).
+    # It's free and Azure recreates it on the next climb, so this only matters for the
+    # single-workload workshop flow.
+    for wid in (az_json("network", "watcher", "list",
+                        "--query", f"[?location=='{w['location']}'].id") or []):
+        az_json("resource", "delete", "--ids", wid)
+        print(f"removed auto-created NetworkWatcher in {w['location']}")
+
+
+def validate(run_dir: str) -> None:
+    """Extended preflight — config completeness + IAM roles + all preflight checks
+    + RG cleanliness. Run before climbing (catches config and auth blockers) and
+    before teardown (confirms the RG is safe to destroy)."""
+    base = REPO / "config" / "workshop.yaml"
+    raw_cfg = yaml.safe_load(base.read_text()) if base.exists() else {}
+    sp = (raw_cfg.get("platform") or {}).get("commvault_sp_object_id", "")
+
+    placeholders = _find_placeholders(raw_cfg)
+    checks: list = [
+        ((False, f"config has unfilled placeholders: {', '.join(placeholders[:3])}"
+                 f"  → fix: fill config/workshop.yaml")
+         if placeholders else (True, "config/workshop.yaml — no placeholder values")),
+        _check_iam(sp),
+        preflight.check_az(), preflight.check_token(), preflight.check_hypervisor(),
+    ]
+
+    try:
+        w = contract(run_dir)
+        checks += [
+            preflight.check_discovered(w["vm_name"]),
+            preflight.check_vcpu(w["location"], w["vm_size"]),
+            _check_rg_clean(w["resource_group"]),
+        ]
+    except SystemExit:
+        checks.append((True, f"terraform not yet applied in {run_dir} — workload checks skipped"))
+
+    all_ok = True
+    for ok, msg in checks:
+        print(f"  {'PASS' if ok else 'FAIL'}  {msg}")
+        all_ok = all_ok and ok
+    if not all_ok:
+        sys.exit("validate FAILED — fix the above before climbing")
+    print("validate PASS — safe to climb and teardown")
+
+
+CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
+        "backup": backup, "restore": restore, "climb": climb, "status": status,
+        "gate": gate, "teardown": teardown}
+
+_USAGE = """op — the ResOps write lane
+
+  op validate  <run_dir>   config + IAM + preflight + RG cleanliness (run first, and before teardown)
+  op preflight <run_dir>   read-only gate: az · token · hypervisor · discovered · vCPU
+  op protect   <run_dir>   create the Commvault VM group for the workload
+  op backup    <run_dir>   trigger a full backup and poll to completion
+  op restore   <run_dir>   derive the restore payload + run the drill
+  op climb     <run_dir>   preflight → protect → backup → restore (full onboard in one step)
+  op status    <run_dir>   show the workload's rung on the readiness ladder (read-only)
+  op gate      <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
+  op teardown  <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy
+
+<run_dir> is the terraform root (normally infra/workloads).
+Always run `op validate` first — it catches config, IAM, and environment blockers up front."""
+
+
+def main() -> None:
+    """Console entry point (`op <cmd> <run_dir>`)."""
+    if len(sys.argv) < 2 or sys.argv[1] in ("help", "-h", "--help"):
+        print(_USAGE)
+        sys.exit(0)
+    if len(sys.argv) != 3 or sys.argv[1] not in CMDS:
+        sys.exit(f"usage: op {{{'|'.join(CMDS)}}} <run_dir>\n\nRun `op help` for details.")
+    if sys.argv[1] not in ("validate", "preflight"):
+        client.ensure_fresh_token()
+    CMDS[sys.argv[1]](sys.argv[2])
+
+
+if __name__ == "__main__":
+    main()

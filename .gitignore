@@ -1,0 +1,40 @@
+# secrets
+.env
+# live tenant ids — fill config/workshop.yaml locally from the .example
+config/workshop.yaml
+*.tfvars
+!*.tfvars.example
+
+# terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# evidence (regenerated each run)
+evidence/
+
+# operator working files (hold live, environment-specific ids)
+resops/operator/drills/restore_headless.json
+resops/operator/drills/restore_headless.json.*
+
+# terraform saved plans
+tfplan
+*.tfplan
+
+# private working journal — keep local, not for the public repo
+NOTES.md
+
+# session handover/log — accumulate live tenant/subscription ids each session
+HANDOVER.md
+LOG.md
+
+# python packaging build artifacts
+*.egg-info/
+build/
+dist/

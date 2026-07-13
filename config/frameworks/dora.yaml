@@ -1,0 +1,14 @@
+# Framework pack — EU Digital Operational Resilience Act (DORA).
+# Maps OUR capabilities (resops/capabilities.py) to DORA references.
+# INDICATIVE — supports an internal resilience programme, not an attestation.
+id: dora
+name: "EU Digital Operational Resilience Act (DORA)"
+disclaimer: "Indicative DORA mapping — supports a resilience programme, not a compliance attestation."
+references:
+  CAP-ASSET-IDENTIFICATION: "Art. 8 (ICT asset identification & classification)"
+  CAP-BACKUP-COVERAGE: "Art. 12 (backup policies — scope of protection)"
+  CAP-BACKUP-MONITORING: "Art. 10 (detection of anomalous activities)"
+  CAP-RECOVERY-READINESS: "Art. 12 (restoration & recovery methods)"
+  CAP-RESTORE-TESTED: "Art. 11/12 (periodic testing of recovery procedures)"
+  CAP-EVIDENCE-TRAIL: "Art. 24 (testing programme — traceable evidence)"
+  CAP-GOVERNED-CHANGE: "Art. 24 (management decisions recorded)"

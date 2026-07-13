@@ -1,0 +1,56 @@
+# ResOps recoverability gate — the second reconciliation loop, as a CI check.
+#
+# `resops gate` HOLDs the job (exit 1) unless the workload reached VALIDATED with
+# fresh proof. Drop it beside your tests and policy checks: a workload doesn't
+# promote unless it's provably recoverable.
+#
+#   build → test → policy → resops gate → promote
+#
+# Scope: this gate READS an already-protected workload's recovery state — it does
+# not provision or climb. The workload must already exist and be protected in your
+# tenant; the daily run keeps its recovery proof fresh.
+#
+# Setup (two repo secrets):
+#   • WORKSHOP_YAML — the filled config/workshop.yaml (it's gitignored by design,
+#     so CI materialises it from this secret in the step below).
+#   • CV_ACCESS_TOKEN / CV_REFRESH_TOKEN — for unattended CI prefer a long-lived
+#     service-account token (a user token can expire between runs; see the README).
+name: ResOps recoverability gate
+
+on:
+  pull_request:             # a required check on the workload PR — no merge if not recoverable
+  workflow_dispatch:        # run on demand
+  schedule:
+    - cron: "0 6 * * *"     # daily 06:00 UTC — builds the audit trail / freshness
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+
+      # config/workshop.yaml holds tenant ids and is gitignored by design, so CI
+      # supplies it from a secret (store your filled file as the WORKSHOP_YAML secret).
+      - name: Provide workshop config
+        run: printf '%s' "${{ secrets.WORKSHOP_YAML }}" > config/workshop.yaml
+
+      - name: ResOps gate (PROMOTE / HOLD)
+        env:
+          CV_ACCESS_TOKEN: ${{ secrets.CV_ACCESS_TOKEN }}
+          CV_REFRESH_TOKEN: ${{ secrets.CV_REFRESH_TOKEN }}
+        run: python -m resops gate          # exit 1 HOLDs the job on unproven recovery
+
+      - name: Render the ladder + crosswalk into the run summary
+        if: always()
+        run: cat evidence/report.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload evidence (JUnit + bundle + DORA/NIST/APRA mapping)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resops-evidence
+          path: evidence/

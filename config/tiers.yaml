@@ -1,0 +1,25 @@
+# tiers.yaml — THE policy. One declarative service level a workload picks
+# (config/workshop.yaml); infra/platform turns each tier into a Commvault plan,
+# and the resops gate enforces the tier's RPO/RTO bars on every run.
+
+tiers:
+  tier1:
+    description: "Mission-critical — tightest RPO/RTO, isolated recovery."
+    rpo_hours: 8          # max data loss  -> plan backup frequency + gate enforcement
+    rto_minutes: 240      # max recovery time (4h) -> gate enforcement
+    retention_days: 30
+    secondary_copy: true
+    isolated_recovery: true
+
+  tier2:
+    description: "Standard production — relaxed RPO/RTO, no isolated recovery."
+    rpo_hours: 24
+    rto_minutes: 480      # 8h
+    retention_days: 30
+    secondary_copy: true
+    isolated_recovery: false
+
+# Promotion-gate freshness default. Consumed by _resolve_policy() as the base
+# recovery_proof_max_age_days when no workload-level override is declared.
+gate:
+  recovery_proof_max_age_days: 7

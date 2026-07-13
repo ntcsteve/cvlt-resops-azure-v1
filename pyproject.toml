@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resops-cvlt-azure"
+version = "0.1.0"
+description = "ResOps on Azure — prove a workload is recoverable and gate promotion on that proof, over the Commvault Metallic SaaS API."
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+# The two commands. `resops` is the read-only ladder + gate (the star); `op` is
+# the write lane that drives a workload up it. `pip install -e .` puts both on PATH.
+[project.scripts]
+resops = "resops.__main__:main"
+op = "resops.operator.op:main"
+
+[tool.setuptools.packages.find]
+include = ["resops*"]
