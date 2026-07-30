@@ -129,6 +129,52 @@ def _plan_name(vmgroup_body: dict) -> str:
     return (vmgroup_body.get("summary", {}).get("plan") or {}).get("name", "")
 
 
+# --------------------------------------------------------------------------- #
+# Threat-scan parsers. Pure, like everything else here: they take an already-
+# fetched body and return a value or None — never raise, never exit. They live in
+# the read layer (not the operator) for two reasons: the responses they parse are
+# plain reads, and importing `resops.operator` requires a filled config/workshop.yaml
+# (gitignored), which would make these untestable on a fresh clone. The write lane
+# imports them and owns the "stop with the fix" behaviour on a None.
+# --------------------------------------------------------------------------- #
+def storage_pool_id(body: dict, pool_name: str) -> int | None:
+    """storagePoolId for a pool NAME. The id lives one level down, under
+    storagePoolEntity — the list itself carries no flat id."""
+    for pool in body.get("storagePoolList", []):
+        entity = pool.get("storagePoolEntity") or {}
+        if entity.get("storagePoolName") == pool_name:
+            return entity.get("storagePoolId")
+    return None
+
+
+def default_copy_id(body: dict) -> int | None:
+    """The copy that actually holds backed-up data: the policy's isDefault copy.
+    A policy also carries a snap copy, which points at the same pool but expires
+    on its own faster schedule — scanning it is not the same as scanning the
+    backup. Confirmed live: the PLAN's policy is the one our jobs write to, not
+    the storage pool's own primary copy, which is a different object entirely."""
+    for copy in body.get("copy", []):
+        if copy.get("isDefault"):
+            return (copy.get("StoragePolicyCopy") or {}).get("copyId")
+    return None
+
+
+def anomaly_verdict(body: dict, commcell_client_id: int) -> dict:
+    """Post-scan anomaly counts for one client, from GET Client/Anomaly.
+
+    Absent from the list means no anomalies were recorded, which is the clean
+    case — the API reports exceptions, not an all-clear per client. Returning a
+    populated dict either way keeps the caller branch-free."""
+    for entry in body.get("anomalyClients", []):
+        if (entry.get("client") or {}).get("clientId") == commcell_client_id:
+            infected = entry.get("infectedFilesCount", 0) or 0
+            fingerprint = entry.get("fingerPrintFilesCount", 0) or 0
+            return {"clean": not (infected or fingerprint),
+                    "infectedFilesCount": infected,
+                    "fingerPrintFilesCount": fingerprint}
+    return {"clean": True, "infectedFilesCount": 0, "fingerPrintFilesCount": 0}
+
+
 def _vms_in_group(vmgroup_body: dict) -> list:
     """VM names declared in a VM group's content."""
     names = []

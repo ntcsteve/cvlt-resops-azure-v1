@@ -3,14 +3,15 @@
 operator/ — the headless WRITE lane. Codifies the proven ResOps climb so a
 workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
 
-    op preflight <run_dir>  read-only gate: az · token · hypervisor · discovered · vCPU
-    op protect   <run_dir>  create the VSA vmgroup (VM added by its Azure vmId)
-    op backup    <run_dir>  trigger a backup and poll to completion
-    op restore   <run_dir>  derive the restore payload (token-native) + run drill
-    op climb     <run_dir>  preflight -> protect -> backup -> restore, ends on the ladder
-    op status    <run_dir>  show the workload's rung on the ladder (via resops) — read-only
-    op gate      <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
-    op teardown  <run_dir>  CV group + GXMD sweep + terraform destroy
+    op preflight   <run_dir>  read-only gate: az · token · hypervisor · discovered · vCPU
+    op protect     <run_dir>  create the VSA vmgroup (VM added by its Azure vmId)
+    op backup      <run_dir>  trigger a backup and poll to completion
+    op restore     <run_dir>  derive the restore payload (token-native) + run drill
+    op threatscan  <run_dir>  trigger ThreatScan on the backup copy, poll, read verdict
+    op climb       <run_dir>  preflight -> protect -> backup -> restore, ends on the ladder
+    op status      <run_dir>  show the workload's rung on the ladder (via resops) — read-only
+    op gate        <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
+    op teardown    <run_dir>  CV group + GXMD sweep + terraform destroy
 
 op DRIVES the climb (write); `resops` (the read-only star) SHOWS the ladder + runs
 the gate. status/climb-end/gate all hand the workload to resops.
@@ -34,6 +35,7 @@ import time
 
 import yaml
 
+from ..reads import anomaly_verdict, default_copy_id, storage_pool_id
 from ._azure import az_json, az_ok
 from .commvault import poll_job
 from . import preflight
@@ -220,6 +222,83 @@ def restore(run_dir: str) -> int:
     return run_restore.main(["--cleanup"])
 
 
+# --------------------------------------------------------------------------- #
+# threatscan — trigger a ThreatScan job on the workload's backup copy,
+# poll to completion, read the verdict. Explicit participant step (rung 3) so
+# the team can see and act on the threat signal before cleanroom recovery.
+# --------------------------------------------------------------------------- #
+def _commcell_client_id(vm_name: str) -> int:
+    """CommCell integer client ID for the VM. The plain Client API only lists
+    physical/proxy clients, not VSA pseudo-clients — confirmed live. The VM's own
+    /VM record carries its pseudo-client id at client.clientId (distinct from
+    pseudoClient.clientId, which is the hypervisor)."""
+    vm = require_vm(vm_name)
+    return vm["client"]["clientId"]
+
+
+def _storage_pool_id(pool_name: str) -> int:
+    """The pool's id, or stop with the fix. Parsing lives in reads.storage_pool_id."""
+    pool_id = storage_pool_id(client.get("StoragePool").json(), pool_name)
+    if pool_id is None:
+        raise SystemExit(f"storage pool {pool_name!r} not found in StoragePool list"
+                         f"  → fix: config/workshop.yaml platform.storage_pool_name")
+    return pool_id
+
+
+def _backup_copy_id(plan_id: int) -> int:
+    """The copy id that actually holds backed-up data, resolved via the PLAN's own
+    storage policy. Parsing lives in reads.default_copy_id."""
+    plan = client.get(f"V2/Plan/{plan_id}").json()["plan"]
+    policy_id = plan["storage"]["storagePolicy"]["storagePolicyId"]
+    copy_id = default_copy_id(client.get(f"StoragePolicy/{policy_id}").json())
+    if copy_id is None:
+        raise SystemExit(f"storage policy {policy_id} (plan {plan_id}) has no default copy")
+    return copy_id
+
+
+def _threatscan_verdict(commcell_client_id: int) -> dict:
+    """Post-scan anomaly counts for this client. Parsing lives in reads.anomaly_verdict."""
+    return anomaly_verdict(client.get("Client/Anomaly").json(), commcell_client_id)
+
+
+def threatscan(run_dir: str) -> None:
+    w = contract(run_dir)
+    vm_name = w["vm_name"]
+    pool_name = CFG.get("storage_pool_name")
+    if not pool_name:
+        raise SystemExit("platform.storage_pool_name missing from workshop.yaml")
+    cid = _commcell_client_id(vm_name)
+    pool_id = _storage_pool_id(pool_name)
+    copy_id = _backup_copy_id(CFG["plan_id"])
+    payload = {
+        "client": {"clientId": cid},
+        "timeRange": {"fromTime": 0, "toTime": int(time.time()) + 3600},  # +1h clock-skew buffer
+        "threatAnalysisFlags": 3,   # 1=malware 2=file-anomaly 3=both
+        "backupDetails": [{"copyId": copy_id, "storagePoolId": pool_id}],
+    }
+    r = write("POST", "EDiscoveryClients/OnDemandAnalytics", json=payload)
+    if r.status_code not in (200, 202):
+        raise SystemExit(f"threatscan trigger failed: HTTP {r.status_code} {r.text[:200]}")
+    body = r.json()
+    # EDiscoveryClients returns jobId (singular); handle jobIds (plural list) defensively
+    job_id = body.get("jobId") or (body.get("jobIds") or [None])[0]
+    if not job_id:
+        raise SystemExit(f"threatscan trigger succeeded but no job ID in response: {body}")
+    print(f"threatscan job {job_id}  (client {cid}, pool {pool_id}, copy {copy_id})…")
+    result = poll_job(client, job_id, timeout=900, every=20)
+    print(f"threatscan {result}")
+    if "Completed" not in result:
+        raise SystemExit(f"threatscan job {job_id} ended with {result!r} — verdict unavailable")
+    time.sleep(5)  # allow Metallic anomaly index to flush before reading verdict
+    verdict = _threatscan_verdict(cid)
+    label = "CLEAN" if verdict["clean"] else "THREATS FOUND"
+    print(f"verdict: {label}  "
+          f"(infected={verdict['infectedFilesCount']}, "
+          f"fingerprint={verdict['fingerPrintFilesCount']})")
+    if not verdict["clean"]:
+        sys.exit(f"threatscan FAILED — threats detected on {vm_name}")
+
+
 def climb(run_dir: str) -> None:
     preflight.run(run_dir)        # gate first — never act on a shaky environment
     gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
@@ -368,20 +447,21 @@ def validate(run_dir: str) -> None:
 
 
 CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
-        "backup": backup, "restore": restore, "climb": climb, "status": status,
-        "gate": gate, "teardown": teardown}
+        "backup": backup, "restore": restore, "threatscan": threatscan,
+        "climb": climb, "status": status, "gate": gate, "teardown": teardown}
 
 _USAGE = """op — the ResOps write lane
 
-  op validate  <run_dir>   config + IAM + preflight + RG cleanliness (run first, and before teardown)
-  op preflight <run_dir>   read-only gate: az · token · hypervisor · discovered · vCPU
-  op protect   <run_dir>   create the Commvault VM group for the workload
-  op backup    <run_dir>   trigger a full backup and poll to completion
-  op restore   <run_dir>   derive the restore payload + run the drill
-  op climb     <run_dir>   preflight → protect → backup → restore (full onboard in one step)
-  op status    <run_dir>   show the workload's rung on the readiness ladder (read-only)
-  op gate      <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
-  op teardown  <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy
+  op validate    <run_dir>   config + IAM + preflight + RG cleanliness (run first, and before teardown)
+  op preflight   <run_dir>   read-only gate: az · token · hypervisor · discovered · vCPU
+  op protect     <run_dir>   create the Commvault VM group for the workload
+  op backup      <run_dir>   trigger a full backup and poll to completion
+  op restore     <run_dir>   derive the restore payload + run the drill
+  op threatscan  <run_dir>   trigger ThreatScan on the backup copy, poll to clean/threat verdict
+  op climb       <run_dir>   preflight → protect → backup → restore (full onboard in one step)
+  op status      <run_dir>   show the workload's rung on the readiness ladder (read-only)
+  op gate        <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
+  op teardown    <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy
 
 <run_dir> is the terraform root (normally infra/workloads).
 Always run `op validate` first — it catches config, IAM, and environment blockers up front."""
