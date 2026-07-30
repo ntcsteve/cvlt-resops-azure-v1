@@ -75,11 +75,19 @@ class Client:
             resp = self._request(url)
         return resp
 
+    # The probe endpoint must be one that answers 401 on an expired token. It is
+    # NOT free choice: this used to call /CommServ, which the Metallic WAF answers
+    # with 403 for this tenant *whatever* the token says. 403 isn't 401, so _renew()
+    # never fired, writes could never self-renew, and tokens silently aged out until
+    # the refresh window closed. /VM is the same endpoint preflight trusts to answer
+    # "is this token alive". Don't swap it for a route the WAF might intercept.
+    PROBE_PATH = "VM"
+
     def ensure_fresh_token(self) -> None:
         """Make one benign read so an expired token is renewed (and saved) now.
         Call this before a non-GET request made elsewhere — those won't auto-renew.
-        The endpoint/response is irrelevant; the point is to trip renew-on-401."""
-        self.get("CommServ")
+        The response is irrelevant; the point is to trip renew-on-401."""
+        self.get(self.PROBE_PATH)
 
     def _request(self, url: str) -> requests.Response:
         """One GET, retried once on a transient network error or gateway error (502/503/504).
