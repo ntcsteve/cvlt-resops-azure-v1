@@ -11,7 +11,7 @@ DevOps turned infrastructure, delivery, and reliability into reconciled, gated l
  op       drive a workload up the ladder              WRITE - drives the climb
 ```
 
-**This workshop, end to end:** a real Azure VM climbs from nothing to **VALIDATED** (recovery proven by an actual restore), the gate flips to **PROMOTE**, and you get a DORA/NIST/APRA evidence report - then you tear it all down. **See it in 2 minutes** (no cloud), then the live workshop runs in two parts: **set up** (once, ~15 min) and **onboard & climb** (~20 min).
+**This workshop, end to end:** a real Azure VM climbs from nothing to **VALIDATED** (recovery proven by an actual restore), the gate flips to **PROMOTE**, and you get a DORA/NIST/APRA evidence report. Then you **break trust on purpose** - plant a detectable compromise, back it up, and watch the same commands reach the opposite verdict, because a backup that completed successfully still isn't always safe to restore from. Then you tear it all down. **See it in 2 minutes** (no cloud), then the live workshop runs in three parts: **set up** (once, ~15 min), **onboard & climb** (~20 min), and **break trust** (~10 min).
 
 ## Quick start
 
@@ -19,10 +19,12 @@ Already have an Azure subscription, a Metallic tenant, and a filled `config/work
 
 ```bash
 source .venv/bin/activate                    # pip install -e . if first time
+resops gate  config/estate.yaml              # no cloud, no token — the whole idea in one second
 op validate  infra/workloads                 # config + IAM + environment — fix blockers before touching anything
 terraform -chdir=infra/workloads apply       # provision the VM
 op climb     infra/workloads                 # protect → backup → threatscan → restore → VALIDATED
 op gate      infra/workloads                 # PROMOTE / HOLD + DORA/NIST/APRA evidence report
+op incident  infra/workloads                 # optional — break trust, then backup + threatscan → HOLD
 op teardown  infra/workloads                 # always run this — the VM costs money until you do
 ```
 
