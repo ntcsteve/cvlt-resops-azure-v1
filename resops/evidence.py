@@ -22,6 +22,7 @@ DEVOPS_LENS = {
     "protect": "like GitOps drift — declared vs actual coverage",
     "detect": "like observability — health checks & alerting",
     "recover": "like rollback readiness — RPO & SLA",
+    "scan": "like scanning an artifact before deploy — is the thing you'd roll back to clean?",
     "validate": "like a chaos drill — prove recovery in isolation",
     "improve": "like a regression gate — trend & audit trail",
     "continuous_business": "Continuous Service — a promotion gate: safe to ship to prod?",

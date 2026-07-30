@@ -6,7 +6,13 @@ gated by evidence; you stop at the first stage that doesn't clear, and that rung
 IS your state. The stage you're stuck on is the next thing to fix.
 
     UNDISCOVERED ─Discover─▸ DISCOVERED ─Protect─▸ PROTECTED
-        ─Detect─▸ MONITORED ─Recover─▸ RECOVERABLE ─Validate─▸ VALIDATED
+        ─Detect─▸ MONITORED ─Recover─▸ RECOVERABLE ─Scan─▸ TRUSTED
+        ─Validate─▸ VALIDATED
+
+Scan sits between Recover and Validate on purpose: Recover asks whether there IS
+a recent recovery point, Scan asks whether that point carries a known threat, and
+Validate asks whether a real restore proved it. You cannot honestly validate a
+recovery from a point you never checked.
 
 State = capability (what's TRUE now). It never carries a parallel "FAIL" track:
 a read error doesn't invent a failure state, it just leaves you on the rung below
@@ -26,7 +32,7 @@ from dataclasses import dataclass, field
 from .client import Client
 from .reads import (
     SUMMARY_CLIP, _find_vm, _get, _plan_name, _recovery_proof, _vms_in_group,
-    find_vmgroup_id, vmgroup_name,
+    anomaly_verdict, find_vmgroup_id, vmgroup_name,
 )
 
 
@@ -38,7 +44,8 @@ class State(enum.Enum):
     PROTECTED = 2
     MONITORED = 3
     RECOVERABLE = 4
-    VALIDATED = 5
+    TRUSTED = 5
+    VALIDATED = 6
 
     @property
     def rank(self) -> int:
@@ -55,7 +62,7 @@ class State(enum.Enum):
 # from one rung to the next; the label names "the next thing to do". (The
 # cloud-native lens per stage lives in evidence.DEVOPS_LENS, keyed by the
 # lower-cased stage name, and is rendered in --detail.)
-STAGES = ("Discover", "Protect", "Detect", "Recover", "Validate")
+STAGES = ("Discover", "Protect", "Detect", "Recover", "Scan", "Validate")
 
 
 @dataclass(frozen=True)
@@ -68,6 +75,8 @@ class Reads:
     vmgroup_error: str = ""
     vm: dict | None = None                        # the matched record from GET /VM
     vm_error: str = ""
+    anomaly: dict | None = None                   # PARSED threat verdict (reads.anomaly_verdict)
+    anomaly_error: str = ""
     proof: dict | None = None                     # latest restore job summary for this VM
     proof_error: str = ""
 
@@ -122,13 +131,33 @@ def gather(client: Client, workload: dict) -> Reads:
 
     vmgroup, vmgroup_error = _get(client, f"V4/VMGroup/{group_id}")
     vm, vm_error = _find_vm(client, vm_name)
+    anomaly, anomaly_error = _threat_verdict(client, vm)
     proof, proof_error = _recovery_proof(client, vm_name)
     return Reads(
         vm_name=vm_name,
         vmgroup=vmgroup, vmgroup_error=vmgroup_error,
         vm=vm, vm_error=vm_error,
+        anomaly=anomaly, anomaly_error=anomaly_error,
         proof=proof, proof_error=proof_error,
     )
+
+
+def _threat_verdict(client: Client, vm: dict | None) -> tuple[dict | None, str]:
+    """The parsed threat verdict for this VM, or (None, reason).
+
+    The VM's own /VM record carries its CommCell pseudo-client id at
+    client.clientId — distinct from pseudoClient.clientId, which is the
+    hypervisor. Without that id there is nothing to look up, so we say so rather
+    than guess."""
+    if vm is None:
+        return None, ""            # Recover already blocks; don't double-report
+    client_id = (vm.get("client") or {}).get("clientId")
+    if not client_id:
+        return None, "VM record carries no CommCell client id"
+    body, err = _get(client, "Client/Anomaly")
+    if err:
+        return None, err
+    return anomaly_verdict(body, client_id), ""
 
 
 def _clip(text: str) -> str:
@@ -225,6 +254,32 @@ def classify(reads: Reads) -> Ladder:
                     f"SLA not met — {sla or 'unknown'}", recover_ev, error=False)
     cleared("Recover", "recoverable — SLA Protected", recover_ev)
 
+    # ── Scan ── is the point we'd restore from carrying a known threat? ───────
+    # HONEST LIMIT: Client/Anomaly reports EXCEPTIONS, not per-client all-clears.
+    # So "no threat recorded" is what this rung can prove; it cannot prove a scan
+    # ever ran. Hence the summary wording — clearing it means nothing was flagged,
+    # which is weaker than "certified clean" and is stated that way on purpose.
+    if reads.anomaly_error:
+        return stop(State.RECOVERABLE, "Scan",
+                    f"could not read threat scan: {reads.anomaly_error}",
+                    {"vm_name": vm_name}, error=True)
+    verdict = reads.anomaly
+    if verdict is None:
+        return stop(State.RECOVERABLE, "Scan",
+                    "no threat verdict available for this VM", {"vm_name": vm_name},
+                    error=True)
+    scan_ev = {"threat_clean": verdict.get("clean"),
+               "infected_files": verdict.get("infectedFilesCount", 0),
+               "fingerprint_files": verdict.get("fingerPrintFilesCount", 0)}
+    if not verdict.get("clean"):
+        detail = verdict.get("unreadable") or (
+            f"{scan_ev['infected_files']} infected, "
+            f"{scan_ev['fingerprint_files']} file-anomaly")
+        return stop(State.RECOVERABLE, "Scan",
+                    f"threat detected in the recovery point — {detail}",
+                    scan_ev, error=False)
+    cleared("Scan", "no threat recorded against the recovery point", scan_ev)
+
     # ── Validate ── has a real restore PROVEN recovery for this VM? ───────────
     if reads.proof_error:
         return stop(State.RECOVERABLE, "Validate",
@@ -248,7 +303,7 @@ def classify(reads: Reads) -> Ladder:
 def _state_after(stage: str) -> State:
     """The rung a stage lifts you onto when it clears."""
     return (State.DISCOVERED, State.PROTECTED, State.MONITORED,
-            State.RECOVERABLE, State.VALIDATED)[STAGES.index(stage)]
+            State.RECOVERABLE, State.TRUSTED, State.VALIDATED)[STAGES.index(stage)]
 
 
 # --------------------------------------------------------------------------- #

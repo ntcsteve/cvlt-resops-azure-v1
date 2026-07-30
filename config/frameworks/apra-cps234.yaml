@@ -1,0 +1,23 @@
+# Framework pack — APRA Prudential Standard CPS 234 (Information Security).
+# Maps OUR capabilities (resops/assurance/capabilities.py) to CPS 234 requirement areas.
+#
+# Why this sits alongside CPS 230 rather than replacing it: 230 is operational risk
+# ("can this critical operation keep running, within tolerance"), 234 is information
+# security ("are these information assets protected, and can you show the controls
+# work"). A compromised-recovery-point question touches both — 230 asks whether you
+# recover in time, 234 asks whether what you recovered is trustworthy.
+#
+# References are by topic area, not exact paragraph numbers, to stay honest.
+# INDICATIVE — supports an internal resilience programme, not an attestation.
+id: apra-cps234
+name: "APRA CPS 234 (Information Security)"
+disclaimer: "Indicative APRA CPS 234 mapping — supports a resilience programme, not a compliance attestation."
+references:
+  CAP-ASSET-IDENTIFICATION: "CPS 234 — identification & classification of information assets"
+  CAP-BACKUP-COVERAGE: "CPS 234 — controls proportionate to asset criticality & sensitivity"
+  CAP-BACKUP-MONITORING: "CPS 234 — detection of information security incidents"
+  CAP-RECOVERY-POINT-TRUST: "CPS 234 — integrity of information assets; incident response"
+  CAP-RECOVERY-READINESS: "CPS 234 — response & recovery capability"
+  CAP-RESTORE-TESTED: "CPS 234 — systematic testing of control effectiveness"
+  CAP-EVIDENCE-TRAIL: "CPS 234 — internal audit review of control design & effectiveness"
+  CAP-GOVERNED-CHANGE: "CPS 234 — Board accountability for information security"

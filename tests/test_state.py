@@ -32,8 +32,14 @@ def _proof(status="Completed"):
     return {"jobId": 7540314, "status": status}
 
 
+def _scan(*, clean=True, infected=0, fingerprint=0, **extra):
+    """A parsed threat verdict, the shape reads.anomaly_verdict returns."""
+    return {"clean": clean, "infectedFilesCount": infected,
+            "fingerPrintFilesCount": fingerprint, **extra}
+
+
 def _full_reads(**overrides) -> Reads:
-    base = dict(vm_name=VM, vmgroup=_group(), vm=_vm(), proof=_proof())
+    base = dict(vm_name=VM, vmgroup=_group(), vm=_vm(), anomaly=_scan(), proof=_proof())
     base.update(overrides)
     return Reads(**base)
 
@@ -47,7 +53,7 @@ def test_full_climb_reaches_validated():
     assert ladder.blocked_stage is None
     assert ladder.promotable is True
     assert "recovery proven" in ladder.reason
-    assert [r.passed for r in ladder.rungs] == [True, True, True, True, True]
+    assert [r.passed for r in ladder.rungs] == [True, True, True, True, True, True]
 
 
 # --------------------------------------------------------------------------- #
@@ -142,6 +148,60 @@ def test_no_successful_backup_stays_monitored():
 
 
 # --------------------------------------------------------------------------- #
+# Scan — is the point we'd restore from carrying a known threat?
+#
+# This is the rung the workshop turns on: a workload can be perfectly recoverable
+# and still be untrustworthy, because the compromise is INSIDE the backup. A dirty
+# verdict must never reach VALIDATED, however green everything below it looks.
+# --------------------------------------------------------------------------- #
+def test_clean_scan_clears_the_rung():
+    ladder = classify(_full_reads())
+    scan = next(r for r in ladder.rungs if r.stage == "Scan")
+    assert scan.passed is True
+    assert scan.evidence["threat_clean"] is True
+
+
+def test_infected_recovery_point_stays_recoverable():
+    ladder = classify(_full_reads(anomaly=_scan(clean=False, infected=3)))
+    assert ladder.state is State.RECOVERABLE
+    assert ladder.blocked_stage == "Scan"
+    assert ladder.blocked_by_error is False
+    assert "threat detected" in ladder.reason
+    assert "3 infected" in ladder.reason
+
+
+def test_file_anomaly_alone_blocks_the_rung():
+    # Mass encryption fires the file-anomaly signal with zero malware matches.
+    ladder = classify(_full_reads(anomaly=_scan(clean=False, fingerprint=42)))
+    assert ladder.state is State.RECOVERABLE
+    assert ladder.blocked_stage == "Scan"
+
+
+def test_a_dirty_scan_beats_a_proven_restore():
+    # The whole point: proof of recovery does NOT redeem a compromised source.
+    # Validate must never be reached, let alone cleared.
+    ladder = classify(_full_reads(anomaly=_scan(clean=False, infected=1),
+                                  proof=_proof(status="Completed")))
+    assert ladder.promotable is False
+    validate = next(r for r in ladder.rungs if r.stage == "Validate")
+    assert validate.passed is None
+
+
+def test_unreadable_verdict_blocks_rather_than_passes():
+    # Fail closed: a verdict we can't parse is not a clean verdict.
+    ladder = classify(_full_reads(anomaly=_scan(clean=False, unreadable="unknown shape")))
+    assert ladder.state is State.RECOVERABLE
+    assert "unknown shape" in ladder.reason
+
+
+def test_scan_read_error_stays_recoverable_as_error():
+    ladder = classify(_full_reads(anomaly=None, anomaly_error="HTTP 503"))
+    assert ladder.state is State.RECOVERABLE
+    assert ladder.blocked_stage == "Scan"
+    assert ladder.blocked_by_error is True
+
+
+# --------------------------------------------------------------------------- #
 # Validate — has a real restore proven recovery?
 # --------------------------------------------------------------------------- #
 def test_no_proof_stays_recoverable():
@@ -169,18 +229,19 @@ def test_failed_restore_stays_recoverable():
 def test_blocked_marks_exactly_one_stage_and_truncates_the_rest():
     ladder = classify(_full_reads(vmgroup=_group(backup_status="")))  # blocked at Detect
     passed = [r.passed for r in ladder.rungs]
-    assert passed == [True, True, False, None, None]  # cleared, cleared, blocked, not reached×2
+    assert passed == [True, True, False, None, None, None]  # cleared×2, blocked, not reached×3
 
 
 def test_state_ordering_is_total():
-    assert State.UNDISCOVERED < State.PROTECTED < State.VALIDATED
-    assert State.VALIDATED.rank == 5
+    assert State.UNDISCOVERED < State.PROTECTED < State.TRUSTED < State.VALIDATED
+    assert State.VALIDATED.rank == 6
 
 
 def test_only_validated_is_promotable():
     for reads, expected in [
         (_full_reads(), True),
         (_full_reads(proof=None), False),
+        (_full_reads(anomaly=_scan(clean=False, infected=1)), False),
         (_full_reads(vmgroup=_group(in_group=False)), False),
     ]:
         assert classify(reads).promotable is expected

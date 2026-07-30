@@ -20,6 +20,16 @@ workloads:
     criticality: critical
     fixture: config/demo/validated.json      # VALIDATED  — recovery PROVEN by a real restore
 
+  - name: checkout-api
+    tier: tier1
+    env: prod
+    owner: payments
+    criticality: critical
+    # THE ONE TO STOP ON. Every light is green — protected, backups completing,
+    # SLA met, recovery PROVEN by a real restore — and it still must not ship,
+    # because the recovery point itself carries a threat. Available is not trusted.
+    fixture: config/demo/threat-detected.json  # RECOVERABLE — blocked at Scan
+
   - name: identity-svc
     tier: tier1
     env: prod

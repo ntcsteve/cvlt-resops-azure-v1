@@ -23,6 +23,7 @@
     "lastSuccessfulBackupTime": 1785409195
   },
   "vm_error": "",
+  "anomaly": {"clean": true, "infectedFilesCount": 0, "fingerPrintFilesCount": 0},
   "proof": {
     "jobId": 884730,
     "status": "Completed",

@@ -8,6 +8,7 @@ references:
   CAP-ASSET-IDENTIFICATION: "Art. 8 (ICT asset identification & classification)"
   CAP-BACKUP-COVERAGE: "Art. 12 (backup policies — scope of protection)"
   CAP-BACKUP-MONITORING: "Art. 10 (detection of anomalous activities)"
+  CAP-RECOVERY-POINT-TRUST: "Art. 12 (integrity of restoration data before recovery)"
   CAP-RECOVERY-READINESS: "Art. 12 (restoration & recovery methods)"
   CAP-RESTORE-TESTED: "Art. 11/12 (periodic testing of recovery procedures)"
   CAP-EVIDENCE-TRAIL: "Art. 24 (testing programme — traceable evidence)"

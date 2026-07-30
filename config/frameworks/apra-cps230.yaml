@@ -9,6 +9,7 @@ references:
   CAP-ASSET-IDENTIFICATION: "CPS 230 — identification of critical operations"
   CAP-BACKUP-COVERAGE: "CPS 230 — operational risk controls"
   CAP-BACKUP-MONITORING: "CPS 230 — monitoring of operational risk"
+  CAP-RECOVERY-POINT-TRUST: "CPS 230 — integrity of critical operations before recovery"
   CAP-RECOVERY-READINESS: "CPS 230 — BCP: recovery within tolerance levels"
   CAP-RESTORE-TESTED: "CPS 230 — scenario & business continuity testing"
   CAP-EVIDENCE-TRAIL: "CPS 230 — review & assurance of controls"

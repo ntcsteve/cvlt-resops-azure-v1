@@ -8,6 +8,7 @@ references:
   CAP-ASSET-IDENTIFICATION: "CM-8 (system component inventory)"
   CAP-BACKUP-COVERAGE: "CP-9 (system backup)"
   CAP-BACKUP-MONITORING: "CP-9, SI-4 (system monitoring)"
+  CAP-RECOVERY-POINT-TRUST: "SI-3 (malicious code protection), SI-7 (information integrity)"
   CAP-RECOVERY-READINESS: "CP-10 (system recovery & reconstitution)"
   CAP-RESTORE-TESTED: "CP-4 (contingency plan testing), CP-9(1) (test restoration)"
   CAP-EVIDENCE-TRAIL: "CP-4 (test results), CA-7 (continuous monitoring)"

@@ -31,6 +31,10 @@ CAPABILITIES = {
         {"id": "CAP-RECOVERY-READINESS",
          "evidences": "recoverable now — RPO within tolerance, restore enabled"},
     ],
+    "scan": [
+        {"id": "CAP-RECOVERY-POINT-TRUST",
+         "evidences": "no threat is recorded against the point we would restore from"},
+    ],
     "validate": [
         {"id": "CAP-RESTORE-TESTED",
          "evidences": "recovery has been proven by a real restore, not assumed"},
