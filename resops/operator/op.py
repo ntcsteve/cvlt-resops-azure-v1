@@ -9,7 +9,7 @@ workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
     op restore     <run_dir>  derive the restore payload (token-native) + run drill
     op threatscan  <run_dir>  trigger ThreatScan on the backup copy, poll, read verdict
     op incident    <run_dir>  plant a detectable compromise in the workload (workshop only)
-    op climb       <run_dir>  preflight -> protect -> backup -> restore, ends on the ladder
+    op climb       <run_dir>  preflight -> protect -> backup -> threatscan -> restore
     op status      <run_dir>  show the workload's rung on the ladder (via resops) — read-only
     op gate        <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
     op teardown    <run_dir>  CV group + GXMD sweep + terraform destroy
@@ -385,6 +385,10 @@ def climb(run_dir: str) -> None:
     preflight.run(run_dir)        # gate first — never act on a shaky environment
     gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
     backup(run_dir, gid)
+    threatscan(run_dir)           # Scan sits below Validate: never prove a restore
+                                  # from a point you haven't checked. Exits non-zero
+                                  # on a threat, so the climb stops here rather than
+                                  # rehearsing recovery from a compromised copy.
     restore(run_dir)              # /VM has caught up by now (backup took minutes)
     print()
     status(run_dir)               # hand to resops — watch the rung land at VALIDATED
@@ -542,7 +546,7 @@ _USAGE = """op — the ResOps write lane
   op restore     <run_dir>   derive the restore payload + run the drill
   op threatscan  <run_dir>   trigger ThreatScan on the backup copy, poll to clean/threat verdict
   op incident    <run_dir>   plant a detectable compromise in the workload (workshop only)
-  op climb       <run_dir>   preflight → protect → backup → restore (full onboard in one step)
+  op climb       <run_dir>   preflight → protect → backup → threatscan → restore (one step)
   op status      <run_dir>   show the workload's rung on the readiness ladder (read-only)
   op gate        <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
   op teardown    <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy

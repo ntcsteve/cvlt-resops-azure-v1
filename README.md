@@ -21,7 +21,7 @@ Already have an Azure subscription, a Metallic tenant, and a filled `config/work
 source .venv/bin/activate                    # pip install -e . if first time
 op validate  infra/workloads                 # config + IAM + environment — fix blockers before touching anything
 terraform -chdir=infra/workloads apply       # provision the VM
-op climb     infra/workloads                 # protect → backup → restore → VALIDATED (pauses at restore)
+op climb     infra/workloads                 # protect → backup → threatscan → restore → VALIDATED
 op gate      infra/workloads                 # PROMOTE / HOLD + DORA/NIST/APRA evidence report
 op teardown  infra/workloads                 # always run this — the VM costs money until you do
 ```
@@ -34,11 +34,11 @@ New here? Start with [See it first](#see-it-first---one-command-no-cloud-no-toke
 python3 -m resops config/demo.yaml
 ```
 ```
- ●●✗··  PROTECTED  blocked at Detect
-   ✓ discover · ✓ protect · ✗ detect · · recover · · validate
+ ●●✗···  PROTECTED  blocked at Detect
+   ✓ discover · ✓ protect · ✗ detect · · recover · · scan · · validate
 ```
 
-**How to read it:** five dots = the five levels. This workload cleared Discover and Protect (●●), then stalled at Detect (✗) - its last backup wasn't clean, so it can't be trusted to recover. The level *is* the verdict. Canned reads - zero network or token; the same ladder, PROMOTE/HOLD gate, and DORA/NIST/APRA crosswalk a live run produces. Every level maps to something you already do for code.
+**How to read it:** six dots = the six levels. This workload cleared Discover and Protect (●●), then stalled at Detect (✗) - its last backup wasn't clean, so it can't be trusted to recover. The level *is* the verdict. Canned reads - zero network or token; the same ladder, PROMOTE/HOLD gate, and DORA/NIST/APRA crosswalk a live run produces. Every level maps to something you already do for code.
 
 ### The whole estate - one command, one verdict
 
@@ -46,16 +46,19 @@ python3 -m resops config/demo.yaml
 python3 -m resops gate config/estate.yaml
 ```
 ```
- ●●●●●  VALIDATED     payments-api    PROMOTE
- ●●●●✗  RECOVERABLE   identity-svc    recoverable on paper, never proven
- ●●✗··  PROTECTED     reporting-db    last backup failed
- ●●●✗·  MONITORED     edge-cache      backups green, SLA missed
- ✗····  UNDISCOVERED  legacy-batch    nobody onboarded it
+ ●●●●●●  VALIDATED     payments-api   recovery proven          PROMOTE
+ ●●●●✗·  RECOVERABLE   checkout-api   threat in the recovery point   HOLD
+ ●●●●●✗  RECOVERABLE   identity-svc   recoverable, never proven      HOLD
+ ●●✗···  PROTECTED     reporting-db   last backup failed             HOLD
+ ●●●✗··  MONITORED     edge-cache     backups green, SLA missed      HOLD
+ ✗·····  UNDISCOVERED  legacy-batch   nobody onboarded it            HOLD
 
- AGGREGATE  HOLD - identity-svc, reporting-db, edge-cache, legacy-batch · exit 1
+ AGGREGATE  HOLD - checkout-api, identity-svc, reporting-db, edge-cache, legacy-batch · exit 1
 ```
 
-Five workloads on five different levels, one aggregate verdict, one exit code your CI could gate on. The gate HOLDs if **any** workload isn't VALIDATED - criticality is recorded as evidence, never a way to ship past a gap. Still zero network, still under a second, and it writes the same evidence bundle, report and hash-chained audit trail a live run does.
+Six workloads on six different levels, one aggregate verdict, one exit code your CI could gate on. The gate HOLDs if **any** workload isn't VALIDATED - criticality is recorded as evidence, never a way to ship past a gap. Still zero network, still under a second, and it writes the same evidence bundle, report and hash-chained audit trail a live run does.
+
+**Stop on `checkout-api`.** Every light is green - protected, backups completing, SLA met, and recovery *proven* by a real restore - and it still must not ship, because the point it would restore from carries a threat. **Available is not the same as trusted.** That single line is why the Scan level exists.
 
 Two things worth trying on it:
 
@@ -75,7 +78,7 @@ A workload sits on **one level** of a readiness ladder; the level *is* the verdi
 
 ```
  UNDISCOVERED ─Discover─▸ DISCOVERED ─Protect─▸ PROTECTED ─Detect─▸ MONITORED
-     ─Recover─▸ RECOVERABLE ─Validate─▸ VALIDATED
+     ─Recover─▸ RECOVERABLE ─Scan─▸ TRUSTED ─Validate─▸ VALIDATED
 ```
 
 It's **two reconciliation loops** - and you already run the first:
@@ -98,6 +101,7 @@ Each stage is the step that lifts a workload onto the next level - and each is a
 | Protect  | a policy attached? | `PROTECTED` | GitOps drift detection |
 | Detect   | last backup clean? | `MONITORED` | observability / alerting |
 | Recover  | recoverable now (RPO/SLA)? | `RECOVERABLE` | rollback readiness / SLOs |
+| Scan     | is the point you'd restore from clean? | `TRUSTED` | scanning an artifact before deploy |
 | Validate | recovery *proven* by a real restore? | `VALIDATED` | **chaos drill / game day** |
 | Improve  | did the level move since last run? | *(trend)* | regression gate |
 | Continuous Service | safe to ship? | *(gate)* | required CI check |
@@ -177,7 +181,7 @@ terraform -chdir=infra/workloads apply
 
 ```bash
 op preflight infra/workloads   # read-only gate: az · token · hypervisor · discovered · vCPU
-op climb     infra/workloads   # protect → backup → restore → lands at VALIDATED
+op climb     infra/workloads   # protect → backup → threatscan → restore → lands at VALIDATED
 op gate      infra/workloads   # the verdict → PROMOTE (0) / HOLD (1) + compliance crosswalk
 op teardown  infra/workloads   # protection group + snapshot, terraform destroy, region NetworkWatcher
 #   op status infra/workloads  # the level, anytime (read-only)
@@ -188,13 +192,38 @@ Two things to expect: `op climb` **pauses at the restore step** (in a terminal) 
 As it climbs, `op status` fills the dots in - and the gate gives the verdict:
 
 ```
- ●●●●●  VALIDATED  ·  recovery proven - job <id>
+ ●●●●●●  VALIDATED  ·  recovery proven - job <id>
  PROMOTE  recoverability proven · exit 0
 ```
 
 ✓ **Done when** `op gate` prints `PROMOTE · exit 0` - a workload that's *provably* recoverable, with the evidence to show an auditor. (No hardcodes: `op` reads two inputs - the `workload` terraform output and `config/workshop.yaml`; runtime specifics come from the live API.)
 
 🎉 You just proved an Azure workload is recoverable - as code, gated, with audit evidence. **That's ResOps.**
+
+### Part 3 - Break trust on purpose (~10 min, optional)
+
+A clean climb proves your workload is **recoverable**. It proves nothing about whether the thing you'd recover *from* is **trustworthy** - and in a real incident that's the question that matters. A compromised service doesn't just go down; recent backups may carry the compromise with them.
+
+So break it, on purpose, and watch the same tool reach the opposite verdict:
+
+```bash
+op incident   infra/workloads   # plant a detectable compromise in the workload
+op backup     infra/workloads   # the incident is now INSIDE a recovery point
+op threatscan infra/workloads   # THREATS FOUND - exits non-zero
+op gate       infra/workloads   # HOLD · exit 1
+```
+
+```
+ ●●●●✗·  RECOVERABLE  blocked at Scan
+ ↳ threat detected in the recovery point - 2 infected, 14 file-anomaly
+ HOLD  exit 1
+```
+
+Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. `op incident` plants the **EICAR test pattern** (the industry-standard harmless string every scanner is built to detect) plus a burst of high-entropy `.locked` files, which is what mass encryption looks like on disk. Nothing is really encrypted and no malware is involved; the known-good `BASELINE` marker is left in place so *"what did we still trust?"* has an answer.
+
+> ⚠️ `op incident` deliberately makes a workload dirty. It targets only the VM in your Terraform contract, and `op teardown` plus a fresh climb restores a clean one. Never point it at anything you care about.
+
+Reverse the order and you get the workshop's whole point in two lines: **the backup completed successfully, and it is still not safe to restore from.**
 
 ## Why it's real - compliance, by design
 
