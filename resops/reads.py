@@ -159,19 +159,34 @@ def default_copy_id(body: dict) -> int | None:
     return None
 
 
+ANOMALY_COUNTS = ("infectedFilesCount", "fingerPrintFilesCount")
+
+
 def anomaly_verdict(body: dict, commcell_client_id: int) -> dict:
     """Post-scan anomaly counts for one client, from GET Client/Anomaly.
 
     Absent from the list means no anomalies were recorded, which is the clean
     case — the API reports exceptions, not an all-clear per client. Returning a
-    populated dict either way keeps the caller branch-free."""
+    populated dict either way keeps the caller branch-free.
+
+    FAILS CLOSED on an unrecognised shape. These field names were read off a
+    tenant that had never recorded an anomaly, so the dirty payload has never
+    actually been seen. If a client is listed but carries none of the counts we
+    know, the honest answer is "this is not clean" — a verdict we cannot read is
+    never a pass. Silently returning clean is the one outcome this tool must
+    never produce."""
     for entry in body.get("anomalyClients", []):
-        if (entry.get("client") or {}).get("clientId") == commcell_client_id:
-            infected = entry.get("infectedFilesCount", 0) or 0
-            fingerprint = entry.get("fingerPrintFilesCount", 0) or 0
-            return {"clean": not (infected or fingerprint),
-                    "infectedFilesCount": infected,
-                    "fingerPrintFilesCount": fingerprint}
+        if (entry.get("client") or {}).get("clientId") != commcell_client_id:
+            continue
+        if not any(key in entry for key in ANOMALY_COUNTS):
+            return {"clean": False, "infectedFilesCount": 0, "fingerPrintFilesCount": 0,
+                    "unreadable": "listed as an anomaly client in a shape we don't "
+                                  "recognise — treating as NOT clean"}
+        infected = entry.get("infectedFilesCount", 0) or 0
+        fingerprint = entry.get("fingerPrintFilesCount", 0) or 0
+        return {"clean": not (infected or fingerprint),
+                "infectedFilesCount": infected,
+                "fingerPrintFilesCount": fingerprint}
     return {"clean": True, "infectedFilesCount": 0, "fingerPrintFilesCount": 0}
 
 

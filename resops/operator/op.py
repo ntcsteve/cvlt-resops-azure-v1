@@ -8,6 +8,7 @@ workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
     op backup      <run_dir>  trigger a backup and poll to completion
     op restore     <run_dir>  derive the restore payload (token-native) + run drill
     op threatscan  <run_dir>  trigger ThreatScan on the backup copy, poll, read verdict
+    op incident    <run_dir>  plant a detectable compromise in the workload (workshop only)
     op climb       <run_dir>  preflight -> protect -> backup -> restore, ends on the ladder
     op status      <run_dir>  show the workload's rung on the ladder (via resops) — read-only
     op gate        <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
@@ -299,6 +300,87 @@ def threatscan(run_dir: str) -> None:
         sys.exit(f"threatscan FAILED — threats detected on {vm_name}")
 
 
+# --------------------------------------------------------------------------- #
+# incident — make the workload untrusted ON PURPOSE, so the threat signal is
+# real instead of narrated. A clean climb proves recoverability; it proves
+# nothing about TRUST. This is the step that lets `op threatscan` say no.
+# --------------------------------------------------------------------------- #
+# Assembled from fragments at runtime, never stored whole. EICAR is the industry
+# standard harmless test pattern every scanner is built to detect — but a file
+# containing it verbatim is exactly what endpoint AV quarantines, and that file
+# would be THIS SOURCE FILE sitting in the repo. Splitting it keeps the checkout
+# scannable. The string is inert: it is not code, it does nothing, it exists only
+# to be recognised.
+_EICAR = ("X5O!P%@AP[4\\PZX54(P^)7CC)7}$"
+          "EICAR-STANDARD-ANTIVIRUS-TEST-FILE!"
+          "$H+H*")
+
+# Runs inside the guest via the Azure agent. Two distinct signals, because
+# ThreatScan looks for both and we want the demo to survive either one missing:
+#   malware      — the EICAR pattern, matched by signature
+#   file anomaly — a burst of high-entropy files with a changed extension, which
+#                  is what mass encryption actually looks like on disk
+_INCIDENT_SCRIPT = r"""
+set -eu
+DATA=/var/lib/app/data
+mkdir -p "$DATA"
+
+# 1. the signature-detectable artifact
+printf '%s' '{eicar}' > "$DATA/invoice_overdue.doc"
+printf '%s' '{eicar}' > "$DATA/.hidden_payload"
+
+# 2. what mass encryption looks like: high-entropy files, extension changed,
+#    originals removed. customers.csv is the one participants will miss.
+for f in customers.csv orders.ndjson; do
+  if [ -f "$DATA/$f" ]; then
+    head -c 4096 /dev/urandom > "$DATA/$f.locked"
+    rm -f "$DATA/$f"
+  fi
+done
+for i in $(seq 1 12); do
+  head -c 2048 /dev/urandom > "$DATA/record_$i.dat.locked"
+done
+
+# 3. the note. Operators find this first in a real event.
+cat > "$DATA/README_RECOVER.txt" <<'NOTE'
+Your files have been encrypted.
+(Workshop simulation. No encryption was performed; these are random bytes.)
+NOTE
+
+echo "planted: 2 EICAR files, $(ls "$DATA" | grep -c '\.locked$') .locked files, 1 note"
+echo "BASELINE marker still present: $([ -f "$DATA/BASELINE" ] && echo yes || echo NO)"
+ls -la "$DATA"
+"""
+
+
+def incident(run_dir: str) -> None:
+    """Plant a detectable incident inside the running workload.
+
+    Deliberately makes the workload untrusted so the next backup carries a
+    compromised recovery point and `op threatscan` returns THREATS FOUND. The
+    known-good BASELINE marker is left in place so "what did we still trust?"
+    has an answer.
+
+    Reversible: `op teardown` then a fresh climb restores a clean workload.
+    Targeted: the VM comes from the terraform contract, so it cannot hit
+    anything other than this run_dir's own workload."""
+    w = contract(run_dir)
+    vm_name, rg = w["vm_name"], w["resource_group"]
+    print(f"incident: planting a detectable compromise in {vm_name} ({rg})")
+    print("  EICAR test pattern + high-entropy .locked files — inert, no real encryption")
+    result = az_json("vm", "run-command", "invoke",
+                     "-g", rg, "-n", vm_name,
+                     "--command-id", "RunShellScript",
+                     "--scripts", _INCIDENT_SCRIPT.replace("{eicar}", _EICAR),
+                     timeout=300)
+    if not result:
+        raise SystemExit(f"incident failed — could not run the command on {vm_name}"
+                         f"  → fix: is the VM running? az vm get-instance-view -g {rg} -n {vm_name}")
+    for msg in result.get("value", []):
+        print(msg.get("message", "").strip())
+    print(f"\n{vm_name} is now UNTRUSTED. Next: op backup, then op threatscan.")
+
+
 def climb(run_dir: str) -> None:
     preflight.run(run_dir)        # gate first — never act on a shaky environment
     gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
@@ -448,7 +530,8 @@ def validate(run_dir: str) -> None:
 
 CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
         "backup": backup, "restore": restore, "threatscan": threatscan,
-        "climb": climb, "status": status, "gate": gate, "teardown": teardown}
+        "incident": incident, "climb": climb, "status": status,
+        "gate": gate, "teardown": teardown}
 
 _USAGE = """op — the ResOps write lane
 
@@ -458,13 +541,18 @@ _USAGE = """op — the ResOps write lane
   op backup      <run_dir>   trigger a full backup and poll to completion
   op restore     <run_dir>   derive the restore payload + run the drill
   op threatscan  <run_dir>   trigger ThreatScan on the backup copy, poll to clean/threat verdict
+  op incident    <run_dir>   plant a detectable compromise in the workload (workshop only)
   op climb       <run_dir>   preflight → protect → backup → restore (full onboard in one step)
   op status      <run_dir>   show the workload's rung on the readiness ladder (read-only)
   op gate        <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
   op teardown    <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy
 
 <run_dir> is the terraform root (normally infra/workloads).
-Always run `op validate` first — it catches config, IAM, and environment blockers up front."""
+Always run `op validate` first — it catches config, IAM, and environment blockers up front.
+
+The workshop's trusted-recovery story, once the workload is VALIDATED:
+  op incident → op backup → op threatscan → op gate
+  clean workload, PROMOTE  ⇒  compromised backup, THREATS FOUND, HOLD."""
 
 
 def main() -> None:

@@ -85,6 +85,18 @@ def test_fingerprint_anomalies_alone_make_it_dirty():
     assert anomaly_verdict(body, 12345)["clean"] is False
 
 
+def test_an_unrecognised_anomaly_shape_fails_closed():
+    # The dirty payload has never been observed — these field names were read off a
+    # tenant that had never recorded an anomaly. If the real one differs, the count
+    # lookup would find nothing and a naive parser would report CLEAN for a client
+    # the API just flagged. A verdict we cannot read must never pass.
+    body = {"anomalyClients": [{"client": {"clientId": 12345},
+                                "someFutureFieldName": 7}]}
+    verdict = anomaly_verdict(body, 12345)
+    assert verdict["clean"] is False
+    assert "unreadable" in verdict
+
+
 def test_another_clients_anomalies_do_not_taint_ours():
     body = {"anomalyClients": [{"client": {"clientId": 99999},
                                 "infectedFilesCount": 500, "fingerPrintFilesCount": 500}]}

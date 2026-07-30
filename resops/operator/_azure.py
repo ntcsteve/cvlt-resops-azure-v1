@@ -11,9 +11,13 @@ import subprocess
 AZ_TIMEOUT = 120
 
 
-def az_json(*args: str):
-    """Run an `az` command, return parsed JSON (or None on failure)."""
-    r = subprocess.run(["az", *args, "-o", "json"], capture_output=True, text=True, timeout=AZ_TIMEOUT)
+def az_json(*args: str, timeout: int = AZ_TIMEOUT):
+    """Run an `az` command, return parsed JSON (or None on failure).
+
+    `timeout` is a keyword because one caller genuinely needs longer: `az vm
+    run-command invoke` waits on the guest agent inside the VM, which is slower
+    and less predictable than a control-plane call."""
+    r = subprocess.run(["az", *args, "-o", "json"], capture_output=True, text=True, timeout=timeout)
     return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
 
 
