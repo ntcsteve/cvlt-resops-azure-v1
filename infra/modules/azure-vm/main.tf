@@ -124,4 +124,14 @@ resource "azurerm_linux_virtual_machine" "this" {
     sku       = "22_04-lts-gen2"
     version   = "latest"
   }
+
+  # Lay down a small service so the workload has code, state, config and a secret —
+  # the four things the trust-map exercise asks participants to classify, and the
+  # files `op incident` later targets. A bare OS gives a threat scan nothing to find.
+  #
+  # NB: like os_disk.name, changing custom_data forces VM REPLACEMENT. That's correct
+  # for a fresh climb and must never be applied to a workload mid-drill.
+  custom_data = base64encode(templatefile("${path.module}/cloud-init.yaml", {
+    workload_name = var.name
+  }))
 }

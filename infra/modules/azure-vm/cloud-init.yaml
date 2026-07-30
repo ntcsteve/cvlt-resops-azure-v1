@@ -1,0 +1,82 @@
+#cloud-config
+# A deliberately small service, laid down so the workload has something to LOSE.
+#
+# A bare OS image cannot be trust-mapped and gives a threat scan nothing to find.
+# The workshop's first exercise asks participants to mark each part of a service
+# as trusted, untrusted or unknown — so the VM ships with exactly four things to
+# mark, each a different trust question:
+#
+#   /opt/app/         the code        did this come from the pipeline?
+#   /var/lib/app/     the state       it changed after the deploy — is that expected?
+#   /etc/app/config.yml  the config   who can write this?
+#   /etc/app/creds.env   the secret   this is the blast radius
+#
+# No containers, no orchestration, no inbound ports. It writes a heartbeat so the
+# state genuinely changes over time, which is what makes "when did this last look
+# right?" a real question rather than a hypothetical one.
+
+write_files:
+  - path: /etc/app/config.yml
+    permissions: "0644"
+    content: |
+      # Service configuration. World-readable on purpose: in the workshop this is
+      # the "who can write this?" conversation.
+      service: ${workload_name}
+      listen: 127.0.0.1:8080
+      data_dir: /var/lib/app/data
+      heartbeat_seconds: 30
+
+  - path: /etc/app/creds.env
+    permissions: "0600"
+    content: |
+      # NOT A REAL CREDENTIAL. Placeholder so the trust-map exercise has a secret
+      # to reason about — the scenario is a credential with broad access being
+      # misused, and this is the thing participants point at when asked "what is
+      # the blast radius?". Never put a live secret here.
+      APP_STORAGE_KEY=demo-not-a-real-key-0000000000000000
+      APP_DB_PASSWORD=demo-not-a-real-password
+
+  - path: /opt/app/serve.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      # The "application". Appends a heartbeat and keeps a small ledger, so the
+      # workload has state that moves. Boring on purpose.
+      set -euo pipefail
+      DATA_DIR=/var/lib/app/data
+      mkdir -p "$DATA_DIR"
+      while true; do
+        date -u +"%Y-%m-%dT%H:%M:%SZ heartbeat ok" >> "$DATA_DIR/service.log"
+        printf '{"order":"%s","status":"settled","amount":%s}\n' \
+          "$(date -u +%s)" "$((RANDOM % 500 + 20))" >> "$DATA_DIR/orders.ndjson"
+        sleep 30
+      done
+
+  - path: /etc/systemd/system/resops-demo.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=ResOps workshop demo service (${workload_name})
+      After=network.target
+
+      [Service]
+      Type=simple
+      EnvironmentFile=/etc/app/creds.env
+      ExecStart=/opt/app/serve.sh
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # Seed a known-good baseline BEFORE the service starts, so there is state that
+  # predates any incident. This is what "the last point we trusted" refers to.
+  - mkdir -p /var/lib/app/data /opt/app
+  - echo "customer,tier,region"                        > /var/lib/app/data/customers.csv
+  - echo "acme,gold,apac"                             >> /var/lib/app/data/customers.csv
+  - echo "globex,silver,emea"                         >> /var/lib/app/data/customers.csv
+  - echo "initech,gold,amer"                          >> /var/lib/app/data/customers.csv
+  - date -u +"%Y-%m-%dT%H:%M:%SZ known-good baseline" > /var/lib/app/data/BASELINE
+  - echo "${workload_name} v1.0.0"                     > /opt/app/VERSION
+  - systemctl daemon-reload
+  - systemctl enable --now resops-demo.service
