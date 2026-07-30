@@ -1,0 +1,24 @@
+{
+  "_comment": "Canned reads — the workload is not in any protection group. The group exists and covers other VMs, so this is the honest 'nobody onboarded it' case, not a read error. Blocks at Discover, state UNDISCOVERED.",
+  "vm_name": "legacy-batch-vm01",
+  "vmgroup": {
+    "name": "estate-shared-vg",
+    "content": [
+      {
+        "virtualMachines": [
+          {"name": "payments-api-vm01"},
+          {"name": "identity-svc-vm01"},
+          {"name": "reporting-db-vm01"}
+        ]
+      }
+    ],
+    "summary": {"plan": {"name": "Estate Standard Protection"}},
+    "vmBackupInfo": {"vmProtectedCount": 3, "vmNotProtectedCount": 0, "vmTotalCount": 3},
+    "lastBackup": {"status": "COMPLETED", "jobId": 884301}
+  },
+  "vmgroup_error": "",
+  "vm": null,
+  "vm_error": "",
+  "proof": null,
+  "proof_error": ""
+}

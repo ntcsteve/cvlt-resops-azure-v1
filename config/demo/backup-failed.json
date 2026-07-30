@@ -1,0 +1,26 @@
+{
+  "_comment": "Canned reads — onboarded and planned, but the last backup FAILED, so there is nothing trustworthy to recover from. Blocks at Detect, state PROTECTED. (Named for the cause rather than the rung: config/demo/protected.json already owns that name and belongs to the single-workload demo in config/demo.yaml.)",
+  "vm_name": "reporting-db-vm01",
+  "vmgroup": {
+    "name": "estate-shared-vg",
+    "content": [
+      {
+        "virtualMachines": [
+          {"name": "reporting-db-vm01"}
+        ]
+      }
+    ],
+    "summary": {"plan": {"name": "Estate Standard Protection"}},
+    "vmBackupInfo": {"vmProtectedCount": 1, "vmNotProtectedCount": 0, "vmTotalCount": 1},
+    "lastBackup": {
+      "status": "FAILED",
+      "failureReason": "Backup job failed — could not quiesce guest; VSS snapshot timed out",
+      "jobId": 884455
+    }
+  },
+  "vmgroup_error": "",
+  "vm": null,
+  "vm_error": "",
+  "proof": null,
+  "proof_error": ""
+}

@@ -1,0 +1,28 @@
+{
+  "_comment": "Canned reads — protected, monitored, SLA met, restorable on paper. But no restore has ever been run, so recovery is assumed rather than proven. This is where most real estates sit. Blocks at Validate, state RECOVERABLE.",
+  "vm_name": "identity-svc-vm01",
+  "vmgroup": {
+    "name": "estate-shared-vg",
+    "content": [
+      {
+        "virtualMachines": [
+          {"name": "identity-svc-vm01"}
+        ]
+      }
+    ],
+    "summary": {"plan": {"name": "Estate Mission-Critical Protection"}},
+    "vmBackupInfo": {"vmProtectedCount": 1, "vmNotProtectedCount": 0, "vmTotalCount": 1},
+    "lastBackup": {"status": "COMPLETED", "jobId": 884602}
+  },
+  "vmgroup_error": "",
+  "vm": {
+    "name": "identity-svc-vm01",
+    "strGUID": "6f2a8c31-14bd-42e7-a90c-5db83f177e26",
+    "slaCategoryDescription": "Protected",
+    "isRestoreActivityEnabled": true,
+    "lastSuccessfulBackupTime": 1785409195
+  },
+  "vm_error": "",
+  "proof": null,
+  "proof_error": ""
+}

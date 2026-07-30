@@ -40,6 +40,35 @@ python3 -m resops config/demo.yaml
 
 **How to read it:** five dots = the five levels. This workload cleared Discover and Protect (●●), then stalled at Detect (✗) - its last backup wasn't clean, so it can't be trusted to recover. The level *is* the verdict. Canned reads - zero network or token; the same ladder, PROMOTE/HOLD gate, and DORA/NIST/APRA crosswalk a live run produces. Every level maps to something you already do for code.
 
+### The whole estate - one command, one verdict
+
+```bash
+python3 -m resops gate config/estate.yaml
+```
+```
+ ●●●●●  VALIDATED     payments-api    PROMOTE
+ ●●●●✗  RECOVERABLE   identity-svc    recoverable on paper, never proven
+ ●●✗··  PROTECTED     reporting-db    last backup failed
+ ●●●✗·  MONITORED     edge-cache      backups green, SLA missed
+ ✗····  UNDISCOVERED  legacy-batch    nobody onboarded it
+
+ AGGREGATE  HOLD - identity-svc, reporting-db, edge-cache, legacy-batch · exit 1
+```
+
+Five workloads on five different levels, one aggregate verdict, one exit code your CI could gate on. The gate HOLDs if **any** workload isn't VALIDATED - criticality is recorded as evidence, never a way to ship past a gap. Still zero network, still under a second, and it writes the same evidence bundle, report and hash-chained audit trail a live run does.
+
+Two things worth trying on it:
+
+```bash
+# 1. REGRESSION - edit config/demo/validated.json, set "proof": null, re-run.
+#    The trend flips to  ↓ regressed VALIDATED→RECOVERABLE  and the gate HOLDs.
+python3 -m resops gate config/estate.yaml
+
+# 2. TAMPER - hand-edit any line in evidence/estate/<workload>/history.jsonl.
+#    The hash chain breaks and names the entry.
+python3 -m resops verify config/estate.yaml     # TAMPERED - breaks at entry 0
+```
+
 ## The idea
 
 A workload sits on **one level** of a readiness ladder; the level *is* the verdict. You climb by clearing each stage, and the gate ships only what's proven recoverable.

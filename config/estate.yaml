@@ -1,0 +1,65 @@
+# ESTATE demo — a resilience programme across five workloads. No cloud, no token,
+# no tenant. Run with:
+#   python3 -m resops      config/estate.yaml            # the ladder, per workload
+#   python3 -m resops gate config/estate.yaml            # PROMOTE / HOLD + exit code
+#   python3 -m resops verify config/estate.yaml          # audit the hash chains
+#
+# Every workload reads from a committed fixture, so the whole estate renders the same
+# ladder, gate and compliance crosswalk a live run produces — with zero network. This
+# is the teaching path: it runs in under a second and cannot fail in front of a room.
+#
+# The point of five workloads: one estate, five different rungs, ONE verdict. The gate
+# HOLDs if ANY workload isn't VALIDATED, so criticality is recorded as evidence and
+# never becomes a way to ship past a gap.
+
+workloads:
+  - name: payments-api
+    tier: tier1
+    env: prod
+    owner: payments
+    criticality: critical
+    fixture: config/demo/validated.json      # VALIDATED  — recovery PROVEN by a real restore
+
+  - name: identity-svc
+    tier: tier1
+    env: prod
+    owner: platform
+    criticality: critical
+    fixture: config/demo/recoverable.json    # RECOVERABLE — recoverable on paper, never proven
+
+  - name: reporting-db
+    tier: tier2
+    env: prod
+    owner: data
+    criticality: important
+    fixture: config/demo/backup-failed.json  # PROTECTED   — last backup failed
+
+  - name: edge-cache
+    tier: tier2
+    env: prod
+    owner: platform
+    criticality: important
+    fixture: config/demo/monitored.json      # MONITORED   — backups green, SLA missed
+
+  - name: legacy-batch
+    tier: tier2
+    env: prod
+    owner: finance
+    criticality: standard
+    fixture: config/demo/undiscovered.json   # UNDISCOVERED — nobody onboarded it
+
+evidence_dir: evidence/estate                # keep the demo out of the live audit trail
+
+gate:
+  frameworks: [dora, nist-800-53, apra-cps230]
+
+  # WHY THESE BARS ARE WIDE OPEN: the fixtures carry fixed timestamps, so a real
+  # freshness or RPO bar would silently flip this demo from PROMOTE to HOLD once the
+  # clock passed it — a landmine in front of a room. Declaring them here also stops
+  # _resolve_policy() injecting tier1/tier2's bars from config/tiers.yaml (it only
+  # fills keys that aren't already declared). Verdicts are now deterministic forever.
+  # The live config/workshop.yaml keeps the real 7-day bar — this override is the
+  # demo's alone.
+  recovery_proof_max_age_days: 36500
+  rpo_target_hours: 999999
+  rto_target_minutes: 999999
