@@ -58,7 +58,7 @@ python3 -m resops gate config/estate.yaml
  AGGREGATE  HOLD - checkout-api, identity-svc, reporting-db, edge-cache, legacy-batch · exit 1
 ```
 
-Six workloads on six different levels, one aggregate verdict, one exit code your CI could gate on. The gate HOLDs if **any** workload isn't VALIDATED - criticality is recorded as evidence, never a way to ship past a gap. Still zero network, still under a second, and it writes the same evidence bundle, report and hash-chained audit trail a live run does.
+Six workloads, six different blocking points, one aggregate verdict, one exit code your CI could gate on. Note `checkout-api` and `identity-svc` sit on the **same level** for **different reasons** - one was never tested, the other was tested and is contaminated. The level alone would hide that; the blocked stage names it. The gate HOLDs if **any** workload isn't VALIDATED - criticality is recorded as evidence, never a way to ship past a gap. Still zero network, still under a second, and it writes the same evidence bundle, report and hash-chained audit trail a live run does.
 
 **Stop on `checkout-api`.** Every light is green - protected, backups completing, SLA met, and recovery *proven* by a real restore - and it still must not ship, because the point it would restore from carries a threat. **Available is not the same as trusted.** That single line is why the Scan level exists.
 

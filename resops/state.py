@@ -16,7 +16,7 @@ recovery from a point you never checked.
 
 State = capability (what's TRUE now). It never carries a parallel "FAIL" track:
 a read error doesn't invent a failure state, it just leaves you on the rung below
-with the HTTP reason — so the only states are the five rungs. Policy lives
+with the HTTP reason — so the only states are the six rungs. Policy lives
 elsewhere (the gate decides PROMOTE/HOLD; Improve reads the trend).
 
 `classify()` is PURE — it takes already-fetched reads and returns a Ladder. No

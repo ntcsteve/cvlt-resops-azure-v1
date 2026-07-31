@@ -1,18 +1,31 @@
 {
-  "_comment": "Canned reads — the top rung. A real restore job completed for this VM, so recovery is PROVEN, not assumed. Clears every stage, state VALIDATED, and the gate promotes. NOTE: the timestamps below are fixed, so the displayed RPO and drill age grow over time. Verdicts never rot because config/estate.yaml declares generous gate bars; only the cosmetic numbers drift. Bump these three epochs to `date +%s` minus a couple of hours if they ever look silly on screen.",
+  "_comment": "Canned reads \u2014 the top rung. A real restore job completed for this VM, so recovery is PROVEN, not assumed. Clears every stage, state VALIDATED, and the gate promotes. NOTE: the timestamps below are fixed, so the displayed RPO and drill age grow over time. Verdicts never rot because config/estate.yaml declares generous gate bars; only the cosmetic numbers drift. Bump these three epochs to `date +%s` minus a couple of hours if they ever look silly on screen.",
   "vm_name": "payments-api-vm01",
   "vmgroup": {
     "name": "estate-shared-vg",
     "content": [
       {
         "virtualMachines": [
-          {"name": "payments-api-vm01"}
+          {
+            "name": "payments-api-vm01"
+          }
         ]
       }
     ],
-    "summary": {"plan": {"name": "Estate Mission-Critical Protection"}},
-    "vmBackupInfo": {"vmProtectedCount": 1, "vmNotProtectedCount": 0, "vmTotalCount": 1},
-    "lastBackup": {"status": "COMPLETED", "jobId": 884711}
+    "summary": {
+      "plan": {
+        "name": "Estate Mission-Critical Protection"
+      }
+    },
+    "vmBackupInfo": {
+      "vmProtectedCount": 1,
+      "vmNotProtectedCount": 0,
+      "vmTotalCount": 1
+    },
+    "lastBackup": {
+      "status": "COMPLETED",
+      "jobId": 884711
+    }
   },
   "vmgroup_error": "",
   "vm": {
@@ -20,15 +33,19 @@
     "strGUID": "1d7e4b58-3f0a-4c62-b8d9-90a1c4e77f13",
     "slaCategoryDescription": "Protected",
     "isRestoreActivityEnabled": true,
-    "lastSuccessfulBackupTime": 1785409195
+    "lastSuccessfulBackupTime": 1785471586
   },
   "vm_error": "",
-  "anomaly": {"clean": true, "infectedFilesCount": 0, "fingerPrintFilesCount": 0},
+  "anomaly": {
+    "clean": true,
+    "infectedFilesCount": 0,
+    "fingerPrintFilesCount": 0
+  },
   "proof": {
     "jobId": 884730,
     "status": "Completed",
-    "jobStartTime": 1785408391,
-    "jobEndTime": 1785408475
+    "jobStartTime": 1785470986,
+    "jobEndTime": 1785471070
   },
   "proof_error": ""
 }

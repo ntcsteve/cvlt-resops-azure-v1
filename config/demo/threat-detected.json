@@ -1,18 +1,31 @@
 {
-  "_comment": "Canned reads — THE workshop case. Every green light is on: onboarded, planned, backups completing, SLA met, and a restore has genuinely proven recovery works. And it still must not promote, because the recovery point itself carries a threat. Available is not the same as trusted. Blocks at Scan, state RECOVERABLE. This is the offline mirror of `op incident` → `op backup` → `op threatscan` on a live workload.",
+  "_comment": "Canned reads \u2014 THE workshop case. Every green light is on: onboarded, planned, backups completing, SLA met, and a restore has genuinely proven recovery works. And it still must not promote, because the recovery point itself carries a threat. Available is not the same as trusted. Blocks at Scan, state RECOVERABLE. This is the offline mirror of `op incident` \u2192 `op backup` \u2192 `op threatscan` on a live workload.",
   "vm_name": "checkout-api-vm01",
   "vmgroup": {
     "name": "estate-shared-vg",
     "content": [
       {
         "virtualMachines": [
-          {"name": "checkout-api-vm01"}
+          {
+            "name": "checkout-api-vm01"
+          }
         ]
       }
     ],
-    "summary": {"plan": {"name": "Estate Mission-Critical Protection"}},
-    "vmBackupInfo": {"vmProtectedCount": 1, "vmNotProtectedCount": 0, "vmTotalCount": 1},
-    "lastBackup": {"status": "COMPLETED", "jobId": 884809}
+    "summary": {
+      "plan": {
+        "name": "Estate Mission-Critical Protection"
+      }
+    },
+    "vmBackupInfo": {
+      "vmProtectedCount": 1,
+      "vmNotProtectedCount": 0,
+      "vmTotalCount": 1
+    },
+    "lastBackup": {
+      "status": "COMPLETED",
+      "jobId": 884809
+    }
   },
   "vmgroup_error": "",
   "vm": {
@@ -20,7 +33,7 @@
     "strGUID": "c0ffee11-2b3c-4d5e-8f90-a1b2c3d4e5f6",
     "slaCategoryDescription": "Protected",
     "isRestoreActivityEnabled": true,
-    "lastSuccessfulBackupTime": 1785409195
+    "lastSuccessfulBackupTime": 1785471586
   },
   "vm_error": "",
   "anomaly": {
@@ -31,8 +44,8 @@
   "proof": {
     "jobId": 884812,
     "status": "Completed",
-    "jobStartTime": 1785408391,
-    "jobEndTime": 1785408475
+    "jobStartTime": 1785470986,
+    "jobEndTime": 1785471070
   },
   "proof_error": ""
 }

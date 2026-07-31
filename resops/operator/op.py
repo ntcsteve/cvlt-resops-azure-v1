@@ -267,7 +267,9 @@ def threatscan(run_dir: str) -> None:
     vm_name = w["vm_name"]
     pool_name = CFG.get("storage_pool_name")
     if not pool_name:
-        raise SystemExit("platform.storage_pool_name missing from workshop.yaml")
+        raise SystemExit("platform.storage_pool_name missing from workshop.yaml"
+                         "  → fix: add the managed storage pool's name, exactly as it"
+                         " appears in the console (Manage > Storage)")
     cid = _commcell_client_id(vm_name)
     pool_id = _storage_pool_id(pool_name)
     copy_id = _backup_copy_id(CFG["plan_id"])
@@ -289,7 +291,12 @@ def threatscan(run_dir: str) -> None:
     result = poll_job(client, job_id, timeout=900, every=20)
     print(f"threatscan {result}")
     if "Completed" not in result:
-        raise SystemExit(f"threatscan job {job_id} ended with {result!r} — verdict unavailable")
+        # A failed scan is NOT a clean scan. Stop rather than let the climb continue
+        # on a recovery point nobody actually checked.
+        raise SystemExit(f"threatscan job {job_id} ended with {result!r} — no verdict, so"
+                         f" the recovery point is UNVERIFIED (not clean)"
+                         f"  → fix: open job {job_id} in the console for the reason;"
+                         f" a scan-server slot or an unsupported agent are the usual ones")
     time.sleep(5)  # allow Metallic anomaly index to flush before reading verdict
     verdict = _threatscan_verdict(cid)
     label = "CLEAN" if verdict["clean"] else "THREATS FOUND"
@@ -559,6 +566,14 @@ The workshop's trusted-recovery story, once the workload is VALIDATED:
   clean workload, PROMOTE  ⇒  compromised backup, THREATS FOUND, HOLD."""
 
 
+# Commands that never call Commvault, so they must not demand a live token.
+# validate/preflight are diagnostics — they have to work on a cold session, which
+# is exactly when you reach for them. incident is pure Azure (terraform contract +
+# az run-command); making it fail on a stale token would block the one command whose
+# whole job is to break things locally.
+_NO_TOKEN_NEEDED = ("validate", "preflight", "incident")
+
+
 def main() -> None:
     """Console entry point (`op <cmd> <run_dir>`)."""
     if len(sys.argv) < 2 or sys.argv[1] in ("help", "-h", "--help"):
@@ -566,7 +581,7 @@ def main() -> None:
         sys.exit(0)
     if len(sys.argv) != 3 or sys.argv[1] not in CMDS:
         sys.exit(f"usage: op {{{'|'.join(CMDS)}}} <run_dir>\n\nRun `op help` for details.")
-    if sys.argv[1] not in ("validate", "preflight"):
+    if sys.argv[1] not in _NO_TOKEN_NEEDED:
         client.ensure_fresh_token()
     CMDS[sys.argv[1]](sys.argv[2])
 

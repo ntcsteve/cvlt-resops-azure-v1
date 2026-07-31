@@ -1,4 +1,4 @@
-# ESTATE demo — a resilience programme across five workloads. No cloud, no token,
+# ESTATE demo — a resilience programme across six workloads. No cloud, no token,
 # no tenant. Run with:
 #   python3 -m resops      config/estate.yaml            # the ladder, per workload
 #   python3 -m resops gate config/estate.yaml            # PROMOTE / HOLD + exit code
@@ -8,9 +8,12 @@
 # ladder, gate and compliance crosswalk a live run produces — with zero network. This
 # is the teaching path: it runs in under a second and cannot fail in front of a room.
 #
-# The point of five workloads: one estate, five different rungs, ONE verdict. The gate
-# HOLDs if ANY workload isn't VALIDATED, so criticality is recorded as evidence and
-# never becomes a way to ship past a gap.
+# The point of six workloads: one estate, six different blocking points, ONE verdict.
+# Note checkout-api and identity-svc land on the SAME rung for different reasons —
+# one was never tested, the other was tested and is contaminated. The rung alone would
+# hide that; the blocked stage names it. The gate HOLDs if ANY workload isn't
+# VALIDATED, so criticality is recorded as evidence and never becomes a way to ship
+# past a gap.
 
 workloads:
   - name: payments-api
