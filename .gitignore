@@ -45,3 +45,9 @@ dist/
 # observability stack state (cattle — deploy before a workshop, destroy after)
 infra/observability/.terraform/
 infra/observability/*.tfstate*
+
+# facilitator runbook — carries delivery coaching, the "what you must not
+# claim" list, and tenant-specific investigation detail. Useful to whoever
+# delivers the day, not something to publish under a vendor-positioned
+# workshop. Shared directly with facilitators, like HANDOVER and NOTES.
+FACILITATOR.md

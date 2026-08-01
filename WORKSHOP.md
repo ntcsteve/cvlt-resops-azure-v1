@@ -5,7 +5,7 @@
 
 **Level** 300-400 · **Duration** 6h35m door to door · **Audience** platform engineers, SREs, cloud architects
 
-Facilitators: read [FACILITATOR.md](FACILITATOR.md) first. Worksheets: [WORKSHEETS.md](WORKSHEETS.md).
+Worksheets: [WORKSHEETS.md](WORKSHEETS.md). Delivering this? There is a facilitator runbook — prep, timings, break-glass and what not to claim. It is shared directly rather than published; ask whoever owns the workshop.
 
 ---
 

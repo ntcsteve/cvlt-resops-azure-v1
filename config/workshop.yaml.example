@@ -89,6 +89,15 @@ platform:
   # Manage > Storage > Libraries > pool display name (a string, not an ID)
   storage_pool_name: <managed-storage-pool-name>
 
+  # OPTIONAL, defaults to 2. The CommCell your tenant lives on.
+  # 2 is the common value for a single-CommCell Metallic instance, but it is
+  # NOT universal, and a wrong value fails in the nastiest way available: the
+  # restore request is ACCEPTED, browses the wrong CommCell, and comes back
+  # looking like an empty backup rather than like an error.
+  # Check yours before the first live restore — any job's commCellId in the
+  # API will tell you.
+  # commcell_id: 2
+
 # ── Gate policy — optional; defaults apply if omitted ────────────────
 gate:
   frameworks: [dora, nist-800-53, apra-cps230]   # compliance crosswalk packs

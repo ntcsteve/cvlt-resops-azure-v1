@@ -4,8 +4,8 @@
 > Sheets 2, 4 and 6 are the ones you take home and use.
 
 > Participants: [WORKSHOP.md](WORKSHOP.md) is the guide these belong to.
-> Facilitators: [FACILITATOR.md](FACILITATOR.md), and collect sheet 1 at M1.2 —
-> you hand it back at the close and the delta is the day's only measurement.
+> Facilitators: collect sheet 1 at M1.2 — you hand it back at the close and the
+> delta is the day's only measurement. The full runbook is shared directly.
 
 ```
  W1  M1.2   your number          sealed, returned at the close

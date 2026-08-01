@@ -67,11 +67,17 @@ OFFLINE_STEPS = [
     },
 ]
 
-# Files the three guides point participants and facilitators at. A dead link in a
-# room is a facilitator improvising, so they are checked like anything else.
-LINKED_FILES = ("FACILITATOR.md", "WORKSHEETS.md", "VERIFY.md", "RESOPS.md",
+# Files the PUBLISHED guides point at. A dead link in a room is a facilitator
+# improvising, so they are checked like anything else.
+LINKED_FILES = ("WORKSHEETS.md", "VERIFY.md", "RESOPS.md",
                 "README.md", ".github/workflows/resops-gate.yml",
                 "config/estate.yaml", "config/incident.yaml")
+
+# Gitignored: it carries delivery coaching, the "what you must not claim" list,
+# and tenant-specific investigation detail, so it is shared directly rather than
+# published. Present for a maintainer, absent in a fresh clone — checked only
+# when it is there, so the suite passes in both.
+PRIVATE_DOCS = ("FACILITATOR.md",)
 
 
 def _run(command: str):
@@ -114,7 +120,9 @@ def test_every_metric_the_docs_name_actually_exists():
     _, output = _run("python3 -m resops metrics config/estate.yaml")
     real = {line.split("{")[0].split(" ")[0]
             for line in output.splitlines() if line.startswith("resops_")}
-    for doc in ("README.md", "RESOPS.md", "WORKSHOP.md", "FACILITATOR.md"):
+    docs = ["README.md", "RESOPS.md", "WORKSHOP.md"]
+    docs += [d for d in PRIVATE_DOCS if (ROOT / d).exists()]
+    for doc in docs:
         for named in set(re.findall(r"\bresops_[a-z_]+\b", (ROOT / doc).read_text())):
             assert named in real, f"{doc} names {named}, which the tool never emits"
 
@@ -125,13 +133,22 @@ def test_every_file_the_guides_point_at_exists():
         assert (ROOT / name).exists(), f"{name} is referenced by the guides but missing"
 
 
-def test_the_three_guides_exist_and_cross_reference_each_other():
-    """Someone picking this up cold lands on one of them and must find the
-    other two."""
-    facilitator = (ROOT / "FACILITATOR.md").read_text()
+def test_the_published_guides_cross_reference_each_other():
+    """Someone landing cold on one published doc must find the others."""
     guide = GUIDE.read_text()
-    assert "FACILITATOR.md" in guide and "WORKSHEETS.md" in guide
-    assert "WORKSHOP" in facilitator or "M1" in facilitator
+    assert "WORKSHEETS.md" in guide
+    assert "WORKSHOP.md" in (ROOT / "WORKSHEETS.md").read_text()
+
+
+def test_the_published_guides_never_link_to_a_private_doc():
+    """A markdown link to a gitignored file is a 404 for everyone who clones.
+    The runbook is referred to in prose on purpose, never linked."""
+    for doc in ("README.md", "WORKSHOP.md", "WORKSHEETS.md", "RESOPS.md", "VERIFY.md"):
+        text = (ROOT / doc).read_text()
+        for private in PRIVATE_DOCS:
+            assert f"]({private})" not in text, (
+                f"{doc} links to {private}, which is gitignored — that link is "
+                f"broken in every clone")
 
 
 def test_the_guide_never_promises_a_live_step_will_work_offline():

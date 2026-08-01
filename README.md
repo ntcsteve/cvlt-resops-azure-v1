@@ -40,10 +40,11 @@ Two different things live in this repo, and it's worth knowing which one you're 
    RESOPS.md        what is the idea, and why adopt it?
    VERIFY.md        how do I write the one file nobody can write for me?
 
- THE FACILITATED DAY — one room, 7 hours, six modules
-   WORKSHOP.md      the participant guide                 M1-M6
-   FACILITATOR.md   the runbook. READ THIS FIRST if you are delivering it.
+ THE FACILITATED DAY — one room, 6.5 hours, five modules
+   WORKSHOP.md      the participant guide                 M1-M5
    WORKSHEETS.md    six printable sheets
+   (a facilitator runbook exists and is shared directly, not published —
+    it carries delivery coaching and tenant-specific detail)
 ```
 
 **Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. **M1-M6 in [WORKSHOP.md](WORKSHOP.md)** are a facilitated day built on the same commands, with the setup done in advance so a room never touches terraform. They are not two versions of the same thing; pick the one that matches why you're here.

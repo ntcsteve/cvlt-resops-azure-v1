@@ -45,7 +45,23 @@ from .drills import run_restore
 
 
 _VSA_APP_ID = 106    # Virtual Server Agent application type — fixed across Metallic tenants
-_COMMCELL_ID = 2     # CommCell ID for this Metallic instance (m036)
+
+# The CommCell this tenant lives on. TENANT-SPECIFIC, unlike _VSA_APP_ID above.
+# 2 is the common default for a single-CommCell Metallic instance and is what
+# ours reports, but "common" is not "always" — and a wrong value here produces a
+# restore request that is accepted and then browses the wrong CommCell, which
+# reads as an empty backup rather than as an error. Override in workshop.yaml:
+#
+#   platform:
+#     commcell_id: 3
+#
+# Find yours in Command Center, or from any job's commCellId in the API.
+_DEFAULT_COMMCELL_ID = 2
+
+
+def commcell_id() -> int:
+    """This tenant's CommCell id, from config, defaulting to the common value."""
+    return CFG.get("commcell_id", _DEFAULT_COMMCELL_ID)
 
 
 # --------------------------------------------------------------------------- #
@@ -155,8 +171,8 @@ def _restore_payload(w: dict, subclient_id: int, disk_name: str,
                      disk_type: str, to_time: int) -> dict:
     """Build the /CreateTask body. The nested shape is captured verbatim from a
     proven Command Center restore — keep the structure as-is; only the values
-    pulled from w / args vary. (applicationId 106 = VSA-Azure; commCellId 2 = this
-    CommCell — both fixed for this tenant.)"""
+    pulled from w / args vary. applicationId 106 is VSA-Azure and is fixed across
+    Metallic; commCellId comes from config because it is NOT (see commcell_id())."""
     name = w["vm_name"]
     sa = w["restore_storage_account"]
     return {"taskInfo": {
@@ -167,7 +183,7 @@ def _restore_payload(w: dict, subclient_id: int, disk_name: str,
         "subTasks": [{"subTask": {"subTaskName": "", "subTaskType": "RESTORE",
                                   "operationType": "RESTORE"},
             "options": {"restoreOptions": {
-                "browseOption": {"commCellId": _COMMCELL_ID,
+                "browseOption": {"commCellId": commcell_id(),
                     "timeRange": {"fromTime": 0, "toTime": to_time},
                     "noImage": False, "useExactIndex": False,
                     "mediaOption": {"copyPrecedence": {"copyPrecedence": 0}},
