@@ -1,13 +1,17 @@
 """
-The ResOps runner — three modes over the same read-only readiness ladder:
+The ResOps runner — five modes over the same read-only readiness ladder:
 
   python -m resops [config.yaml]          climb the ladder; exit = number of read FAILs
   python -m resops gate [config.yaml]     the promotion gate; exit 0 PROMOTE / 1 HOLD
+  python -m resops list [config.yaml]     list VM groups + ids (onboarding lookup)
   python -m resops verify [config.yaml]   audit the hash-chained trail; exit 0 intact
   python -m resops metrics [config.yaml]  publish the last run as Prometheus text
 
+`verify` and `metrics` read what a previous run wrote — no tenant, no network.
+
 Each workload is placed on ONE rung of the readiness ladder —
-UNDISCOVERED → DISCOVERED → PROTECTED → MONITORED → RECOVERABLE → VALIDATED —
+UNDISCOVERED → DISCOVERED → PROTECTED → MONITORED → RECOVERABLE → TRUSTED →
+VALIDATED —
 by classify() (resops/state.py). The runner gathers the reads, prints the rung,
 the stage it's blocked on, and the trend since last run, then writes the evidence
 bundle + audit trail. `gate` is Continuous Service: promote only if the workload
