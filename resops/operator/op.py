@@ -263,7 +263,16 @@ def _threatscan_verdict(commcell_client_id: int) -> dict | None:
     return threat_attestation(client.get("Client/Anomaly").json(), commcell_client_id)
 
 
-def threatscan(run_dir: str) -> None:
+def threatscan(run_dir: str) -> dict | None:
+    """Run a threat scan over the workload's backup copy and RETURN the verdict.
+
+    None means no threat was recorded — which is weaker than "clean", and the
+    0-file guard below is what stops that difference being papered over.
+
+    Returns rather than exits, so the stop is visible at every call site. This
+    function used to terminate the process from three levels down, which made
+    `climb()` read as though it simply carried on. It does not, and now it says so.
+    """
     w = contract(run_dir)
     vm_name = w["vm_name"]
     pool_name = CFG.get("storage_pool_name")
@@ -318,9 +327,23 @@ def threatscan(run_dir: str) -> None:
     verdict = _threatscan_verdict(cid)
     if verdict is None:
         print(f"verdict: CLEAN  ({analysed} files analysed, no anomalies recorded)")
-        return
+        return None
     print(f"verdict: THREATS FOUND  ({analysed} files analysed — {verdict.get('detail')})")
-    sys.exit(f"threatscan FAILED — threats detected on {vm_name}")
+    return verdict
+
+
+def _cli_threatscan(run_dir: str) -> None:
+    """`op threatscan` as a standalone command: exit 1 when threats are found, so
+    it can gate a pipeline.
+
+    The wording matters. A scan that could not run and a scan that ran and found
+    threats are opposite situations, and "threatscan FAILED" (what this used to
+    print) reads at 2am as "the scan broke, re-run it" — the precise opposite of
+    "the scan worked and your recovery point is poisoned". The failed-job path
+    above says UNVERIFIED; this one says compromised."""
+    if threatscan(run_dir) is not None:
+        sys.exit("THREATS DETECTED — the scan ran and this recovery point is NOT safe "
+                 "to restore from. The scan did its job; the backup is the problem.")
 
 
 # --------------------------------------------------------------------------- #
@@ -408,10 +431,16 @@ def climb(run_dir: str) -> None:
     preflight.run(run_dir)        # gate first — never act on a shaky environment
     gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
     backup(run_dir, gid)
-    threatscan(run_dir)           # Scan sits below Validate: never prove a restore
-                                  # from a point you haven't checked. Exits non-zero
-                                  # on a threat, so the climb stops here rather than
-                                  # rehearsing recovery from a compromised copy.
+    # Scan sits below Validate: never prove a restore from a point you haven't
+    # checked. A threat stops the climb HERE rather than rehearsing recovery from
+    # a compromised copy — deliberate, and now visible at the call site.
+    verdict = threatscan(run_dir)
+    if verdict is not None:
+        sys.exit(f"climb stopped at Scan — {verdict.get('detail')}\n"
+                 f"  This recovery point carries a threat. Rehearsing a restore from it\n"
+                 f"  would prove recovery works and tell you nothing about whether the\n"
+                 f"  thing you recovered is safe.\n"
+                 f"  → investigate, or `op restore` deliberately to see what comes back.")
     restore(run_dir)              # /VM has caught up by now (backup took minutes)
     print()
     status(run_dir)               # hand to resops — watch the rung land at VALIDATED
@@ -565,7 +594,7 @@ def validate(run_dir: str) -> None:
 
 
 CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
-        "backup": backup, "restore": restore, "threatscan": threatscan,
+        "backup": backup, "restore": restore, "threatscan": _cli_threatscan,
         "incident": incident, "climb": climb, "status": status,
         "gate": gate, "teardown": teardown}
 
