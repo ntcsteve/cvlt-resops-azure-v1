@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # The ONLY target. Everything reaches us by push; we never reach out to a
+  # protected workload. No service discovery, no cloud credentials, no agents.
+  - job_name: pushgateway
+    honor_labels: true # keep the workload/framework labels exactly as sent
+    static_configs:
+      - targets: ["pushgateway:9091"]

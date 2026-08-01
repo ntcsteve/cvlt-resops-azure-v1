@@ -50,6 +50,35 @@ terraform -chdir=infra/observability destroy
 it loses nothing: rebuild is one apply and the numbers return the next time
 anything runs `resops metrics`.
 
+## Test it without spending anything
+
+```bash
+./infra/observability/test-stack.sh          # ~1 min, needs docker running
+KEEP=1 ./infra/observability/test-stack.sh   # leave it up to poke at
+```
+
+Nothing in this stack is Azure-specific — it is three containers and four config
+files, and Azure only supplies a VM to run Docker on. So the part that can break
+is testable on a laptop. The script runs **the real files in `stack/`**, the same
+ones cloud-init embeds; a test against a copy would prove nothing about what
+deploys.
+
+```
+ 1  containers reach healthy
+ 2  pushgateway accepts a real `resops metrics` payload
+ 3  prometheus has the series
+ 4  grafana's datasource is healthy
+ 5  grafana LOADED the dashboard      provisioning failures are otherwise SILENT
+ 6  every panel query returns data    ◀ catches an empty panel before a room does
+```
+
+Check 6 is the one worth having. Static validation cannot catch a query that
+parses correctly and matches nothing.
+
+**Only these need a real Azure apply**, and only once: cloud-init running on
+Azure's image, the NSG letting 3000/9091 through, the public IP being reachable,
+and B2s being big enough. Everything else is proven locally, for free, repeatedly.
+
 ## The panels
 
 ```

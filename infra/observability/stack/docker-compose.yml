@@ -1,0 +1,38 @@
+# THE stack. This exact file is what runs on the VM and what test-stack.sh runs
+# locally — not a copy of it. A test against a copy proves nothing about what
+# deploys, so cloud-init embeds this file rather than restating it.
+#
+# Paths are relative so the same file works from /opt/obs on the VM and from
+# infra/observability/stack on a laptop. GRAFANA_PASSWORD comes from a .env file
+# beside this one: Terraform writes it on the VM, test-stack.sh writes it locally.
+#
+# NO VOLUMES. The stack is cattle — every number it shows is derived from evidence
+# that lives in the repo, so there is nothing here worth persisting.
+services:
+  pushgateway:
+    image: prom/pushgateway:v1.9.0
+    restart: always
+    ports: ["9091:9091"]
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: always
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on: [pushgateway]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    restart: always
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/ds.yml:ro
+      - ./grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/db.yml:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
