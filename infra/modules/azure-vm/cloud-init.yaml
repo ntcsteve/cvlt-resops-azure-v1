@@ -59,9 +59,11 @@ write_files:
       # WHAT "GOOD" LOOKS LIKE, declared by the workload that owns it.
       #
       # The drill restores a recovery point into isolation and runs this INSIDE the
-      # restored copy. The exit code is the attestation: 0 means a human-readable
-      # set of checks actually passed on the actual data. Nothing infers, nothing
-      # samples, nothing guesses from metadata — it opens the box and looks.
+      # restored copy. The OK:/FAIL: line it prints is the attestation — a
+      # human-readable set of checks that actually ran on the actual data. Nothing
+      # infers, nothing samples, nothing guesses from metadata — it opens the box
+      # and looks. (The drill parses that line, not the exit code; keep the two in
+      # agreement and keep every message on ONE line. Contract: VERIFY.md.)
       #
       # This is the only attester we own end to end, and it is the only one that
       # survived contact with this tenant: threat scan analysed zero files, and
@@ -77,8 +79,9 @@ write_files:
       [ -s /opt/app/VERSION ]  || fail "/opt/app/VERSION missing"
 
       # 2. the known-good marker survived — "what did we still trust?"
-      [ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing — this point predates
-      no known-good state"
+      # Keep every fail message on ONE line: the drill reads the first FAIL: line
+      # as the attestation detail, so a wrapped message is silently truncated.
+      [ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing — no known-good state in this recovery point"
 
       # 3. the records are actually readable, not just present
       [ -s "$DATA/customers.csv" ] || fail "customers.csv missing — records lost"

@@ -32,8 +32,15 @@ CAPABILITIES = {
          "evidences": "recoverable now — RPO within tolerance, restore enabled"},
     ],
     "scan": [
+        # Wording matters here more than anywhere else in this file. It used to read
+        # "no threat is recorded against the point we would restore from", which is
+        # the absence-of-evidence claim the Scan rung was rebuilt to reject: a scan
+        # that never ran also records no threat. The rung now demands a NAMED
+        # attester that actually opened the recovery point, so the control text has
+        # to claim that and nothing more.
         {"id": "CAP-RECOVERY-POINT-TRUST",
-         "evidences": "no threat is recorded against the point we would restore from"},
+         "evidences": "a named attester opened the point we would restore from "
+                      "and verified its contents"},
     ],
     "validate": [
         {"id": "CAP-RESTORE-TESTED",

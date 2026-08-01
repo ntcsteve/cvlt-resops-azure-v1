@@ -66,12 +66,45 @@ VERIFY_SCRIPT = "/opt/app/verify.sh"
 ATTESTATIONS = REPO / "evidence" / "attestations"
 
 
+def parse_verdict(stdout: str) -> tuple[bool | None, str]:
+    """The verify.sh output contract, as a pure function. Returns (clean, detail).
+
+    Pinned here (and by tests) because every rule below fails SILENTLY when broken,
+    which is the worst possible failure mode for an attester:
+
+      • the FIRST matching line wins and parsing stops — so a verdict message
+        wrapped over two lines is truncated mid-sentence into the attestation,
+        the gate reason and the evidence bundle. It has happened once already.
+      • no recognisable line means UNATTESTED (None), never clean. A script that
+        crashed before printing must not read as a pass.
+      • the line is authoritative, not the exit code: a shell script has many ways
+        to exit non-zero that say nothing about the data.
+
+    The full contract for the people writing these scripts is in VERIFY.md."""
+    line = next((l.strip() for l in stdout.splitlines()
+                 if l.strip().startswith(("OK:", "FAIL:", "NO VERIFY"))), "")
+    if line.startswith("OK:"):
+        return True, line[3:].strip()
+    if line.startswith("FAIL:"):
+        return False, line[5:].strip()
+    if line.startswith("NO VERIFY"):
+        return None, (f"no verify script at {VERIFY_SCRIPT} — this workload declares "
+                      f"no attester (see VERIFY.md)")
+    return None, "verify script produced no verdict line"
+
+
 def verify_recovered(t: dict) -> tuple[bool | None, str]:
     """Run the workload's own verify script INSIDE the restored copy.
 
     This is the attestation. Not a metadata proxy, not a vendor verdict — the
-    recovery point is opened in isolation and its data is read. The exit code is
-    the answer, and the script is one a participant can read in ten seconds.
+    recovery point is opened in isolation and its data is read, by a script a
+    participant can read in ten seconds.
+
+    THE VERDICT LINE IS AUTHORITATIVE, NOT THE EXIT CODE. We parse the first
+    stdout line starting with OK:/FAIL:, because a shell script has many ways to
+    exit non-zero that say nothing about the data (a missing binary, a set -e
+    trip). A script that exits without printing a verdict is UNATTESTED, which
+    blocks — never a pass. The contract is documented in VERIFY.md.
 
     Returns (clean, detail). clean is None when we could not run the check at
     all, which is NOT the same as passing: no result blocks the Scan rung."""
@@ -85,16 +118,10 @@ def verify_recovered(t: dict) -> tuple[bool | None, str]:
         return None, "could not run the verify script (guest agent unreachable?)"
     message = "\n".join(m.get("message", "") for m in result.get("value", []))
     stdout = message.split("[stderr]")[0]
-    line = next((l.strip() for l in stdout.splitlines()
-                 if l.strip().startswith(("OK:", "FAIL:", "NO VERIFY"))), "")
     for l in stdout.splitlines():
         if l.strip():
             print("   ", l.strip()[:160])
-    if line.startswith("OK:"):
-        return True, line[3:].strip()
-    if line.startswith("FAIL:"):
-        return False, line[5:].strip()
-    return None, "verify script produced no verdict line"
+    return parse_verdict(stdout)
 
 
 def write_attestation(vm_name: str, clean: bool | None, detail: str, job_id: str) -> Path:
