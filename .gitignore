@@ -32,7 +32,9 @@ NOTES.md
 
 # session handover/log — accumulate live tenant/subscription ids each session
 HANDOVER.md
-HANDOVER.prev.md   # rotated by /wrap-up — same live ids, same secrecy
+# rotated by /wrap-up — same live ids, same secrecy. NOTE: gitignore has
+# no trailing comments; a pattern with one on the same line matches NOTHING.
+HANDOVER.prev.md
 LOG.md
 
 # python packaging build artifacts
