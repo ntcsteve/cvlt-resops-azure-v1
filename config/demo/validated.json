@@ -37,9 +37,9 @@
   },
   "vm_error": "",
   "attestation": {
-    "source": "threatscan",
+    "source": "restore-verify",
     "clean": true,
-    "detail": "746 files analysed, no anomalies"
+    "detail": "code intact, baseline present, 3 customer records"
   },
   "proof": {
     "jobId": 884730,

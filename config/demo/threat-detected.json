@@ -1,5 +1,5 @@
 {
-  "_comment": "Canned reads \u2014 THE workshop case. Every green light is on: onboarded, planned, backups completing, SLA met, and a restore has genuinely proven recovery works. And it still must not promote, because the recovery point itself carries a threat. Available is not the same as trusted. Blocks at Scan, state RECOVERABLE. This is the offline mirror of `op incident` \u2192 `op backup` \u2192 `op threatscan` on a live workload.",
+  "_comment": "Canned reads \u2014 THE workshop case. Every green light is on: onboarded, planned, backups completing, SLA met, and a restore has genuinely proven recovery works. And it still must not promote, because the recovery point itself came back compromised \u2014 restore-verify opened it and found 14 encrypted files. Available is not the same as trusted. Blocks at Scan, state RECOVERABLE. The offline mirror of op incident \u2192 op backup \u2192 op restore on a live workload.",
   "vm_name": "checkout-api-vm01",
   "vmgroup": {
     "name": "estate-shared-vg",
@@ -37,9 +37,9 @@
   },
   "vm_error": "",
   "attestation": {
-    "source": "threatscan",
+    "source": "restore-verify",
     "clean": false,
-    "detail": "2 infected, 14 file-anomaly"
+    "detail": "14 encrypted (.locked) files present"
   },
   "proof": {
     "jobId": 884812,

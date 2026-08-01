@@ -22,9 +22,9 @@ source .venv/bin/activate                    # pip install -e . if first time
 resops gate  config/estate.yaml              # no cloud, no token — the whole idea in one second
 op validate  infra/workloads                 # config + IAM + environment — fix blockers before touching anything
 terraform -chdir=infra/workloads apply       # provision the VM
-op climb     infra/workloads                 # protect → backup → threatscan → restore → VALIDATED
+op climb     infra/workloads                 # protect → backup → restore + verify → VALIDATED
 op gate      infra/workloads                 # PROMOTE / HOLD + DORA/NIST/APRA evidence report
-op incident  infra/workloads                 # optional — break trust, then backup + threatscan → HOLD
+op incident  infra/workloads                 # optional — break trust, then backup + restore → HOLD
 op teardown  infra/workloads                 # always run this — the VM costs money until you do
 ```
 
@@ -49,7 +49,7 @@ python3 -m resops gate config/estate.yaml
 ```
 ```
  ●●●●●●  VALIDATED     payments-api   recovery proven          PROMOTE
- ●●●●✗·  RECOVERABLE   checkout-api   threat in the recovery point   HOLD
+ ●●●●✗·  RECOVERABLE   checkout-api   restored copy came back dirty  HOLD
  ●●●●●✗  RECOVERABLE   identity-svc   recoverable, never proven      HOLD
  ●●✗···  PROTECTED     reporting-db   last backup failed             HOLD
  ●●●✗··  MONITORED     edge-cache     backups green, SLA missed      HOLD
@@ -209,19 +209,34 @@ A clean climb proves your workload is **recoverable**. It proves nothing about w
 So break it, on purpose, and watch the same tool reach the opposite verdict:
 
 ```bash
-op incident   infra/workloads   # plant a detectable compromise in the workload
-op backup     infra/workloads   # the incident is now INSIDE a recovery point
-op threatscan infra/workloads   # THREATS FOUND - exits non-zero
-op gate       infra/workloads   # HOLD · exit 1
+op incident  infra/workloads   # plant a detectable compromise in the workload
+op backup    infra/workloads   # the incident is now INSIDE a recovery point
+op restore   infra/workloads   # restore it in isolation, then READ what came back
+op gate      infra/workloads   # HOLD · exit 1
 ```
 
 ```
  ●●●●✗·  RECOVERABLE  blocked at Scan
- ↳ threat detected in the recovery point - 2 infected, 14 file-anomaly
+ ↳ recovery point failed restore-verify - 14 encrypted (.locked) files present
  HOLD  exit 1
 ```
 
-Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. `op incident` plants the **EICAR test pattern** (the industry-standard harmless string every scanner is built to detect) plus a burst of high-entropy `.locked` files, which is what mass encryption looks like on disk. Nothing is really encrypted and no malware is involved; the known-good `BASELINE` marker is left in place so *"what did we still trust?"* has an answer.
+Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - thirty lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers. The exit code is the attestation.
+
+### Why a script and not a backup-product scan
+
+We tried two shortcuts first and both were blind:
+
+| Attempt | Result |
+|---|---|
+| Threat scan on the backup | analysed **0 files** on every run in our tenant - and reported "clean" |
+| Dedupe ratio as an integrity signal | the same idle VM ranges **57.9% - 99.7%**; 42 points of natural variance is noise, not signal |
+
+Both were *proxies*. There is no cheap way to know a backup is good - **you have to open it and look.** That is why almost nobody does it, and why almost nobody actually knows. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
+
+An attestation also has a **shelf life**: "verified once, a year ago" is not verified. `config/tiers.yaml` sets `attestation_max_age_days` per tier (tier1 30d, tier2 90d), and a stale attestation is a hard HOLD with no override.
+
+`op incident` plants the **EICAR test pattern** (the industry-standard harmless string) plus a burst of high-entropy `.locked` files, which is what mass encryption looks like on disk. Nothing is really encrypted and no malware is involved; the known-good `BASELINE` marker is left in place so *"what did we still trust?"* has an answer.
 
 > ⚠️ `op incident` deliberately makes a workload dirty. It targets only the VM in your Terraform contract, and `op teardown` plus a fresh climb restores a clean one. Never point it at anything you care about.
 
