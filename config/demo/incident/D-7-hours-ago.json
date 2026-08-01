@@ -1,0 +1,60 @@
+{
+  "_comment": "RECOVERY POINT D \u2014 the freshest, and the one the gate LIKES. Backup 7h old (inside the tier1 8h RPO), restore-verify attested it clean 6h ago, a drill proved recovery. Every bar passes and the gate says PROMOTE. It is also squarely inside the incident window, which the gate cannot know. This is the point of the whole exercise.",
+  "vm_name": "orders-api-vm01",
+  "vmgroup": {
+    "name": "orders-api-vg",
+    "content": [
+      {
+        "virtualMachines": [
+          {
+            "name": "orders-api-vm01"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "plan": {
+        "name": "Estate Mission-Critical Protection"
+      }
+    },
+    "vmBackupInfo": {
+      "vmProtectedCount": 1,
+      "vmNotProtectedCount": 0,
+      "vmTotalCount": 1
+    },
+    "lastBackup": {
+      "status": "COMPLETED",
+      "jobId": 991204
+    }
+  },
+  "vmgroup_error": "",
+  "vm": {
+    "name": "orders-api-vm01",
+    "strGUID": "8b41d0a7-56ce-4f19-9c2a-7e3f80b16d45",
+    "slaCategoryDescription": "Protected",
+    "isRestoreActivityEnabled": true,
+    "lastSuccessfulBackupTime": {
+      "hours_ago": 7
+    }
+  },
+  "vm_error": "",
+  "attestation": {
+    "source": "restore-verify",
+    "clean": true,
+    "detail": "code intact, baseline present, 41892 customer records",
+    "at": {
+      "hours_ago": 6
+    }
+  },
+  "proof": {
+    "jobId": 991210,
+    "status": "Completed",
+    "jobStartTime": {
+      "hours_ago": 6
+    },
+    "jobEndTime": {
+      "hours_ago": 6
+    }
+  },
+  "proof_error": ""
+}

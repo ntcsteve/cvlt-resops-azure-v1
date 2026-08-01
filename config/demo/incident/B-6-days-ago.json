@@ -1,0 +1,60 @@
+{
+  "_comment": "RECOVERY POINT B \u2014 last week's verified point. Attested clean 6 days ago, well inside the tier1 30-day attestation bar, and a drill proved recovery. It fails on ONE number: 144h of data loss against an 8h RPO target. The gate is right, and the room still has to decide whether an RPO written for outages should govern a compromise.",
+  "vm_name": "orders-api-vm01",
+  "vmgroup": {
+    "name": "orders-api-vg",
+    "content": [
+      {
+        "virtualMachines": [
+          {
+            "name": "orders-api-vm01"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "plan": {
+        "name": "Estate Mission-Critical Protection"
+      }
+    },
+    "vmBackupInfo": {
+      "vmProtectedCount": 1,
+      "vmNotProtectedCount": 0,
+      "vmTotalCount": 1
+    },
+    "lastBackup": {
+      "status": "COMPLETED",
+      "jobId": 989771
+    }
+  },
+  "vmgroup_error": "",
+  "vm": {
+    "name": "orders-api-vm01",
+    "strGUID": "8b41d0a7-56ce-4f19-9c2a-7e3f80b16d45",
+    "slaCategoryDescription": "Protected",
+    "isRestoreActivityEnabled": true,
+    "lastSuccessfulBackupTime": {
+      "days_ago": 6
+    }
+  },
+  "vm_error": "",
+  "attestation": {
+    "source": "restore-verify",
+    "clean": true,
+    "detail": "code intact, baseline present, 41103 customer records",
+    "at": {
+      "days_ago": 6
+    }
+  },
+  "proof": {
+    "jobId": 989780,
+    "status": "Completed",
+    "jobStartTime": {
+      "days_ago": 6
+    },
+    "jobEndTime": {
+      "days_ago": 6
+    }
+  },
+  "proof_error": ""
+}

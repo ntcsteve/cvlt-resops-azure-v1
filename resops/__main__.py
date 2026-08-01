@@ -34,6 +34,7 @@ import dataclasses
 import datetime as _dt
 import json
 import sys
+import time
 from pathlib import Path
 
 import yaml
@@ -62,12 +63,37 @@ DEFAULT_CONFIG = ROOT / "config" / "workshop.yaml"
 ENV_PATH = ROOT / ".env"
 
 
+def _resolve_ages(node, now: float):
+    """Resolve `{"days_ago": N}` / `{"hours_ago": N}` anywhere in a fixture into an
+    epoch. Everything else passes through untouched.
+
+    Fixtures otherwise carry FIXED epochs, so a demo's displayed RPO and
+    attestation age grow every week until they read as nonsense. Verdicts never
+    rotted (config/estate.yaml pins its bars wide open on purpose) but the numbers
+    did — and config/incident.yaml cannot work that way at all, because its whole
+    exercise turns on "6 days ago" still meaning six days when you run it.
+
+    Only a dict whose keys are EXACTLY one of these converts, so a real API payload
+    can never be mistaken for an offset."""
+    if isinstance(node, dict):
+        for unit, seconds in (("days_ago", 86400), ("hours_ago", 3600)):
+            if set(node) == {unit}:
+                return int(now - node[unit] * seconds)
+        return {k: _resolve_ages(v, now) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_resolve_ages(item, now) for item in node]
+    return node
+
+
 def reads_from_fixture(rel_path: str) -> Reads:
     """Build Reads from a committed JSON fixture — the no-cloud demo path. This is
     the same Reads that gather() folds live API GETs into, so the demo drives the
     real ladder, gate, and crosswalk with zero network, token, or tenant. Unknown
-    keys (e.g. a leading `_comment`) are ignored so fixtures can self-document."""
-    data = json.loads((ROOT / rel_path).read_text())
+    keys (e.g. a leading `_comment`) are ignored so fixtures can self-document.
+
+    Reads the clock, but only here: this is an I/O boundary like gather(), and
+    classify() downstream stays pure."""
+    data = _resolve_ages(json.loads((ROOT / rel_path).read_text()), time.time())
     fields = {f.name for f in dataclasses.fields(Reads)}
     return Reads(**{k: v for k, v in data.items() if k in fields})
 

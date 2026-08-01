@@ -1,0 +1,54 @@
+{
+  "_comment": "RECOVERY POINT C \u2014 yesterday evening. The backup completed and the VM is restorable, but NOBODY EVER OPENED IT. No attestation exists, so the Scan rung blocks and the gate HOLDs. It may well be the cleanest point in the list; there is simply no evidence either way. Absence of evidence is not evidence of absence.",
+  "vm_name": "orders-api-vm01",
+  "vmgroup": {
+    "name": "orders-api-vg",
+    "content": [
+      {
+        "virtualMachines": [
+          {
+            "name": "orders-api-vm01"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "plan": {
+        "name": "Estate Mission-Critical Protection"
+      }
+    },
+    "vmBackupInfo": {
+      "vmProtectedCount": 1,
+      "vmNotProtectedCount": 0,
+      "vmTotalCount": 1
+    },
+    "lastBackup": {
+      "status": "COMPLETED",
+      "jobId": 991090
+    }
+  },
+  "vmgroup_error": "",
+  "vm": {
+    "name": "orders-api-vm01",
+    "strGUID": "8b41d0a7-56ce-4f19-9c2a-7e3f80b16d45",
+    "slaCategoryDescription": "Protected",
+    "isRestoreActivityEnabled": true,
+    "lastSuccessfulBackupTime": {
+      "hours_ago": 32
+    }
+  },
+  "vm_error": "",
+  "attestation": null,
+  "attestation_error": "",
+  "proof": {
+    "jobId": 991095,
+    "status": "Completed",
+    "jobStartTime": {
+      "hours_ago": 30
+    },
+    "jobEndTime": {
+      "hours_ago": 30
+    }
+  },
+  "proof_error": ""
+}

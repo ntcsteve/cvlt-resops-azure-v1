@@ -1,0 +1,82 @@
+# THE INCIDENT — four candidate recovery points for ONE workload.
+#
+#   python3 -m resops gate config/incident.yaml
+#
+# Offline, one second, no cloud and no token, exactly like config/estate.yaml.
+#
+# ── HONEST NOTE ON THE MODELLING ─────────────────────────────────────────────
+# resops judges a WORKLOAD, not a catalogue of recovery points. This file reuses
+# the multi-workload view to put four candidate points side by side, so each row
+# reads as "if you restored from THIS point, here is what the gate would say".
+# That is a teaching device. Do not read it as a claim that the tool enumerates
+# recovery points, because it does not.
+#
+# ── THE SCENARIO ─────────────────────────────────────────────────────────────
+# orders-api is your tier1 payments workload. 41,892 customer records.
+# This morning you found a ransom note in /var/lib/app/data.
+#
+#   THE ONE FACT THAT DECIDES EVERYTHING, AND THE ONE YOU DO NOT HAVE:
+#   the first anomalous log entry is "sometime last week". Log retention on
+#   that host is 7 days, and the earliest surviving entry is already abnormal.
+#   So the incident may have started 3 days ago. Or 9. Nobody can tell you.
+#
+# ── THE EXERCISE ─────────────────────────────────────────────────────────────
+# Run the gate. Read what it says. Then choose a point and justify it to the
+# room in one sentence, naming what you are giving up.
+#
+# Expect the gate to promote exactly one point, and expect that to be the point
+# you least want to restore from. That is not a bug in the gate. It is a policy
+# written for outages being asked a question about compromise:
+#
+#   an RPO target assumes the only cost of an older point is LOST DATA.
+#   under compromise, the freshest point is the most DANGEROUS one.
+#
+# The gate narrows four options to one on the evidence it has. It cannot know
+# when the compromise began. Necessary, and not sufficient — the last call is
+# still yours, and now you can show your working.
+#
+# ── WHAT TO NOTICE BEFORE YOU ARGUE ──────────────────────────────────────────
+#   C is unattested. It might be the cleanest point here. Nobody looked.
+#   A is the only point outside any plausible window, and it costs 400 days.
+#   A is only "the certain one" because NOTHING WAS VERIFIED between it and B.
+#     That gap is not bad luck. It is the drill you did not schedule.
+#     Attestation freshness stops being a config setting right about here.
+
+evidence_dir: evidence/incident
+
+gate:
+  frameworks: [dora, nist-800-53, apra-cps230]
+  # REAL bars, unlike estate.yaml. This config wants the gate to do real work:
+  # tier1 injects rpo 8h / rto 240m / attestation 30d from config/tiers.yaml,
+  # and 7 days is the default recovery-proof freshness. Relative fixture ages
+  # (days_ago / hours_ago) mean these verdicts stay correct forever.
+  recovery_proof_max_age_days: 7
+
+workloads:
+  - name: D-7-hours-ago
+    tier: tier1
+    env: prod
+    owner: payments
+    criticality: critical
+    fixture: config/demo/incident/D-7-hours-ago.json    # freshest · attested · IN the window
+
+  - name: C-32-hours-ago
+    tier: tier1
+    env: prod
+    owner: payments
+    criticality: critical
+    fixture: config/demo/incident/C-32-hours-ago.json   # nobody ever opened it
+
+  - name: B-6-days-ago
+    tier: tier1
+    env: prod
+    owner: payments
+    criticality: critical
+    fixture: config/demo/incident/B-6-days-ago.json     # attested clean · 144h of loss
+
+  - name: A-400-days-ago
+    tier: tier1
+    env: prod
+    owner: payments
+    criticality: critical
+    fixture: config/demo/incident/A-400-days-ago.json   # certain · and useless
