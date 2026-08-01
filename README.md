@@ -30,6 +30,8 @@ op teardown  infra/workloads                 # always run this — the VM costs 
 
 New here? Start with [See it first](#see-it-first---one-command-no-cloud-no-token) below (zero setup), then follow [Part 1 — Set up](#part-1---set-up-once-15-min).
 
+> Three docs, three questions. **This file** — how do I run it? · **[RESOPS.md](RESOPS.md)** — what is the idea, and why should my team adopt it? · **[VERIFY.md](VERIFY.md)** — how do I write the one file nobody can write for me?
+
 ## See it first - one command, no cloud, no token
 
 ```bash
@@ -61,6 +63,27 @@ python3 -m resops gate config/estate.yaml
 Six workloads, six different blocking points, one aggregate verdict, one exit code your CI could gate on. Note `checkout-api` and `identity-svc` sit on the **same level** for **different reasons** - one was never tested, the other was tested and is contaminated. The level alone would hide that; the blocked stage names it. The gate HOLDs if **any** workload isn't VALIDATED - criticality is recorded as evidence, never a way to ship past a gap. Still zero network, still under a second, and it writes the same evidence bundle, report and hash-chained audit trail a live run does.
 
 **Stop on `checkout-api`.** Every light is green - protected, backups completing, SLA met, and recovery *proven* by a real restore - and it still must not ship, because the point it would restore from carries a threat. **Available is not the same as trusted.** That single line is why the Scan level exists.
+
+### Turning it on without everything going red
+
+Point this at a real estate and almost everything HOLDs on day one. Correctly. But nobody can ship, so the check gets deleted by Friday - and the only tool that told you the truth is gone. You don't switch on 100% coverage enforcement against a legacy codebase either. You **ratchet**:
+
+```yaml
+  - name: reporting-db
+    enforce_from: 2027-01-01                          # a DATE, not a flag
+    tolerance_reason: "backup policy rebuild in flight"
+```
+
+```
+ ●●✗···  PROTECTED  reporting-db  last backup failed        HOLD
+ ↳ TOLERATED until 2027-01-01 - still a HOLD, excluded from the aggregate until that date
+
+ AGGREGATE  PROMOTE - 5/6 enforced and clear · 1 TOLERATED (reporting-db) · exit 0
+```
+
+**This is not a bypass, and the difference is the whole point.** A bypass hides a gap. Here the workload's own verdict is untouched - it still prints HOLD, still names its blocked stage, still lands in the bundle and the report - and only the *aggregate exit code* stops counting it, because that's the only thing blocking a pipeline. The count is published as `resops_tolerated`, so **"we have 3 unenforced" is a number on a wall that has to go down.**
+
+It's a date rather than a boolean on purpose: a flag is permanent the moment someone forgets it, a date expires on its own and the workload starts enforcing with no action from anyone. A typo fails the run (exit 2) rather than tolerating forever. Use it to adopt the gate. Don't use it to defer a gap you have no plan to close.
 
 Two things worth trying on it:
 
@@ -250,7 +273,7 @@ op gate      infra/workloads   # HOLD · exit 1
  HOLD  exit 1
 ```
 
-Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - thirty lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers. The exit code is the attestation.
+Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - thirty lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers. The one line it prints - `OK:` or `FAIL:` - is the attestation. The contract is in [VERIFY.md](VERIFY.md): it's the one file you have to write yourself, and the one nobody can write for you.
 
 ### Why a script and not a backup-product scan
 
