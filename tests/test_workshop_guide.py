@@ -41,6 +41,12 @@ OFFLINE_STEPS = [
         ],
     },
     {
+        "module": "M2.3 — publish the judgment",
+        "command": "python3 -m resops metrics config/estate.yaml",
+        "exit_code": 0,
+        "must_contain": ["resops_rung", "resops_promotable", "resops_tolerated"],
+    },
+    {
         "module": "M6.4 — four recovery points",
         "command": "python3 -m resops gate config/incident.yaml",
         "exit_code": 1,
@@ -52,7 +58,20 @@ OFFLINE_STEPS = [
             "attestation stale (400.0d > 30d)",
         ],
     },
+    {
+        # Runs after M6.4 in the guide, which is what writes the chain it audits.
+        "module": "M6.5 — the audit trail",
+        "command": "python3 -m resops verify config/incident.yaml",
+        "exit_code": 0,
+        "must_contain": ["audit trail intact"],
+    },
 ]
+
+# Files the three guides point participants and facilitators at. A dead link in a
+# room is a facilitator improvising, so they are checked like anything else.
+LINKED_FILES = ("FACILITATOR.md", "WORKSHEETS.md", "VERIFY.md", "RESOPS.md",
+                "README.md", ".github/workflows/resops-gate.yml",
+                "config/estate.yaml", "config/incident.yaml")
 
 
 def _run(command: str):
@@ -81,6 +100,21 @@ def test_every_offline_command_still_produces_what_the_guide_promises():
             assert expected in output, (
                 f"{step['module']}: the guide promises {expected!r} and the tool "
                 f"no longer prints it")
+
+
+def test_every_file_the_guides_point_at_exists():
+    """A dead link in a room is a facilitator improvising."""
+    for name in LINKED_FILES:
+        assert (ROOT / name).exists(), f"{name} is referenced by the guides but missing"
+
+
+def test_the_three_guides_exist_and_cross_reference_each_other():
+    """Someone picking this up cold lands on one of them and must find the
+    other two."""
+    facilitator = (ROOT / "FACILITATOR.md").read_text()
+    guide = GUIDE.read_text()
+    assert "FACILITATOR.md" in guide and "WORKSHEETS.md" in guide
+    assert "WORKSHOP" in facilitator or "M1" in facilitator
 
 
 def test_the_guide_never_promises_a_live_step_will_work_offline():
