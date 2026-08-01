@@ -33,20 +33,28 @@
     "strGUID": "c0ffee11-2b3c-4d5e-8f90-a1b2c3d4e5f6",
     "slaCategoryDescription": "Protected",
     "isRestoreActivityEnabled": true,
-    "lastSuccessfulBackupTime": 1785471586
+    "lastSuccessfulBackupTime": {
+      "hours_ago": 4
+    }
   },
   "vm_error": "",
   "attestation": {
     "source": "restore-verify",
     "clean": false,
     "detail": "14 encrypted (.locked) files present",
-    "at": 1785563583
+    "at": {
+      "hours_ago": 1
+    }
   },
   "proof": {
     "jobId": 884812,
     "status": "Completed",
-    "jobStartTime": 1785470986,
-    "jobEndTime": 1785471070
+    "jobStartTime": {
+      "hours_ago": 4
+    },
+    "jobEndTime": {
+      "hours_ago": 3
+    }
   },
   "proof_error": ""
 }

@@ -33,14 +33,18 @@
     "strGUID": "6f2a8c31-14bd-42e7-a90c-5db83f177e26",
     "slaCategoryDescription": "Protected",
     "isRestoreActivityEnabled": true,
-    "lastSuccessfulBackupTime": 1785471586
+    "lastSuccessfulBackupTime": {
+      "hours_ago": 5
+    }
   },
   "vm_error": "",
   "attestation": {
     "source": "restore-verify",
     "clean": true,
     "detail": "code intact, baseline present, 3 customer records",
-    "at": 1781502783
+    "at": {
+      "days_ago": 47
+    }
   },
   "proof": null,
   "proof_error": ""

@@ -33,7 +33,9 @@
     "strGUID": "b41c0d92-7a55-4e18-9f31-2c7d6e5a0b44",
     "slaCategoryDescription": "Missed SLA",
     "isRestoreActivityEnabled": true,
-    "lastSuccessfulBackupTime": 1785471586
+    "lastSuccessfulBackupTime": {
+      "hours_ago": 26
+    }
   },
   "vm_error": "",
   "proof": null,
