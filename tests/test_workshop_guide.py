@@ -102,6 +102,23 @@ def test_every_offline_command_still_produces_what_the_guide_promises():
                 f"no longer prints it")
 
 
+def test_every_metric_the_docs_name_actually_exists():
+    """The docs show ILLUSTRATIVE metric blocks — labels trimmed, values chosen
+    for the story — so they cannot be matched literally. Metric NAMES can be, and
+    that is the half that goes stale: a renamed or invented series sends someone
+    to build a dashboard panel that will never match anything.
+
+    This exists because the README briefly claimed
+    `resops_tolerated{workload="reporting-db"} 1` when the shipped estate emits 0.
+    Same illustration-vs-reality trap the guide test was written for."""
+    _, output = _run("python3 -m resops metrics config/estate.yaml")
+    real = {line.split("{")[0].split(" ")[0]
+            for line in output.splitlines() if line.startswith("resops_")}
+    for doc in ("README.md", "RESOPS.md", "WORKSHOP.md", "FACILITATOR.md"):
+        for named in set(re.findall(r"\bresops_[a-z_]+\b", (ROOT / doc).read_text())):
+            assert named in real, f"{doc} names {named}, which the tool never emits"
+
+
 def test_every_file_the_guides_point_at_exists():
     """A dead link in a room is a facilitator improvising."""
     for name in LINKED_FILES:

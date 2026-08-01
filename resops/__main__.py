@@ -113,7 +113,16 @@ Usage:
   python -m resops metrics [config]            Prometheus exposition of the LAST run (stdout)
   python -m resops help                        show this message
 
-config defaults to config/workshop.yaml. Nothing here mutates your environment."""
+config defaults to config/workshop.yaml. Nothing here mutates your environment.
+
+Adopting the gate across an estate that isn't ready yet? Declare a dated
+tolerance on a workload and its HOLD stops blocking the aggregate until then:
+
+    enforce_from: 2027-01-01        # a DATE, so it expires on its own
+    tolerance_reason: "..."         # recorded in the evidence bundle
+
+The workload still HOLDs, on screen and in the report. Only the aggregate exit
+code stops counting it, and `resops_tolerated` publishes how many you have."""
 
 
 def die(message: str) -> int:

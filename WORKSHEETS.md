@@ -3,6 +3,10 @@
 > Six sheets. Print them, or copy each into a shared doc — one page per sheet.
 > Sheets 2, 5 and 6 are the ones you take home and use.
 
+> Participants: [WORKSHOP.md](WORKSHOP.md) is the guide these belong to.
+> Facilitators: [FACILITATOR.md](FACILITATOR.md), and collect sheet 1 at M1.2 —
+> you hand it back at the close and the delta is the day's only measurement.
+
 ---
 
 # Worksheet 1 · Your number

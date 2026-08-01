@@ -30,7 +30,23 @@ op teardown  infra/workloads                 # always run this — the VM costs 
 
 New here? Start with [See it first](#see-it-first---one-command-no-cloud-no-token) below (zero setup), then follow [Part 1 — Set up](#part-1---set-up-once-15-min).
 
-> Three docs, three questions. **This file** — how do I run it? · **[RESOPS.md](RESOPS.md)** — what is the idea, and why should my team adopt it? · **[VERIFY.md](VERIFY.md)** — how do I write the one file nobody can write for me?
+### Which document do you want?
+
+Two different things live in this repo, and it's worth knowing which one you're reading.
+
+```
+ THE TOOLKIT — work through it yourself, at your own pace
+   README.md        ← you are here. how do I run it?      Parts 1-3 below
+   RESOPS.md        what is the idea, and why adopt it?
+   VERIFY.md        how do I write the one file nobody can write for me?
+
+ THE FACILITATED DAY — one room, 7 hours, six modules
+   WORKSHOP.md      the participant guide                 M1-M6
+   FACILITATOR.md   the runbook. READ THIS FIRST if you are delivering it.
+   WORKSHEETS.md    six printable sheets
+```
+
+**Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. **M1-M6 in [WORKSHOP.md](WORKSHOP.md)** are a facilitated day built on the same commands, with the setup done in advance so a room never touches terraform. They are not two versions of the same thing; pick the one that matches why you're here.
 
 ## See it first - one command, no cloud, no token
 
@@ -106,6 +122,7 @@ python3 -m resops metrics config/estate.yaml    # …publish many
 ```
  resops_rung{workload="payments-api",criticality="critical"} 6
  resops_promotable{workload="payments-api"} 1
+ resops_tolerated{workload="reporting-db"} 0     # 1 once you declare enforce_from
  resops_attestation_age_days{workload="identity-svc"} 47.0
  resops_workload_info{workload="checkout-api",state="RECOVERABLE",blocked_stage="Scan"} 1
  resops_control_coverage{framework="dora",control="Art. 11/12 (periodic testing…)",outcome="PASS"} 1

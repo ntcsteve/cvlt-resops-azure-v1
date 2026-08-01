@@ -2,6 +2,8 @@
 
 > **This is the one file you have to write yourself, and the one nobody can write for you.**
 
+> Lost? [README.md](README.md) runs the toolkit · [RESOPS.md](RESOPS.md) is the idea · [WORKSHOP.md](WORKSHOP.md) is the facilitated day.
+
 A backup product can tell you a job completed. Only your workload can tell you whether what came back is the thing you needed. `verify.sh` is that answer, expressed as a script, run **inside the restored copy** by a drill that opened the recovery point in isolation.
 
 It is the test. The drill is the test runner. `resops gate` is the required check.
