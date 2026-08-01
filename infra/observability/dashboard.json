@@ -1,0 +1,234 @@
+{
+  "uid": "resops-recoverability",
+  "title": "ResOps — Recoverability",
+  "tags": ["resops"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-90d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "framework",
+        "label": "Framework",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "resops-prom" },
+        "query": "label_values(resops_control_coverage, framework)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Provably recoverable",
+      "description": "Workloads the gate would PROMOTE, over all workloads evaluated. This is the number nobody can answer today.",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "resops-prom" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(resops_promotable) / resops_workloads_total * 100",
+          "legendFormat": "promotable"
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "green", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "bargauge",
+      "title": "Where the estate is stuck",
+      "description": "Workloads by the stage that blocked them. The stage IS the next thing to fix.",
+      "gridPos": { "h": 6, "w": 9, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "resops-prom" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count by (blocked_stage) (resops_workload_info{blocked_stage!=\"\"})",
+          "legendFormat": "{{blocked_stage}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Attestation age — when did anything last verify this?",
+      "description": "Days since something opened the recovery point and read it. A workload with NO row here has never been verified at all, which is worse than a large number.",
+      "gridPos": { "h": 6, "w": 9, "x": 15, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "resops-prom" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(resops_attestation_age_days)",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "job": true, "instance": true, "__name__": true } } }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "days", "decimals": 1 },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "orange", "value": 30 },
+                    { "color": "red", "value": 90 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "type": "bargauge",
+      "title": "Control coverage — $framework",
+      "description": "Workloads with PASS evidence per control. Expect this to be mostly RED: it measures whether recovery was PROVEN, not whether a policy exists.",
+      "gridPos": { "h": 11, "w": 18, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "resops-prom" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (control) (resops_control_coverage{framework=\"$framework\",outcome=\"PASS\"})",
+          "legendFormat": "{{control}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 2 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "text",
+      "title": "Read this before screenshotting the panel above",
+      "gridPos": { "h": 11, "w": 6, "x": 18, "y": 6 },
+      "options": {
+        "mode": "markdown",
+        "content": "### Indicative mapping\n\nThis crosswalk **supports a resilience programme. It is not a compliance attestation.**\n\nIt maps our own capabilities to framework references by topic area, not by paragraph. Treat it as a way to find gaps, never as evidence of compliance.\n\n---\n\n### Why it is mostly red\n\nMost compliance dashboards are green because they measure whether a **policy exists**.\n\nThis one measures whether **recovery was proven** — a real restore, opened and read.\n\nIf it ever goes green without work, something is wrong with it.\n\n---\n\n### No row is worse than a big number\n\nA workload missing from *Attestation age* has **never** been verified. Absence is not zero."
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Every workload — rung, blocker, verdict",
+      "description": "The fleet, one row each. Rung runs 0 UNDISCOVERED to 6 VALIDATED.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "resops-prom" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "resops_workload_info",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "job": true, "instance": true, "__name__": true, "Value": true },
+            "renameByName": {
+              "workload": "Workload",
+              "state": "Rung",
+              "blocked_stage": "Blocked at",
+              "gate": "Gate",
+              "env": "Env",
+              "owner": "Owner"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Gate" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "PROMOTE": { "color": "green", "index": 0, "text": "PROMOTE" } } },
+                  { "type": "value", "options": { "HOLD": { "color": "red", "index": 1, "text": "HOLD" } } },
+                  { "type": "value", "options": { "OVERRIDE": { "color": "orange", "index": 2, "text": "OVERRIDE" } } }
+                ]
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

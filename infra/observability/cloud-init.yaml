@@ -36,6 +36,9 @@ write_files:
       apiVersion: 1
       datasources:
         - name: Prometheus
+          # Fixed uid so the dashboard JSON can reference it deterministically
+          # instead of relying on whatever Grafana generates at first boot.
+          uid: resops-prom
           type: prometheus
           access: proxy
           url: http://prometheus:9090
@@ -52,6 +55,11 @@ write_files:
           allowUiUpdates: false     # dashboards are code, not clicks
           options:
             path: /var/lib/grafana/dashboards
+
+  - path: /opt/obs/dashboards/resops.json
+    permissions: "0644"
+    content: |
+      ${dashboard_json}
 
   - path: /opt/obs/docker-compose.yml
     permissions: "0644"

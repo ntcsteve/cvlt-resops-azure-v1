@@ -140,7 +140,11 @@ resource "azurerm_linux_virtual_machine" "this" {
     version   = "latest"
   }
 
+  # The dashboard is CODE — a file in this repo, provisioned at boot, with
+  # allowUiUpdates false. Indented into the cloud-init write_files block so it
+  # travels with the VM and never has to be clicked together by hand.
   custom_data = base64encode(templatefile("${path.module}/cloud-init.yaml", {
     grafana_password = random_password.grafana.result
+    dashboard_json   = indent(6, file("${path.module}/dashboard.json"))
   }))
 }
