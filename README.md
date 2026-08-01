@@ -258,7 +258,7 @@ We tried two shortcuts first and both were blind:
 
 | Attempt | Result |
 |---|---|
-| Threat scan on the backup | analysed **0 files** on every run in our tenant - and reported "clean" |
+| Threat scan on the backup | analysed **0 files** on every run *in our tenant* - and reported "clean". Probably our configuration (no file indexing on a streaming VM group), not a product limit - but unproven either way |
 | Dedupe ratio as an integrity signal | the same idle VM ranges **57.9% - 99.7%**; 42 points of natural variance is noise, not signal |
 
 Both were *proxies*. There is no cheap way to know a backup is good - **you have to open it and look.** That is why almost nobody does it, and why almost nobody actually knows. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
