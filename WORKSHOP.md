@@ -3,7 +3,7 @@
 > **Participant guide.** Work at your own pace. The facilitator floats.
 > Every command is copy-paste. You should never type a path from memory.
 
-**Level** 300-400 · **Duration** 7h10m door to door · **Audience** platform engineers, SREs, cloud architects
+**Level** 300-400 · **Duration** 6h35m door to door · **Audience** platform engineers, SREs, cloud architects
 
 Facilitators: read [FACILITATOR.md](FACILITATOR.md) first. Worksheets: [WORKSHEETS.md](WORKSHEETS.md).
 
@@ -17,27 +17,37 @@ Facilitators: read [FACILITATOR.md](FACILITATOR.md) first. Worksheets: [WORKSHEE
  You do not gate on recoverability.
 ```
 
-Everything today supports that sentence. If you leave with nothing else, leave with the question it implies: *how much of your estate could you prove is recoverable right now, to someone who did not believe you?*
+If you leave with nothing else, leave with the question it implies: *how much of your estate could you prove is recoverable right now, to someone who did not believe you?*
 
-## How the day runs
+## The map of the day
+
+Recovering a service you can no longer trust is five decisions. **You are not going to learn them and then apply them. You are going to walk them, and write them down at the close for a workload you own.**
 
 ```
- M1  Broken trust                    60m   what can you still trust?
- M2  Recoverability as code          50m   the check, and how it becomes a default
- M3  The Trusted Recovery Pattern    50m   the decision model you take home
- M4  Verify your verifier            30m   the most transferable 30 minutes today
- M5  Lab — declare and prove         75m   you write an attester
- M6  Game day                        75m   break it, then choose
-     Close                           15m
+ 1  what do I still trust?                    M1
+ 2  which copies survived the blast radius?   M1  → air gap
+ 3  which recovery points are clean?          M4  → verify.sh
+ 4  which one do I pick?                      M5  → four points
+ 5  how do I justify it afterwards?           M5  → evidence
+```
+
+## How it runs
+
+```
+ M1  Broken trust                60m   what can you still trust?
+ M2  Recoverability as code      50m   the check, and how it scales
+ M3  Verify your verifier        30m   the most transferable 30 minutes
+ M4  Lab — declare and prove     75m   you write an attester
+ M5  Game day                    75m   break it, then choose
+     Close                       20m
 ```
 
 ```
  OFFLINE   no cloud, no token, one second, cannot fail
  LIVE      a real Azure VM, already provisioned for you
- WATCH     the facilitator drives; you do not need to follow along
 ```
 
-Your workload was provisioned and climbed to VALIDATED before you arrived. You will not spend the morning on terraform.
+Your workload was climbed to VALIDATED before you arrived. You will not spend the morning on terraform.
 
 ### Before you start
 
@@ -57,11 +67,9 @@ source .venv/bin/activate
 
 **60 minutes · OFFLINE**
 
-**Objective:** establish that a service can be fully available and still be operationally untrusted, and produce the trust map you will be scored against in M6.
+**Objective:** a service can be fully available and still be operationally untrusted. Produce the trust map you get scored against in M5.
 
 ## 1.1 · See the gap · 10 min
-
-An estate of six workloads. One command.
 
 ```bash
 python3 -m resops gate config/estate.yaml
@@ -91,36 +99,33 @@ python3 -m resops gate config/estate.yaml
 
 The **bar** is the six stages. The **state** is where you stopped. **blocked at** names the stage that did not clear.
 
-**Stop on `checkout-api`.** Protected. Backups completing. SLA met. Recovery *proven* by a real restore. Every light green, and it still must not ship, because the point it would restore from carries a threat.
+**Stop on `checkout-api`.** Protected. Backups completing. SLA met. Recovery *proven* by a real restore. Every light green, and it still must not ship.
 
 ```
  ? WHY THIS MATTERS
 
-   Available is not the same as trusted. Every other row is a problem
-   you already know how to describe. That one is not, and it is why
-   the Scan stage exists.
+   Available is not the same as trusted. Every other row is a
+   problem you already know how to describe. That one is not.
 
    checkout-api and identity-svc sit on the SAME rung for opposite
-   reasons — one was tested and is contaminated, one was never tested.
-   The rung hides that. The blocked stage names it.
+   reasons — one was tested and is contaminated, one was never
+   tested. The rung hides that. The blocked stage names it.
 ```
 
 ## 1.2 · Your number · 5 min · WORKSHEET 1
 
-Write your answer. Fold it. Hand it to the facilitator. You get it back at the close.
+Write it. Fold it. Hand it in. You get it back at the close.
 
 ```
- 1. What percentage of your production estate could you PROVE
-    is recoverable today?
+ 1. What % of your production estate could you PROVE is recoverable?
  2. How would you prove it, to someone who did not believe you?
  3. How long would producing that proof take?
 ```
 
 ```
  ? WHY THIS MATTERS
-
-   This is the only measurement the day makes. If your answer at the
-   close is the same as now, we wasted your time and I want to know.
+   The only measurement the day makes. If your answer at the close
+   is the same as now, we wasted your time and I want to know.
 ```
 
 ## 1.3 · Trust map · 35 min · WORKSHEET 2
@@ -129,13 +134,13 @@ Write your answer. Fold it. Hand it to the facilitator. You get it back at the c
 
 `orders-api` is a tier-1 payments service. 41,892 customer records.
 
-A deployment landed on Tuesday. A storage credential with broad access was over-permissioned and has been used from an address nobody recognises. This morning there is a file called `README_RECOVER.txt` in the data directory.
+A deployment landed Tuesday. A storage credential with broad access was over-permissioned and used from an address nobody recognises. This morning there is a `README_RECOVER.txt` in the data directory.
 
-The service is still responding. Requests are being served. Dashboards are green.
+The service is still responding. Dashboards are green.
 
 ### The four categories
 
-Every workload, at any size, is made of four things. Yours has forty services and six managed stores. It is still these four categories, just more of each.
+Every workload, at any size, is made of four things. Yours has forty services and six managed stores. Still these four, just more of each.
 
 ```
  CODE       what executes            did this come from the pipeline?
@@ -144,7 +149,7 @@ Every workload, at any size, is made of four things. Yours has forty services an
  IDENTITY   what it can reach with   this is the blast radius
 ```
 
-In today's lab those are four things you can point at:
+In today's lab:
 
 ```
  CODE      /opt/app/serve.sh · /opt/app/VERSION
@@ -155,7 +160,7 @@ In today's lab those are four things you can point at:
 
 ### The exercise
 
-Mark each, and justify it in one line.
+Mark each. Justify in one line.
 
 ```
  TRUSTED     I would run production on this as-is, and here is why
@@ -163,7 +168,7 @@ Mark each, and justify it in one line.
  UNKNOWN     I have no evidence either way
 ```
 
-Then two harder questions:
+Then:
 
 ```
  4. What single missing fact would move the most boxes out of UNKNOWN?
@@ -172,16 +177,38 @@ Then two harder questions:
 
 ```
  ? WHY THIS MATTERS
+   UNKNOWN is the honest answer more often than people write. A box
+   you cannot justify is worth more today than a confident one.
 
-   UNKNOWN is the honest answer far more often than people write, and
-   a box you cannot justify is worth more today than a confident one.
-   Question 5 is what the rest of the day answers.
-
-   KEEP THIS SHEET. In M6 you find out which boxes you got right,
+   KEEP THIS SHEET. In M5 you find out which boxes you got right,
    and it is scored.
 ```
 
-**M1 outputs:** a sealed number · a trust map · a question you cannot yet answer.
+## 1.4 · Your backups · 10 min
+
+Most tables write **unknown** at question 5. So:
+
+```
+ The credential that was misused — could it reach your backups?
+ Could it delete them? Could it change their retention?
+ Who would know if it had?
+```
+
+**→ AIR GAP PROTECT** is shown here, in the console, as the answer to the question you just wrote down yourself. An isolated, immutable copy the compromised credential cannot reach.
+
+```
+ ? WHY THIS MATTERS
+
+     the console DECLARES it     an air-gapped, immutable pool
+     the code VERIFIES it        the Protect stage confirms the plan
+                                 is attached, on every run
+
+   A control you declared and never verified is a control you
+   hope you have. Hold that thought — M2 explains why some things
+   belong in a console and some never do.
+```
+
+**M1 outputs:** a sealed number · a trust map · pattern steps 1 and 2, walked.
 
 ---
 
@@ -189,35 +216,81 @@ Then two harder questions:
 
 **50 minutes · OFFLINE**
 
-**Objective:** turn the ladder into a check that runs in CI, and work out how it becomes a default rather than a heroic one-off.
+**Objective:** build the layer that is missing from almost every estate.
 
-## 2.1 · Read the bar · 10 min
+## 2.1 · Build, run, incident · 10 min
 
-No command. Look at these four and answer two questions each: **which stage failed, and what is the fix?**
+Three modes. You already live all three.
 
 ```
- A   ●●●✗··   MONITORED
- B   ●●●●●✗   RECOVERABLE
- C   ✗·····   UNDISCOVERED
- D   ●●●●✗·   RECOVERABLE
+ BUILD      decided once, deliberately, a human on the hook
+            design review · terraform written · policy agreed
+            → UI or code. either. it is architecture.
+
+ RUN        what must be true on every change, forever
+            CI · reconcile · gate · alert · publish
+            → CODE ONLY. a human clicking here IS the drift.
+
+ INCIDENT   rare, urgent, incomplete information, judgement
+            console · dashboards · correlate · decide · defend
+            → UI. code is too rigid for a question nobody anticipated.
+```
+
+**The test for any task:** does the answer change per workload or per run?
+
+```
+ changes every run     → automate. a human cannot keep up.
+ decided once          → UI. a human SHOULD be on the hook.
+ your API says no      → document it, prep it, stop fighting it.
+```
+
+```
+ ? WHY THIS MATTERS
+
+   MOST BACKUP TOOLING GIVES YOU
+     BUILD      someone configured it, once, years ago
+     RUN        ─────── nothing ───────
+     INCIDENT   someone clicks restore, in a panic
+
+   That missing middle is the only place recoverability is proven
+   or lost. Green backup dashboards are a BUILD artefact being read
+   as a RUN signal. "We have backups" is a build claim.
+   "We can recover" is a run claim.
+
+   RELIABILITY, PRE-SRE          RECOVERABILITY, TODAY
+   HA architecture               backup policy configured
+   ─── nothing ───               ─── nothing ───
+   heroics and war rooms         panic restore
+
+   SRE invented the run layer: SLOs, error budgets, required checks.
+   Recoverability is where reliability was before SRE existed.
+   The next 40 minutes build that layer.
+```
+
+## 2.2 · Read the bar · 5 min
+
+Which stage failed, and what is the fix?
+
+```
+ A   ●●●✗··   MONITORED        C   ✗·····   UNDISCOVERED
+ B   ●●●●●✗   RECOVERABLE      D   ●●●●✗·   RECOVERABLE
 ```
 
 ```
  ✓ ANSWERS
-   A  Recover   — backups are green but the RPO/SLA bar is missed
-   B  Validate  — recoverable on paper, no restore has ever proven it
-   C  Discover  — nobody onboarded it
-   D  Scan      — the point you would restore from is not trusted
+   A  Recover   backups green, RPO/SLA bar missed
+   B  Validate  recoverable on paper, never proven by a restore
+   C  Discover  nobody onboarded it
+   D  Scan      the point you would restore from is not trusted
 
-   B and D are the same rung, different problems. That distinction is
-   the whole reason the tool names a stage instead of a score.
+   B and D are the same rung, different problems.
 ```
 
-## 2.2 · The ratchet · 15 min
+## 2.3 · The ratchet · 15 min
 
-Point this at a real estate and almost everything HOLDs on day one. Correctly. But nobody can ship, so the check gets deleted by Friday, and the only tool that told you the truth is gone.
+Point this at a real estate and almost everything HOLDs on day one. Correctly. But nobody can ship, so the check gets deleted by Friday.
 
-Open `config/estate.yaml`, find `reporting-db`, and uncomment these two lines:
+Open `config/estate.yaml`, find `reporting-db`, uncomment:
 
 ```yaml
     enforce_from: 2027-01-01
@@ -241,7 +314,7 @@ python3 -m resops gate config/estate.yaml
  ✗ IF NOT   exit 2 means a malformed date. it must be YYYY-MM-DD.
 ```
 
-Now put it back:
+Put it back:
 
 ```bash
 git checkout config/estate.yaml
@@ -249,20 +322,18 @@ git checkout config/estate.yaml
 
 ```
  ? WHY THIS MATTERS
-
    reporting-db STILL HOLDS. On screen, in the bundle, in the report.
-   Only the aggregate stopped counting it, and only until that date
-   arrives on its own.
+   Only the aggregate stopped counting it, and only until that date.
 
-   A bypass hides a gap. This declares one, counts it, and expires by
-   itself. It is a date and not a flag because a flag is permanent the
-   moment someone forgets it.
+   A bypass hides a gap. This declares one, counts it, and expires
+   by itself. A date, not a flag — a flag is permanent the moment
+   someone forgets it.
 
    The count publishes as resops_tolerated, so "we have 3 unenforced"
    becomes a number on a wall that has to go down.
 ```
 
-## 2.3 · Twenty lines of CI · 10 min
+## 2.4 · Twenty lines of CI · 10 min
 
 ```bash
 cat .github/workflows/resops-gate.yml
@@ -270,123 +341,57 @@ python3 -m resops metrics config/estate.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   a workflow that runs on pull_request and daily,
-                    then Prometheus text including resops_rung,
-                    resops_promotable and resops_tolerated
+ ✓ YOU SHOULD SEE   a workflow on pull_request + daily, then Prometheus
+                    text with resops_rung, resops_promotable,
+                    resops_tolerated
 
  ? WHY THIS MATTERS
-   Judge once, publish many. The metrics read evidence a run already
-   wrote — no tenant, no network, no agent on any workload.
+   Judge once, publish many. No tenant, no network, no agent on any
+   workload. This is the "% provably recoverable" number nobody has.
 ```
 
-## 2.4 · Making it the default · 15 min
+## 2.5 · Making it the default · 10 min
 
-Discussion, no commands. The two questions this room always asks.
+Discussion. No commands.
 
 ```
  "HOW DOES THIS BECOME A DEFAULT FOR 200 SERVICES?"
-
-   infra/platform/   the paved road — hypervisor, storage, one policy
-                     per tier. Platform team owns it. Built once.
-   config/tiers.yaml THE policy. RPO, RTO, attestation freshness.
-   an app team       declares `tier: tier1` and inherits every bar.
-
-   They do not configure recoverability. They choose a tier.
+   infra/platform/    the paved road. built once, by platform.
+   config/tiers.yaml  THE policy. RPO, RTO, attestation freshness.
+   an app team        declares `tier: tier1` and inherits every bar.
+   → they do not configure recoverability. they choose a tier.
 
  "DO I WRITE 200 verify.sh FILES?"
-
-   No. One per workload SHAPE, not per workload. A template per
-   archetype — VM, managed DB, bucket, queue. Most teams have four
-   or five shapes and think they have two hundred.
+   No. One per workload SHAPE. VM, managed DB, bucket, queue.
+   Most teams have five shapes and think they have two hundred.
 
  "DOES THIS PAGE ME?"
-
-   NO. And this is the most under-sold point of the day.
-   Recoverability drift is not an incident. It is a MERGE BLOCKER.
-   It fails a pull request. It does not wake you up. The blocked
-   stage names the fix and it waits until Tuesday.
+   NO. Recoverability drift is not an incident. It is a MERGE
+   BLOCKER. It fails a pull request. It does not wake you up.
 ```
 
 ```
- WHO OWNS WHAT — write this down, it is the argument you will have
-                 when you get back
+ WHO OWNS WHAT — the argument you will have when you get back
 
-   verify.sh          the app team      only they know what "good" is
-   the drill          platform          it is infrastructure
-   the gate           CI                it is a required check
-   tiers.yaml         platform + risk   it is policy
+   verify.sh    the app team      only they know what "good" is
+   the drill    platform          it is infrastructure
+   the gate     CI                it is a required check
+   tiers.yaml   platform + risk   it is policy
 ```
 
-**M2 outputs:** a gate config you edited · the ownership split · three answers.
+**M2 outputs:** a gate config you edited · the ownership split · a rule that transfers to every tool you own.
 
 ---
 
-# M3 · The Trusted Recovery Pattern
+# M3 · Verify your verifier
 
-**50 minutes · WORKSHEET 3**
-
-**Objective:** leave with a reusable decision model, not an impression.
-
-## 3.1 · The five steps · 10 min
-
-```
- 1  Map trust boundaries        what is trusted, untrusted, unknown
- 2  Find trusted protected      which copies survived the same blast radius
-    state
- 3  Label recovery points       which are clean, which are suspect,
-                                and which has nobody looked at
- 4  Choose or construct the     newest may be risky, oldest may be
-    cleanest viable point       too lossy
- 5  Capture evidence and        what was protected, what was trusted,
-    learning                    what was restored, and why
-```
-
-You did step 1 in M1. You do step 3 in M5, step 4 in M6, step 5 at the close.
-
-## 3.2 · Write it for the scenario · 25 min · WORKSHEET 3
-
-Using the trust map you already made, write one or two concrete actions per step. Not elegant phrasing. Operational clarity — what you would actually do on the morning you found that ransom note.
-
-## 3.3 · The blast radius question · 15 min
-
-Most tables write something like *"restore from backup"* at step 2. So:
-
-```
- Is your backup inside the blast radius?
-
- The credential that was misused — could it reach your backups?
- Could it delete them? Could it change their retention?
- Who would know if it had?
-```
-
-**→ AIR GAP PROTECT** is shown here, in the console, as the answer to the question you just asked yourself. Immutable, isolated copies that the compromised credential cannot reach.
-
-```
- ? WHY THIS MATTERS
-
-   Notice the pairing, because the whole day is built on it:
-
-     the UI DECLARES it        an air-gapped, immutable pool
-     the code VERIFIES it      the Protect stage confirms the plan
-                               is actually attached, on every run
-
-   A control you declared and never verified is a control you hope
-   you have.
-```
-
-**M3 output:** a Trusted Recovery Pattern for the scenario.
-
----
-
-# M4 · Verify your verifier
-
-**30 minutes · WORKSHEET 4**
+**30 minutes · WORKSHEET 3**
 
 **Objective:** the most transferable thirty minutes of the day, and it is not about backup.
 
-## 4.1 · Ship or hold? · 20 min
+## 3.1 · Ship or hold? · 20 min
 
-The facilitator shows a real threat scan job record from a real tenant.
+A real threat scan job, from a real tenant.
 
 ```
  status       Completed
@@ -396,25 +401,29 @@ The facilitator shows a real threat scan job record from a real tenant.
 
 **Vote. Out loud, hands up, before anything else is said.**
 
-Then the facilitator reveals what else that record says, and what it cost us to not look.
+Then open the job yourself and find one field nobody reads:
+
+```
+ totalNumOfFiles     ?
+ pendingReason       ?
+```
 
 ```
  ? THE RULE THIS PRODUCES
-
    Absence of evidence is not evidence of absence.
    A check that ran nothing must never report a pass.
 ```
 
 You will then be shown the two places that rule is enforced in code, rather than asserted on a slide.
 
-## 4.2 · Three checks in your pipeline · 10 min · WORKSHEET 4
+## 3.2 · Three checks in your pipeline · 10 min · WORKSHEET 3
 
 ```
  Name three checks in YOUR pipeline that could pass having
  examined nothing.
 ```
 
-Starters, if you need them:
+Starters:
 
 ```
  a test filter matched 0 tests and the runner exited 0
@@ -427,25 +436,24 @@ Starters, if you need them:
 
 ```
  ? WHY THIS MATTERS
-
    That last one. Your alert did not fire. Was everything fine, or
-   did the metric stop being emitted? Every SRE in this room has
-   that scar. This lesson is not about backup at all.
+   did the metric stop being emitted? Every SRE here has that scar.
+   This lesson is not about backup at all.
 ```
 
-**M4 output:** three named checks you will go and verify.
+**M3 output:** three checks you will go and verify.
 
 ---
 
-# M5 · Lab — declare and prove
+# M4 · Lab — declare and prove
 
-**75 minutes · LIVE**
+**75 minutes · LIVE · WORKSHEET 4**
 
-**Objective:** author an attester. This is the one thing nobody can write for you.
+**Objective:** author an attester. The one thing nobody can write for you. This is pattern step 3.
 
-## 5.1 · Your workload · 20 min
+## 4.1 · Your workload · 20 min
 
-It was climbed to VALIDATED before you arrived.
+Climbed to VALIDATED before you arrived.
 
 ```bash
 op gate infra/workloads
@@ -454,19 +462,29 @@ op gate infra/workloads
 ```
  ✓ YOU SHOULD SEE   ●●●●●●  VALIDATED
                     PROMOTE  recoverability proven · exit 0
-
  ✗ IF NOT           tell the facilitator your codename. do not debug it.
 ```
 
-Now read the thing that actually produced that verdict:
+Now read what produced that verdict:
 
 ```bash
-cat /opt/app/verify.sh        # on your workload, via the console or ssh
+grep -A 40 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
 ```
 
-Thirty lines of shell. Four checks. Read it in ten seconds. Full contract in [VERIFY.md](VERIFY.md).
+```
+ ? WHY YOU READ IT HERE AND NOT OVER SSH
+   That VM has no public IP, no inbound NSG rule, no open ports.
+   You cannot reach it and neither can anything else. The only way
+   in is the guest agent — which is exactly how the drill runs this
+   script inside the RESTORED copy.
 
-## 5.2 · Write a check for YOUR shape · 35 min
+   The workload being unreachable is the point. The attester still
+   ran, inside a machine nobody could log into.
+```
+
+Thirty lines. Four checks. Full contract in [VERIFY.md](VERIFY.md).
+
+## 4.2 · Write a check for YOUR shape · 35 min · WORKSHEET 4
 
 **Pick the shape you actually run.** Not the one in the lab.
 
@@ -477,7 +495,7 @@ Thirty lines of shell. Four checks. Read it in ten seconds. Full contract in [VE
  KUBERNETES       restore, apply, probe
 ```
 
-Write the checks. Pseudocode is worth exactly as much as bash — the contract is four rules and none of them are language-specific:
+Pseudocode counts. Four rules, none language-specific:
 
 ```
  1  the verdict LINE is authoritative      OK: / FAIL:
@@ -486,7 +504,7 @@ Write the checks. Pseudocode is worth exactly as much as bash — the contract i
  4  no verdict means UNATTESTED            never clean
 ```
 
-Aim for checks in the left column, not the right:
+Aim left, not right:
 
 ```
  GOOD                                WEAK
@@ -496,18 +514,17 @@ Aim for checks in the left column, not the right:
  schema is what you expect           the service starts
 ```
 
-The right column is what a backup product can already tell you. The left column requires opening the data, which is why this has to live with the workload.
+The right column is what a backup product already tells you. The left requires opening the data.
 
-**Then compare with the table next to you.** Different shape, same four rules.
+**Then compare with the table next to you.**
 
 ```
  ? WHY THIS MATTERS
-
-   You just proved the contract generalises, rather than being told
+   You just proved the contract generalises rather than being told
    it does. That comparison IS the evidence.
 ```
 
-## 5.3 · Teardown · 10 min
+## 4.3 · Teardown · 10 min
 
 ```bash
 op teardown infra/workloads
@@ -518,27 +535,25 @@ op teardown infra/workloads
  ✗ IF NOT           tell the facilitator. it costs money until it is gone.
 ```
 
-**M5 output:** a verify contract for a workload you actually run.
+**M4 output:** a verify contract for a workload you actually run.
 
 ---
 
-# M6 · Game day
+# M5 · Game day
 
 **75 minutes · LIVE + OFFLINE · WORKSHEET 5**
 
-## 6.1 · Predict · 5 min · SCORED
+Pattern steps 4 and 5. This is the first time today you are in incident mode.
+
+## 5.1 · Predict · 5 min · SCORED
 
 From your M1 trust map, before anything runs:
 
 ```
- code       survives?   Y / N
- state      survives?   Y / N
- config     survives?   Y / N
- identity   survives?   Y / N
- BASELINE   survives?   Y / N
+ code · state · config · identity · BASELINE      survives?  Y / N
 ```
 
-## 6.2 · Break it · 10 min
+## 5.2 · Break it · 10 min
 
 ```bash
 op incident infra/workloads
@@ -551,9 +566,16 @@ op backup   infra/workloads
                     then a backup job, queueing 5-15 min. THIS IS NORMAL.
 ```
 
-The compromise is now inside a recovery point. Every vendor signal is about to go green.
+**Watch your backup job in the console while it queues.**
 
-## 6.3 · Restore, and read what came back · 20 min
+```
+ ? WHAT YOU ARE WATCHING
+   Your own planted compromise being committed into a recovery point.
+   The job goes Completed. Green. Correct. Nothing is broken —
+   which is exactly what makes it dangerous.
+```
+
+## 5.3 · Restore, and read what came back · 20 min
 
 ```bash
 op restore infra/workloads
@@ -572,14 +594,13 @@ op gate    infra/workloads
 
 ```
  ? WHY THIS MATTERS
-
    backup Completed. restore Completed. VM healthy. Every vendor
    signal GREEN. The recovery point was still poison.
 
-   Caught by thirty lines of shell anyone in this room can read.
+   Caught by thirty lines of shell anyone here can read.
 ```
 
-## 6.4 · Four recovery points · 25 min · WORKSHEET 5
+## 5.4 · Four recovery points · 25 min · WORKSHEET 5
 
 ```bash
 python3 -m resops gate config/incident.yaml
@@ -597,31 +618,30 @@ python3 -m resops gate config/incident.yaml
      ↳ attestation stale (400.0d > 30d)
 ```
 
-**The one fact you do not have:** the first anomalous log entry is *"sometime last week"*. Retention on that host is 7 days and the earliest surviving entry is already abnormal. The incident may have started 3 days ago. Or 9.
+**The fact you do not have:** the first anomalous log entry is *"sometime last week"*. Retention is 7 days and the earliest surviving entry is already abnormal. It may have started 3 days ago. Or 9.
 
-**Choose a point. Justify it in one sentence, naming what you give up.**
+**Choose. Justify in one sentence, naming what you give up.**
 
 ```
  ? WHY THIS MATTERS
-
    The gate promotes exactly one point, and it is the one squarely
    inside the incident window. That is not a bug. It is a policy
-   written for OUTAGES being asked a question about COMPROMISE:
+   written for OUTAGES answering a question about COMPROMISE:
 
      an RPO target assumes the only cost of an older point is
-     LOST DATA. Under compromise, the freshest point is the most
-     DANGEROUS one.
+     LOST DATA. Under compromise, the freshest point is the
+     most DANGEROUS one.
 
-   And notice A. It is the only point anyone can be certain about,
-   it costs 400 days of orders, and it is only certain because
+   And notice A. The only point anyone can be certain about, it
+   costs 400 days of orders, and it is only certain because
    NOTHING WAS VERIFIED between it and last week.
 
    That gap is not bad luck. It is the drill nobody scheduled.
 ```
 
-**→ SYNTHETIC RECOVERY** is shown here, if the room wants a point that is not in that list.
+**→ SYNTHETIC RECOVERY** is named here, if the room wants a point that is not in that list.
 
-## 6.5 · Evidence · 15 min · WORKSHEET 5
+## 5.5 · Evidence · 15 min · WORKSHEET 5
 
 ```bash
 cat evidence/incident/summary.json
@@ -632,50 +652,61 @@ python3 -m resops verify config/incident.yaml
  ✓ YOU SHOULD SEE   audit trail intact — hash chain verified
 ```
 
-**→ REPORTING** — the console view beside the evidence bundle. Same run, human view and machine view.
+**Pull a report in the console** and put it beside the bundle.
 
-Write the evidence outline: what would you show your leadership, your auditor, and your own team, and which of the three is hardest?
+```
+ ? WHY THIS MATTERS
+   the console report   the operation ran        human-readable
+   the evidence bundle  the decision was         machine-readable,
+                        justified, and against   hash-chained
+                        which control
 
-**M6 outputs:** a scored prediction · a justified decision · an evidence outline.
+   Neither replaces the other.
+```
+
+Write the evidence outline: what would you show leadership, an auditor, and your own team, and which is hardest?
+
+**M5 outputs:** a scored prediction · a justified decision · an evidence outline.
 
 ---
 
 # Close
 
-**15 minutes · WORKSHEET 6**
+**20 minutes · WORKSHEET 6**
+
+You have now walked all five steps. Write them down for something real.
 
 ```
- 1  Unseal worksheet 1. Write today's real number beside it.
- 2  Your workload: the five pattern steps, one line each.
- 3  ONE next action. Named. With a date.
+ 1  Unseal worksheet 1. Write today's number beside it.
+ 2  The five steps, for a workload YOU own. One line each.
+ 3  ONE next action. Named. Dated.
       a runbook change · a platform default · an evidence improvement
 ```
 
 ```
  THE ADOPTION LADDER
-
- L1  SEE       resops gate, read-only. your real number.        day 1
- L2  DECLARE   verify.sh for ONE tier-1 workload. 20 lines.     week 1
- L3  PROVE     one scheduled drill. one attestation.            week 2
- L4  GATE      required check on that ONE workload. ratchet.    month 1
- L5  PUBLISH   resops metrics on a wall. % provably recoverable. quarter 1
+ L1  SEE       resops gate, read-only. your real number.       day 1
+ L2  DECLARE   verify.sh for ONE tier-1 workload. 20 lines.    week 1
+ L3  PROVE     one scheduled drill. one attestation.           week 2
+ L4  GATE      required check on that ONE workload. ratchet.   month 1
+ L5  PUBLISH   % provably recoverable, on a wall.              quarter 1
 ```
 
-L1 is read-only and physically cannot mutate your environment. There is a test enforcing that. It tells you your real position by Monday.
+L1 is read-only and physically cannot mutate your environment. There is a test enforcing that.
 
-**In seven days you will get one question: did you run it against anything real?**
+**In seven days you get one question: did you run it against anything real?**
 
 ---
 
 ## What is honestly not solved
 
 ```
- the lab workload is a VM      the contract transfers, worked examples
+ the lab workload is a VM      the contract transfers; worked examples
                                for managed DB and buckets are not written
  restore-verify costs money    sampling plus a per-tier freshness bar is
-                               a policy, not a cost model. we do not have one.
- the crosswalk is INDICATIVE   it supports a resilience programme.
-                               it is not a formal attestation.
+                               a policy, not a cost model. we have none.
+ the crosswalk is INDICATIVE   supports a resilience programme.
+                               not a formal attestation.
  nobody owns this by default   it spans three teams who mostly do not
                                talk about recovery together
 ```

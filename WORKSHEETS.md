@@ -1,11 +1,20 @@
 # Worksheets
 
 > Six sheets. Print them, or copy each into a shared doc — one page per sheet.
-> Sheets 2, 5 and 6 are the ones you take home and use.
+> Sheets 2, 4 and 6 are the ones you take home and use.
 
 > Participants: [WORKSHOP.md](WORKSHOP.md) is the guide these belong to.
 > Facilitators: [FACILITATOR.md](FACILITATOR.md), and collect sheet 1 at M1.2 —
 > you hand it back at the close and the delta is the day's only measurement.
+
+```
+ W1  M1.2   your number          sealed, returned at the close
+ W2  M1.3   trust map            KEEP IT — scored in M5.1
+ W3  M3.2   three checks         take home
+ W4  M4.2   your verify contract take home
+ W5  M5     predict · choose · evidence
+ W6  Close  YOUR workload + one next action
+```
 
 ---
 
@@ -25,8 +34,6 @@ Name / table: ______________________
 
 ```
    ______________________________________________________________
-
-   ______________________________________________________________
 ```
 
 **3. How long would producing that proof take?**
@@ -35,13 +42,13 @@ Name / table: ______________________
    ☐ minutes    ☐ hours    ☐ days    ☐ weeks    ☐ I could not
 ```
 
-> You get this back at 16:00. If your answer has not changed, tell the facilitator.
+> You get this back at the close. If your answer has not changed, tell the facilitator.
 
 ---
 
 # Worksheet 2 · Trust map
 
-**M1.3 · 35 minutes · KEEP THIS — it is scored in M6**
+**M1.3 · 35 minutes · KEEP THIS — it is scored in M5.1**
 
 **Scenario.** `orders-api`, tier-1 payments, 41,892 customer records. A deployment landed Tuesday. A storage credential with broad access was over-permissioned and used from an unrecognised address. This morning there is a `README_RECOVER.txt` in the data directory. The service is still responding. Dashboards are green.
 
@@ -83,40 +90,13 @@ Mark each and justify in one line. **UNKNOWN is a real answer and often the hone
    ______________________________________________________________
 ```
 
----
-
-# Worksheet 3 · Trusted Recovery Pattern — the scenario
-
-**M3.2 · 25 minutes**
-
-One or two concrete actions per step. Not phrasing. What you would actually do on the morning you found that note.
-
-```
- 1  MAP TRUST BOUNDARIES
-    (you did this on worksheet 2 — carry the conclusion here)
-    ____________________________________________________________
-
- 2  FIND TRUSTED PROTECTED STATE
-    which copies survived the same blast radius?
-    ____________________________________________________________
-    ↳ could the misused credential reach them?   ☐ yes ☐ no ☐ unknown
-
- 3  LABEL RECOVERY POINTS
-    which are clean, which are suspect, which has nobody looked at?
-    ____________________________________________________________
-
- 4  CHOOSE OR CONSTRUCT THE CLEANEST VIABLE POINT
-    ____________________________________________________________
-
- 5  CAPTURE EVIDENCE AND LEARNING
-    ____________________________________________________________
-```
+> M1.4 answers question 5. Note what changes your mind, if anything does.
 
 ---
 
-# Worksheet 4 · Checks that could pass having examined nothing
+# Worksheet 3 · Checks that could pass having examined nothing
 
-**M4.2 · 10 minutes**
+**M3.2 · 10 minutes**
 
 ```
  THE RULE
@@ -144,11 +124,60 @@ Starters: a test filter that matched 0 tests · a scanner with no ruleset for th
 
 ---
 
+# Worksheet 4 · Your verify contract
+
+**M4.2 · 35 minutes · TAKE THIS HOME — it is L2 of the adoption ladder**
+
+**My workload shape:** ☐ VM ☐ managed DB ☐ object storage ☐ kubernetes ☐ other ______
+
+**The four rules. Pseudocode counts.**
+
+```
+ 1  the verdict LINE is authoritative      OK: / FAIL:
+ 2  ONE line per message                   the parser stops at the first
+ 3  print the verdict LAST                 then exit
+ 4  no verdict means UNATTESTED            never clean
+```
+
+**What "good" looks like for my workload. Aim for checks that need the data OPENED.**
+
+```
+ 1  ________________________________________________________
+    FAIL: ___________________________________________________
+
+ 2  ________________________________________________________
+    FAIL: ___________________________________________________
+
+ 3  ________________________________________________________
+    FAIL: ___________________________________________________
+
+ 4  ________________________________________________________
+    FAIL: ___________________________________________________
+
+ OK: _______________________________________________________
+```
+
+```
+ GOOD                                WEAK
+ the file PARSES                     the file exists
+ row counts in an expected range     the disk is the expected size
+ a known-good marker is present      the timestamp looks recent
+ schema is what you expect           the service starts
+```
+
+**Compared with the table next to me. Their shape: ____________ What was the same?**
+
+```
+   ______________________________________________________________
+```
+
+---
+
 # Worksheet 5 · The decision
 
-**M6.1, 6.4 and 6.5**
+**M5.1, 5.4 and 5.5**
 
-### Part A · Predict · M6.1 · before anything runs
+### Part A · Predict · M5.1 · before anything runs
 
 From worksheet 2. Which survive the incident?
 
@@ -162,7 +191,7 @@ From worksheet 2. Which survive the incident?
  SCORE  ___ / 5
 ```
 
-### Part B · Choose a recovery point · M6.4
+### Part B · Choose a recovery point · M5.4
 
 ```
  D  7 hours ago    attested clean       RPO 7h        gate: PROMOTE
@@ -181,8 +210,6 @@ From worksheet 2. Which survive the incident?
 
 ```
    ______________________________________________________________
-
-   ______________________________________________________________
 ```
 
 **The gate promoted D. Do you agree with the gate? Why or why not?**
@@ -191,9 +218,7 @@ From worksheet 2. Which survive the incident?
    ______________________________________________________________
 ```
 
-### Part C · Evidence outline · M6.5
-
-What would you show each of these, the morning after?
+### Part C · Evidence outline · M5.5
 
 ```
  YOUR LEADERSHIP   ___________________________________________
@@ -202,7 +227,7 @@ What would you show each of these, the morning after?
 
  YOUR OWN TEAM     ___________________________________________
 
- Which of the three is hardest to produce today, and why?
+ Which is hardest to produce today, and why?
    ______________________________________________________________
 ```
 
@@ -210,28 +235,33 @@ What would you show each of these, the morning after?
 
 # Worksheet 6 · Your workload, and one next action
 
-**Close · 15 minutes · THIS IS THE ONE THAT MATTERS**
+**Close · 20 minutes · THIS IS THE ONE THAT MATTERS**
 
-**Pick one real workload you own, influence, or support.**
+You have walked all five steps today. Now write them for something real.
 
-Name: ______________________  Tier / criticality: ______________________
+**Workload:** ______________________  **Tier / criticality:** ______________
 
-### The pattern, for that workload
+### The pattern, for your workload
 
 ```
- 1  what becomes UNTRUSTED in a similar event?
+ 1  WHAT DO I STILL TRUST?
+    what becomes untrusted in a similar event?
     ____________________________________________________________
 
- 2  what trusted protected state exists TODAY, if any?
+ 2  WHICH COPIES SURVIVED THE BLAST RADIUS?
+    what trusted protected state exists TODAY, if any?
     ____________________________________________________________
 
- 3  which recovery points would most need validation?
+ 3  WHICH RECOVERY POINTS ARE CLEAN?
+    which would most need validation, and who would do it?
     ____________________________________________________________
 
- 4  where would a curated or constructed point reduce loss?
+ 4  WHICH ONE DO I PICK?
+    where would a curated or constructed point reduce loss?
     ____________________________________________________________
 
- 5  what part of your current recovery story is hardest to PROVE?
+ 5  HOW DO I JUSTIFY IT AFTERWARDS?
+    what part of your recovery story is hardest to PROVE?
     ____________________________________________________________
 ```
 
@@ -266,8 +296,8 @@ Pick exactly one. Name it. Date it.
 
 ```
  L1  SEE       resops gate — read-only, cannot mutate anything     day 1
- L2  DECLARE   verify.sh for ONE tier-1 workload. 20 lines.        week 1
+ L2  DECLARE   verify.sh for ONE tier-1 workload (worksheet 4)     week 1
  L3  PROVE     one scheduled drill. one attestation.               week 2
  L4  GATE      required check on that ONE workload. ratchet.       month 1
- L5  PUBLISH   resops metrics on a wall.                           quarter 1
+ L5  PUBLISH   % provably recoverable, on a wall.                  quarter 1
 ```

@@ -41,13 +41,13 @@ OFFLINE_STEPS = [
         ],
     },
     {
-        "module": "M2.3 — publish the judgment",
+        "module": "M2.4 — publish the judgment",
         "command": "python3 -m resops metrics config/estate.yaml",
         "exit_code": 0,
         "must_contain": ["resops_rung", "resops_promotable", "resops_tolerated"],
     },
     {
-        "module": "M6.4 — four recovery points",
+        "module": "M5.4 — four recovery points",
         "command": "python3 -m resops gate config/incident.yaml",
         "exit_code": 1,
         "must_contain": [
@@ -59,8 +59,8 @@ OFFLINE_STEPS = [
         ],
     },
     {
-        # Runs after M6.4 in the guide, which is what writes the chain it audits.
-        "module": "M6.5 — the audit trail",
+        # Runs after M5.4 in the guide, which is what writes the chain it audits.
+        "module": "M5.5 — the audit trail",
         "command": "python3 -m resops verify config/incident.yaml",
         "exit_code": 0,
         "must_contain": ["audit trail intact"],
