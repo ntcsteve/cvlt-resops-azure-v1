@@ -47,7 +47,7 @@ Two different things live in this repo, and it's worth knowing which one you're 
     it carries delivery coaching and tenant-specific detail)
 ```
 
-**Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. **M1-M6 in [WORKSHOP.md](WORKSHOP.md)** are a facilitated day built on the same commands, with the setup done in advance so a room never touches terraform. They are not two versions of the same thing; pick the one that matches why you're here.
+**Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. **M1-M5 in [WORKSHOP.md](WORKSHOP.md)** are a facilitated day built on the same commands, with the setup done in advance so a room never touches terraform. They are not two versions of the same thing; pick the one that matches why you're here.
 
 ## See it first - one command, no cloud, no token
 
@@ -337,3 +337,75 @@ Every run writes `evidence/` - `report.md` (a **Controls** column), `bundle.json
 
 `infra/platform/` is the platform team's paved road (an adopted hypervisor + storage + a policy per tier from `config/tiers.yaml`); `infra/workloads/` is a PR per app team. You **don't** run `op climb` - recoverability comes from the tier's backup schedule (the RPO you declared), and the gate confirms it on every PR + a daily run. Same muscle as a required test or a security scan: a workload doesn't promote unless it's provably recoverable.
 </content>
+
+## Before you run this in your own tenant
+
+Everything above works offline against committed fixtures. The moment you point it at a real subscription and a real data-protection tenant, these are the things that cost us hours. None are obvious and most fail quietly.
+
+### The one that fails silently
+
+**`platform.commcell_id` defaults to `2`.** That is the common value for a single-CommCell Metallic instance, and it is not universal. It goes into the restore request's `commCellId`. A wrong value is **accepted**, browses the wrong CommCell, and comes back looking like an empty backup rather than like an error. Check yours before the first live restore - any job's `commCellId` in the API will tell you.
+
+### Azure
+
+```
+ SP Object ID ≠ App Registration Object ID     different GUIDs, and the
+                                               error if you use the wrong
+                                               one is an unhelpful 403
+   az ad sp show --id <appId> --query id -o tsv
+
+ GXMD snapshots block resource-group deletion  a backup leaves one, and it
+                                               does NOT appear in az disk list
+ Recovery Services vaults block it too         `op teardown` sweeps both
+ changing custom_data forces VM replacement    same trap as os_disk.name.
+                                               fine on a fresh climb,
+                                               never mid-drill
+ a restore briefly runs a SECOND VM            size your regional vCPU quota
+                                               for two, not one
+```
+
+### The data-protection tenant
+
+```
+ backup job "Waiting" for 5-15 min is NORMAL   it is queueing for a media
+                                               agent. do not kill it.
+ tokens die on a hard wall                     renewal fails with HTTP 500
+                                               "Renew request placed after
+                                               the permissible time limit",
+                                               which reads like a server
+                                               fault and is auth. run
+                                               `resops list` first, always.
+ vmgroup_id is ephemeral                       resolved live by name
+                                               (resops-<name>-vg). never
+                                               hard-code it.
+ use a FRESH workload codename every run       see below
+```
+
+**On codenames.** In our tenant `DELETE /v4/VMGroup/{id}` returns HTTP 202 *"pending administrator authorization"*. The group vanishes from listings, which reads exactly like success, and if nobody approves it, it comes back. So every run leaves an undeleteable group behind. Reusing a retired name makes `op protect` adopt the stale group and attach it to a dead VM GUID - and that failure surfaces later, at backup, reading like nothing at all. Give every run its own codename. Check whether your tenant behaves the same way before assuming it does not.
+
+### What is proven, and what is not
+
+Be careful which of these you repeat as fact. The project has already paid once for stating an unproven thing confidently.
+
+```
+ PROVEN LIVE      the full climb to VALIDATED, the restore drill, and all
+                  four attestation verdicts - unattested, dirty, stale, clean
+ PROVEN LIVE      the compromised-backup path: every vendor signal green,
+                  the recovery point still poison
+ PROVEN LOCALLY   the observability stack, 12/12 checks in Docker.
+                  NEVER applied to Azure.
+ NOT PROVEN       that threat scan cannot work here. What IS proven is that
+                  in our tenant those jobs analysed zero files and reported
+                  clean. The evidence points at configuration, not a product
+                  limit. Do not say "it does not work".
+ NOT SCOPED       Synthetic Recovery. Available in the tenant, never run.
+ NOT WRITTEN      verify.sh worked examples for managed databases and object
+                  storage. The contract transfers; the examples do not exist.
+ NO MODEL         the cost of restore-verify at production data volume.
+                  Sampling plus a per-tier freshness bar is a policy, not a
+                  number.
+```
+
+## Maintainer
+
+Maintained by [@ntcsteve](https://github.com/ntcsteve). Open an issue for questions, corrections, or if you get an adapter working against a different data-protection platform - the ladder, gate, evidence and metrics are vendor-neutral, and `client.py` + `reads.py` (384 lines) are the only coupled files.
