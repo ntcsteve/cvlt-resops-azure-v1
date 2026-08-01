@@ -36,9 +36,9 @@ import time
 
 import yaml
 
-from ..reads import anomaly_verdict, default_copy_id, storage_pool_id
+from ..reads import default_copy_id, storage_pool_id, threat_attestation
 from ._azure import az_json, az_ok
-from .commvault import poll_job
+from .commvault import job_summary, poll_job
 from . import preflight
 from ._common import CFG, HOST, HYP, REPO, client, contract, find_vm, group_id, write
 from .drills import run_restore
@@ -257,9 +257,10 @@ def _backup_copy_id(plan_id: int) -> int:
     return copy_id
 
 
-def _threatscan_verdict(commcell_client_id: int) -> dict:
-    """Post-scan anomaly counts for this client. Parsing lives in reads.anomaly_verdict."""
-    return anomaly_verdict(client.get("Client/Anomaly").json(), commcell_client_id)
+def _threatscan_verdict(commcell_client_id: int) -> dict | None:
+    """The scan's attestation for this client, or None if it attests nothing.
+    Parsing lives in reads.threat_attestation."""
+    return threat_attestation(client.get("Client/Anomaly").json(), commcell_client_id)
 
 
 def threatscan(run_dir: str) -> None:
@@ -297,14 +298,29 @@ def threatscan(run_dir: str) -> None:
                          f" the recovery point is UNVERIFIED (not clean)"
                          f"  → fix: open job {job_id} in the console for the reason;"
                          f" a scan-server slot or an unsupported agent are the usual ones")
+    # A job can report "Completed" having analysed NOTHING. On 2026-08-01 every
+    # scan in this tenant came back "no new backup data to analyze" with zero
+    # files — and we called it CLEAN. A scan that examined nothing attests
+    # nothing, and saying otherwise is the single most dangerous thing this tool
+    # could do. Check what it actually looked at before believing the verdict.
+    summary = job_summary(client, job_id)
+    analysed = summary.get("totalNumOfFiles") or 0
+    if not analysed:
+        why = (summary.get("pendingReason") or "").replace("<br/>", " | ").strip()
+        raise SystemExit(
+            f"threatscan job {job_id} analysed 0 files — the recovery point is "
+            f"UNVERIFIED, not clean.\n"
+            f"  reason: {why or 'none given'}\n"
+            f"  → this tenant's VSA backups may not be eligible for threat analysis; "
+            f"check file indexing on the VM group before trusting any scan verdict")
+
     time.sleep(5)  # allow Metallic anomaly index to flush before reading verdict
     verdict = _threatscan_verdict(cid)
-    label = "CLEAN" if verdict["clean"] else "THREATS FOUND"
-    print(f"verdict: {label}  "
-          f"(infected={verdict['infectedFilesCount']}, "
-          f"fingerprint={verdict['fingerPrintFilesCount']})")
-    if not verdict["clean"]:
-        sys.exit(f"threatscan FAILED — threats detected on {vm_name}")
+    if verdict is None:
+        print(f"verdict: CLEAN  ({analysed} files analysed, no anomalies recorded)")
+        return
+    print(f"verdict: THREATS FOUND  ({analysed} files analysed — {verdict.get('detail')})")
+    sys.exit(f"threatscan FAILED — threats detected on {vm_name}")
 
 
 # --------------------------------------------------------------------------- #

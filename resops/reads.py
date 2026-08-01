@@ -162,32 +162,41 @@ def default_copy_id(body: dict) -> int | None:
 ANOMALY_COUNTS = ("infectedFilesCount", "fingerPrintFilesCount")
 
 
-def anomaly_verdict(body: dict, commcell_client_id: int) -> dict:
-    """Post-scan anomaly counts for one client, from GET Client/Anomaly.
+def threat_attestation(body: dict, commcell_client_id: int) -> dict | None:
+    """An ATTESTATION about a recovery point, derived from GET Client/Anomaly.
 
-    Absent from the list means no anomalies were recorded, which is the clean
-    case — the API reports exceptions, not an all-clear per client. Returning a
-    populated dict either way keeps the caller branch-free.
+    Returns None when there is nothing to attest — which is the honest answer
+    far more often than it looks.
 
-    FAILS CLOSED on an unrecognised shape. These field names were read off a
-    tenant that had never recorded an anomaly, so the dirty payload has never
-    actually been seen. If a client is listed but carries none of the counts we
-    know, the honest answer is "this is not clean" — a verdict we cannot read is
-    never a pass. Silently returning clean is the one outcome this tool must
-    never produce."""
+    THE MISTAKE THIS FUNCTION EXISTS TO PREVENT. Client/Anomaly reports
+    EXCEPTIONS. A client absent from that list has no *recorded anomaly*, which
+    is NOT the same as "was scanned and found clean". We read absence as an
+    all-clear for a month; the live run on 2026-08-01 showed every scan in this
+    tenant had analysed zero files, so the clean verdicts meant nothing at all.
+    Absence of evidence is not evidence of absence, and a recoverability tool
+    that confuses the two is worse than no tool.
+
+    So this only ever reports a NEGATIVE it can actually see:
+        anomalies recorded   -> attested, clean=False
+        anything else        -> None, i.e. nobody has attested anything
+
+    A positive attestation has to come from a source that knows a check really
+    ran — see the metadata attester (integrity_attestation)."""
     for entry in body.get("anomalyClients", []):
         if (entry.get("client") or {}).get("clientId") != commcell_client_id:
             continue
         if not any(key in entry for key in ANOMALY_COUNTS):
-            return {"clean": False, "infectedFilesCount": 0, "fingerPrintFilesCount": 0,
-                    "unreadable": "listed as an anomaly client in a shape we don't "
-                                  "recognise — treating as NOT clean"}
+            return {"source": "threatscan", "clean": False,
+                    "detail": "listed as an anomaly client in a shape we don't "
+                              "recognise — treating as NOT clean"}
         infected = entry.get("infectedFilesCount", 0) or 0
         fingerprint = entry.get("fingerPrintFilesCount", 0) or 0
-        return {"clean": not (infected or fingerprint),
-                "infectedFilesCount": infected,
-                "fingerPrintFilesCount": fingerprint}
-    return {"clean": True, "infectedFilesCount": 0, "fingerPrintFilesCount": 0}
+        if not (infected or fingerprint):
+            return None          # listed but with zero counts — attests nothing
+        return {"source": "threatscan", "clean": False,
+                "detail": f"{infected} infected, {fingerprint} file-anomaly",
+                "infectedFilesCount": infected, "fingerPrintFilesCount": fingerprint}
+    return None
 
 
 def _vms_in_group(vmgroup_body: dict) -> list:

@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from .client import Client
 from .reads import (
     SUMMARY_CLIP, _find_vm, _get, _plan_name, _recovery_proof, _vms_in_group,
-    anomaly_verdict, find_vmgroup_id, vmgroup_name,
+    threat_attestation, find_vmgroup_id, vmgroup_name,
 )
 
 
@@ -75,8 +75,10 @@ class Reads:
     vmgroup_error: str = ""
     vm: dict | None = None                        # the matched record from GET /VM
     vm_error: str = ""
-    anomaly: dict | None = None                   # PARSED threat verdict (reads.anomaly_verdict)
-    anomaly_error: str = ""
+    # Who attests this recovery point is trustworthy, and what they found.
+    # None means NOBODY has — which is a gap, never a pass. {"source", "clean", ...}
+    attestation: dict | None = None
+    attestation_error: str = ""
     proof: dict | None = None                     # latest restore job summary for this VM
     proof_error: str = ""
 
@@ -131,24 +133,28 @@ def gather(client: Client, workload: dict) -> Reads:
 
     vmgroup, vmgroup_error = _get(client, f"V4/VMGroup/{group_id}")
     vm, vm_error = _find_vm(client, vm_name)
-    anomaly, anomaly_error = _threat_verdict(client, vm)
+    attestation, attestation_error = _attest(client, vm)
     proof, proof_error = _recovery_proof(client, vm_name)
     return Reads(
         vm_name=vm_name,
         vmgroup=vmgroup, vmgroup_error=vmgroup_error,
         vm=vm, vm_error=vm_error,
-        anomaly=anomaly, anomaly_error=anomaly_error,
+        attestation=attestation, attestation_error=attestation_error,
         proof=proof, proof_error=proof_error,
     )
 
 
-def _threat_verdict(client: Client, vm: dict | None) -> tuple[dict | None, str]:
-    """The parsed threat verdict for this VM, or (None, reason).
+def _attest(client: Client, vm: dict | None) -> tuple[dict | None, str]:
+    """Ask each attester in turn whether this recovery point is trustworthy.
+
+    Today there is one: the threat lane, and it can only ever report a NEGATIVE
+    (see reads.threat_attestation). So on a healthy tenant this returns None,
+    meaning nobody has attested anything — and the Scan rung says exactly that
+    rather than inventing a pass.
 
     The VM's own /VM record carries its CommCell pseudo-client id at
     client.clientId — distinct from pseudoClient.clientId, which is the
-    hypervisor. Without that id there is nothing to look up, so we say so rather
-    than guess."""
+    hypervisor."""
     if vm is None:
         return None, ""            # Recover already blocks; don't double-report
     client_id = (vm.get("client") or {}).get("clientId")
@@ -157,7 +163,7 @@ def _threat_verdict(client: Client, vm: dict | None) -> tuple[dict | None, str]:
     body, err = _get(client, "Client/Anomaly")
     if err:
         return None, err
-    return anomaly_verdict(body, client_id), ""
+    return threat_attestation(body, client_id), ""
 
 
 def _clip(text: str) -> str:
@@ -254,31 +260,31 @@ def classify(reads: Reads) -> Ladder:
                     f"SLA not met — {sla or 'unknown'}", recover_ev, error=False)
     cleared("Recover", "recoverable — SLA Protected", recover_ev)
 
-    # ── Scan ── is the point we'd restore from carrying a known threat? ───────
-    # HONEST LIMIT: Client/Anomaly reports EXCEPTIONS, not per-client all-clears.
-    # So "no threat recorded" is what this rung can prove; it cannot prove a scan
-    # ever ran. Hence the summary wording — clearing it means nothing was flagged,
-    # which is weaker than "certified clean" and is stated that way on purpose.
-    if reads.anomaly_error:
+    # ── Scan ── has ANYONE attested the point we'd restore from? ──────────────
+    # An unattested recovery point is not a clean one. This rung used to clear on
+    # the absence of a recorded anomaly, which sounds reasonable and is wrong: a
+    # scan that never ran also records no anomaly. Live proof, 2026-08-01 — every
+    # scan in the tenant had analysed zero files, so every "clean" was hollow.
+    # An attester must say something it actually checked, or this rung blocks.
+    if reads.attestation_error:
         return stop(State.RECOVERABLE, "Scan",
-                    f"could not read threat scan: {reads.anomaly_error}",
+                    f"could not read attestation: {reads.attestation_error}",
                     {"vm_name": vm_name}, error=True)
-    verdict = reads.anomaly
-    if verdict is None:
+    attestation = reads.attestation
+    if attestation is None:
         return stop(State.RECOVERABLE, "Scan",
-                    "no threat verdict available for this VM", {"vm_name": vm_name},
-                    error=True)
-    scan_ev = {"threat_clean": verdict.get("clean"),
-               "infected_files": verdict.get("infectedFilesCount", 0),
-               "fingerprint_files": verdict.get("fingerPrintFilesCount", 0)}
-    if not verdict.get("clean"):
-        detail = verdict.get("unreadable") or (
-            f"{scan_ev['infected_files']} infected, "
-            f"{scan_ev['fingerprint_files']} file-anomaly")
+                    "recovery point is UNATTESTED — nothing has verified it is safe "
+                    "to restore from", {"vm_name": vm_name, "attested_by": None},
+                    error=False)
+    scan_ev = {"attested_by": attestation.get("source"),
+               "attested_clean": attestation.get("clean"),
+               "detail": attestation.get("detail", "")}
+    if not attestation.get("clean"):
         return stop(State.RECOVERABLE, "Scan",
-                    f"threat detected in the recovery point — {detail}",
+                    f"recovery point failed {attestation.get('source')} — "
+                    f"{attestation.get('detail', 'not clean')}",
                     scan_ev, error=False)
-    cleared("Scan", "no threat recorded against the recovery point", scan_ev)
+    cleared("Scan", f"attested clean by {attestation.get('source')}", scan_ev)
 
     # ── Validate ── has a real restore PROVEN recovery for this VM? ───────────
     if reads.proof_error:

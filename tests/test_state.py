@@ -32,14 +32,13 @@ def _proof(status="Completed"):
     return {"jobId": 7540314, "status": status}
 
 
-def _scan(*, clean=True, infected=0, fingerprint=0, **extra):
-    """A parsed threat verdict, the shape reads.anomaly_verdict returns."""
-    return {"clean": clean, "infectedFilesCount": infected,
-            "fingerPrintFilesCount": fingerprint, **extra}
+def _scan(*, clean=True, source="threatscan", detail="", **extra):
+    """An attestation — the shape reads.threat_attestation returns."""
+    return {"source": source, "clean": clean, "detail": detail, **extra}
 
 
 def _full_reads(**overrides) -> Reads:
-    base = dict(vm_name=VM, vmgroup=_group(), vm=_vm(), anomaly=_scan(), proof=_proof())
+    base = dict(vm_name=VM, vmgroup=_group(), vm=_vm(), attestation=_scan(), proof=_proof())
     base.update(overrides)
     return Reads(**base)
 
@@ -148,54 +147,58 @@ def test_no_successful_backup_stays_monitored():
 
 
 # --------------------------------------------------------------------------- #
-# Scan — is the point we'd restore from carrying a known threat?
+# Scan — has ANYONE attested the point we'd restore from?
 #
-# This is the rung the workshop turns on: a workload can be perfectly recoverable
-# and still be untrustworthy, because the compromise is INSIDE the backup. A dirty
-# verdict must never reach VALIDATED, however green everything below it looks.
+# The rung the workshop turns on, and the rung that taught us the hardest lesson.
+# It used to clear whenever no anomaly was recorded — which sounds reasonable and
+# is wrong, because a scan that never ran records no anomaly either. Live proof
+# on 2026-08-01: every scan in the tenant had analysed zero files, so every
+# "clean" was hollow. An unattested recovery point is now a BLOCK.
 # --------------------------------------------------------------------------- #
-def test_clean_scan_clears_the_rung():
-    ladder = classify(_full_reads())
-    scan = next(r for r in ladder.rungs if r.stage == "Scan")
-    assert scan.passed is True
-    assert scan.evidence["threat_clean"] is True
-
-
-def test_infected_recovery_point_stays_recoverable():
-    ladder = classify(_full_reads(anomaly=_scan(clean=False, infected=3)))
+def test_an_unattested_point_blocks_the_rung():
+    # THE regression guard. Nobody checked, so nobody may promote.
+    ladder = classify(_full_reads(attestation=None))
     assert ladder.state is State.RECOVERABLE
     assert ladder.blocked_stage == "Scan"
     assert ladder.blocked_by_error is False
-    assert "threat detected" in ladder.reason
+    assert "UNATTESTED" in ladder.reason
+
+
+def test_a_positive_attestation_clears_the_rung():
+    ladder = classify(_full_reads(attestation=_scan(clean=True, detail="746 files")))
+    scan = next(r for r in ladder.rungs if r.stage == "Scan")
+    assert scan.passed is True
+    assert scan.evidence["attested_clean"] is True
+    assert scan.evidence["attested_by"] == "threatscan"
+
+
+def test_the_evidence_names_who_attested():
+    # An attestation is only worth anything if you can say who made it.
+    ladder = classify(_full_reads(attestation=_scan(source="restore-verify", clean=True)))
+    scan = next(r for r in ladder.rungs if r.stage == "Scan")
+    assert scan.evidence["attested_by"] == "restore-verify"
+
+
+def test_a_failed_attestation_stays_recoverable():
+    ladder = classify(_full_reads(attestation=_scan(clean=False, detail="3 infected")))
+    assert ladder.state is State.RECOVERABLE
+    assert ladder.blocked_stage == "Scan"
+    assert ladder.blocked_by_error is False
     assert "3 infected" in ladder.reason
 
 
-def test_file_anomaly_alone_blocks_the_rung():
-    # Mass encryption fires the file-anomaly signal with zero malware matches.
-    ladder = classify(_full_reads(anomaly=_scan(clean=False, fingerprint=42)))
-    assert ladder.state is State.RECOVERABLE
-    assert ladder.blocked_stage == "Scan"
-
-
-def test_a_dirty_scan_beats_a_proven_restore():
-    # The whole point: proof of recovery does NOT redeem a compromised source.
-    # Validate must never be reached, let alone cleared.
-    ladder = classify(_full_reads(anomaly=_scan(clean=False, infected=1),
+def test_a_dirty_point_beats_a_proven_restore():
+    # Proof of recovery does NOT redeem a compromised source. Validate must never
+    # be reached, let alone cleared.
+    ladder = classify(_full_reads(attestation=_scan(clean=False, detail="1 infected"),
                                   proof=_proof(status="Completed")))
     assert ladder.promotable is False
     validate = next(r for r in ladder.rungs if r.stage == "Validate")
     assert validate.passed is None
 
 
-def test_unreadable_verdict_blocks_rather_than_passes():
-    # Fail closed: a verdict we can't parse is not a clean verdict.
-    ladder = classify(_full_reads(anomaly=_scan(clean=False, unreadable="unknown shape")))
-    assert ladder.state is State.RECOVERABLE
-    assert "unknown shape" in ladder.reason
-
-
-def test_scan_read_error_stays_recoverable_as_error():
-    ladder = classify(_full_reads(anomaly=None, anomaly_error="HTTP 503"))
+def test_attestation_read_error_stays_recoverable_as_error():
+    ladder = classify(_full_reads(attestation=None, attestation_error="HTTP 503"))
     assert ladder.state is State.RECOVERABLE
     assert ladder.blocked_stage == "Scan"
     assert ladder.blocked_by_error is True
@@ -241,7 +244,7 @@ def test_only_validated_is_promotable():
     for reads, expected in [
         (_full_reads(), True),
         (_full_reads(proof=None), False),
-        (_full_reads(anomaly=_scan(clean=False, infected=1)), False),
+        (_full_reads(attestation=_scan(clean=False, infected=1)), False),
         (_full_reads(vmgroup=_group(in_group=False)), False),
     ]:
         assert classify(reads).promotable is expected

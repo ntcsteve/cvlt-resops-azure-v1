@@ -36,10 +36,10 @@
     "lastSuccessfulBackupTime": 1785471586
   },
   "vm_error": "",
-  "anomaly": {
+  "attestation": {
+    "source": "threatscan",
     "clean": false,
-    "infectedFilesCount": 2,
-    "fingerPrintFilesCount": 14
+    "detail": "2 infected, 14 file-anomaly"
   },
   "proof": {
     "jobId": 884812,

@@ -11,7 +11,7 @@ import time, and that file is gitignored — so a test that imported it would pa
 on the author's machine and fail on a fresh clone. The parsers live in the read
 layer precisely so this suite runs anywhere.
 """
-from resops.reads import anomaly_verdict, default_copy_id, storage_pool_id
+from resops.reads import default_copy_id, storage_pool_id, threat_attestation
 
 
 # --------------------------------------------------------------------------- #
@@ -56,48 +56,52 @@ def test_default_copy_id_is_none_when_no_copy_is_default():
 
 
 # --------------------------------------------------------------------------- #
-# anomaly_verdict — absence means clean; the API reports exceptions, not all-clears.
+# threat_attestation — the function that exists because we got this wrong.
+#
+# Client/Anomaly reports EXCEPTIONS. For a month we read "not in the list" as
+# "scanned and clean". On 2026-08-01 a live run showed every scan in the tenant
+# had analysed ZERO files, so every clean verdict was hollow. This lane can now
+# only ever report a negative it actually saw; a positive must come from an
+# attester that knows a check really ran.
 # --------------------------------------------------------------------------- #
-def test_verdict_is_clean_when_the_client_has_no_anomaly_record():
-    verdict = anomaly_verdict({"anomalyClients": []}, 12345)
-    assert verdict == {"clean": True, "infectedFilesCount": 0, "fingerPrintFilesCount": 0}
+def test_absence_attests_NOTHING_not_cleanliness():
+    # The whole point. No record means nobody checked, not "it's fine".
+    assert threat_attestation({"anomalyClients": []}, 12345) is None
 
 
-def test_verdict_is_clean_when_counts_are_zero():
+def test_zero_counts_attest_nothing():
+    # Listed with zeroes is still not proof a scan examined anything.
     body = {"anomalyClients": [{"client": {"clientId": 12345},
                                 "infectedFilesCount": 0, "fingerPrintFilesCount": 0}]}
-    assert anomaly_verdict(body, 12345)["clean"] is True
+    assert threat_attestation(body, 12345) is None
 
 
-def test_infected_files_make_it_dirty():
+def test_infected_files_are_a_real_negative():
     body = {"anomalyClients": [{"client": {"clientId": 12345},
                                 "infectedFilesCount": 3, "fingerPrintFilesCount": 0}]}
-    verdict = anomaly_verdict(body, 12345)
-    assert verdict["clean"] is False
-    assert verdict["infectedFilesCount"] == 3
+    att = threat_attestation(body, 12345)
+    assert att["clean"] is False
+    assert att["source"] == "threatscan"
+    assert "3 infected" in att["detail"]
 
 
-def test_fingerprint_anomalies_alone_make_it_dirty():
-    # File-anomaly detection (mass encryption) fires without any malware match —
-    # a ransomware event can be all fingerprint and zero infected.
+def test_fingerprint_anomalies_alone_are_a_real_negative():
+    # Mass encryption fires the file-anomaly signal with zero malware matches.
     body = {"anomalyClients": [{"client": {"clientId": 12345},
                                 "infectedFilesCount": 0, "fingerPrintFilesCount": 42}]}
-    assert anomaly_verdict(body, 12345)["clean"] is False
+    assert threat_attestation(body, 12345)["clean"] is False
 
 
-def test_an_unrecognised_anomaly_shape_fails_closed():
-    # The dirty payload has never been observed — these field names were read off a
-    # tenant that had never recorded an anomaly. If the real one differs, the count
-    # lookup would find nothing and a naive parser would report CLEAN for a client
-    # the API just flagged. A verdict we cannot read must never pass.
+def test_an_unrecognised_shape_fails_closed():
+    # Flagged by the API in a shape we can't parse. Not clean, and say why.
     body = {"anomalyClients": [{"client": {"clientId": 12345},
                                 "someFutureFieldName": 7}]}
-    verdict = anomaly_verdict(body, 12345)
-    assert verdict["clean"] is False
-    assert "unreadable" in verdict
+    att = threat_attestation(body, 12345)
+    assert att["clean"] is False
+    assert "don't" in att["detail"] or "recognise" in att["detail"]
 
 
 def test_another_clients_anomalies_do_not_taint_ours():
     body = {"anomalyClients": [{"client": {"clientId": 99999},
                                 "infectedFilesCount": 500, "fingerPrintFilesCount": 500}]}
-    assert anomaly_verdict(body, 12345)["clean"] is True
+    assert threat_attestation(body, 12345) is None
