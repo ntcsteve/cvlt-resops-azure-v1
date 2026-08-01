@@ -72,15 +72,16 @@ done
 # --- 2. publish real metrics ------------------------------------------------ #
 step "2. publish a real run"
 ( cd "$REPO" && python3 -m resops gate config/estate.yaml >/dev/null 2>&1 )
-METRICS=$( cd "$REPO" && python3 -m resops metrics config/estate.yaml 2>/dev/null )
-if [ -z "$METRICS" ]; then
-  bad "resops metrics produced nothing — run \`resops gate config/estate.yaml\` first"
-else
-  code=$(printf '%s' "$METRICS" | curl -s -o /dev/null -w '%{http_code}' \
-         --data-binary @- "$PUSH/metrics/job/resops")
-  [ "$code" = "200" ] && ok "pushgateway accepted the payload (HTTP $code)" \
-                      || bad "pushgateway rejected the payload (HTTP $code)"
-fi
+
+# Pipe STRAIGHT through, exactly as `terraform output publish_command` prints it.
+# Do NOT capture into a variable first: command substitution strips trailing
+# newlines, the exposition format requires one, and pushgateway answers 400. That
+# bug was in this script until the test caught it — a test that reshapes the
+# payload is testing itself, not the thing it claims to.
+code=$( cd "$REPO" && python3 -m resops metrics config/estate.yaml 2>/dev/null \
+        | curl -s -o /dev/null -w '%{http_code}' --data-binary @- "$PUSH/metrics/job/resops" )
+[ "$code" = "200" ] && ok "pushgateway accepted the payload (HTTP $code)" \
+                    || bad "pushgateway rejected the payload (HTTP $code)"
 
 # --- 3. prometheus has it --------------------------------------------------- #
 step "3. prometheus"
