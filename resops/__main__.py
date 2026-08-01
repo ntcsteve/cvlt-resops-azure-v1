@@ -23,6 +23,10 @@ Config declares one `workload:` or a `workloads:` list (a resilience programme
 across critical functions). Each workload keeps its own evidence subdir + hash
 chain; a top-level summary.json rolls them up. The gate HOLDs if ANY workload
 isn't VALIDATED — criticality is recorded as evidence, never a way to ship past it.
+
+The one exception is `enforce_from:` — a declared, dated enforcement tolerance
+(see gate.tolerated). It never changes a workload's own verdict, only whether
+that verdict blocks the aggregate exit code, and it expires by itself.
 """
 from __future__ import annotations
 
@@ -44,7 +48,7 @@ from .config import load_tiers, platform_url
 from .evidence import (
     DEVOPS_LENS, Bundle, append_history, history_entry, load_history, verify_history,
 )
-from .gate import gate
+from .gate import gate, tolerated
 from .reads import (_age_days, _attestation_age_days, _rpo_hours, _rto_minutes,
                     list_vmgroups)
 from .render import (
@@ -140,6 +144,15 @@ def main(argv: list[str] | None = None) -> int:
             return die(f"workload '{w['name']}': tier '{t}' not in config/tiers.yaml"
                        f" — defined: {', '.join(known_tiers) or 'none'}")
 
+    # Resolve each declared enforcement tolerance into a plain bool, here at the
+    # I/O edge where the clock lives, so everything downstream (gate, aggregate,
+    # metrics, report) reads a resolved value and stays clock-free.
+    today = _dt.date.today().isoformat()
+    for w in workloads:
+        err = _resolve_tolerance(w, today)
+        if err:
+            return die(err)
+
     # `verify` and `metrics` both read what a previous run wrote — no tenant needed.
     if subcommand == "verify":
         return _verify(base_dir, workloads)
@@ -231,6 +244,24 @@ def _resolve_policy(workload: dict, config: dict) -> dict:
                     and "attestation_max_age_days" in tier):
                 base["attestation_max_age_days"] = tier["attestation_max_age_days"]
     return base
+
+
+def _resolve_tolerance(workload: dict, today: str) -> str:
+    """Resolve `enforce_from:` into a plain `tolerated` bool on the workload.
+
+    Returns an error message to die() on, or "" when fine. YAML parses an
+    unquoted ISO date into a date object and a malformed one into a string, so
+    str() normalises both and gate.tolerated() rejects whatever isn't a date."""
+    declared = workload.get("enforce_from")
+    if declared in (None, ""):
+        workload["tolerated"] = False
+        return ""
+    try:
+        workload["tolerated"] = tolerated(str(declared), today)
+    except (ValueError, TypeError):
+        return (f"workload '{workload['name']}': enforce_from '{declared}' is not a date"
+                f" — expected YYYY-MM-DD, e.g. enforce_from: 2026-10-01")
+    return ""
 
 
 def _slug(name: str) -> str:
@@ -347,9 +378,19 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
                        rpo_hours=metrics["rpo_hours"],
                        rto_minutes=metrics["rto_minutes"], regressed=tr.regressed)
 
+    # A declared tolerance rides along in the evidence, never in the verdict.
+    # An auditor must be able to see both what the gate decided and what the
+    # programme chose not to enforce yet.
+    gate_dict = verdict.to_dict() if verdict else None
+    if gate_dict is not None and workload.get("enforce_from"):
+        gate_dict["tolerance"] = {
+            "enforce_from": str(workload["enforce_from"]),
+            "active": workload.get("tolerated", False),
+            "reason": workload.get("tolerance_reason", ""),
+        }
+
     bundle = Bundle(target=target, run_at=run_at, results=results,
-                    gate=verdict.to_dict() if verdict else None,
-                    controls=controls, findings=findings)
+                    gate=gate_dict, controls=controls, findings=findings)
     paths = (w_dir / "bundle.json", w_dir / "history.jsonl", w_dir / "report.md")
 
     for line in render_headline(workload["name"], workload["criticality"], ladder, tr,
@@ -364,7 +405,9 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
     write_junit(bundle.to_dict(), workload["name"], paths[0].parent / "junit.xml")
 
     if gate_mode:
-        _print_verdict(verdict, paths[0])
+        _print_verdict(verdict, paths[0],
+                       str(workload.get("enforce_from") or ""),
+                       workload.get("tolerated", False))
     elif not multi:
         print(f"  Evidence: {_display(paths[0])} · Report: {_display(paths[2])}"
               f"{_open_count(findings)}")
@@ -378,6 +421,8 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
         # so anything a dashboard needs has to survive into it.
         "blocked_stage": ladder.blocked_stage,
         "attestation_age_days": metrics["attestation_age_days"],
+        "enforce_from": str(workload["enforce_from"]) if workload.get("enforce_from") else None,
+        "tolerated": workload.get("tolerated", False),
         "evidence": _display(paths[0]),
         "counts": bundle.summary_counts(),
         "open_findings": sum(f.status == "OPEN" for f in findings),
@@ -395,7 +440,8 @@ def _finalize(bundle, stage_results, run_at, target, state, paths) -> None:
     write_report(bundle_dict, report_path)
 
 
-def _print_verdict(verdict, bundle_path) -> None:
+def _print_verdict(verdict, bundle_path, enforce_from: str = "",
+                   is_tolerated: bool = False) -> None:
     print("  " + "─" * 41)
     code = {"PROMOTE": GREEN, "OVERRIDE": YELLOW, "HOLD": RED}[verdict.decision]
     headline = verdict.reasons[0] if verdict.reasons else "recoverability proven"
@@ -405,6 +451,17 @@ def _print_verdict(verdict, bundle_path) -> None:
         print(color(f"  ↳ {extra}", DIM))
     if verdict.acknowledged_risk:
         print(color(f"  ↳ {_display(bundle_path)}: acknowledged_risk logged", DIM))
+    # The verdict above is the verdict. This line only says whether it currently
+    # blocks the pipeline — printed loudly so a tolerance can never be quiet.
+    if enforce_from and verdict.decision == "HOLD":
+        if is_tolerated:
+            print(color(f"  ↳ TOLERATED until {enforce_from} — still a HOLD, excluded "
+                        f"from the aggregate until that date", YELLOW))
+        else:
+            print(color(f"  ↳ tolerance EXPIRED {enforce_from} — enforced from now on", RED))
+    elif enforce_from and is_tolerated:
+        print(color(f"  ↳ tolerance until {enforce_from} is no longer needed — "
+                    f"this workload passes; remove enforce_from", DIM))
 
 
 # --------------------------------------------------------------------------- #
@@ -413,7 +470,12 @@ def _print_verdict(verdict, bundle_path) -> None:
 def _aggregate(summaries, base_dir, run_at, target, gate_mode, flat) -> int:
     totals = {k: sum(s["counts"][k] for s in summaries) for k in ("pass", "gap", "fail", "skip")}
     opens = sum(s["open_findings"] for s in summaries)
-    holds = [s["name"] for s in summaries if s["gate"] == "HOLD"]
+    # THE RATCHET, and the only place it acts. A tolerated workload still holds —
+    # it just doesn't block the pipeline yet. Both lists are published so the gap
+    # is counted, never dropped.
+    all_holds = [s for s in summaries if s["gate"] == "HOLD"]
+    holds = [s["name"] for s in all_holds if not s.get("tolerated")]
+    tolerated_holds = [s["name"] for s in all_holds if s.get("tolerated")]
     overridden = [s["name"] for s in summaries if s["gate"] == "OVERRIDE"]
     if gate_mode:
         exit_code, decision = (1, "HOLD") if holds else (0, "PROMOTE")
@@ -424,18 +486,27 @@ def _aggregate(summaries, base_dir, run_at, target, gate_mode, flat) -> int:
         "run_at": run_at, "target": target, "mode": "gate" if gate_mode else "loop",
         "workloads": summaries,
         "aggregate": {"decision": decision, "totals": totals, "open_findings": opens,
-                      "overridden": overridden, "exit": exit_code},
+                      "overridden": overridden, "tolerated": tolerated_holds,
+                      "exit": exit_code},
     }
     base_dir.mkdir(parents=True, exist_ok=True)
     (base_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
     if not flat:   # only roll up when it's a multi-workload programme
         n = len(summaries)
+        tol = f" · {len(tolerated_holds)} TOLERATED ({', '.join(tolerated_holds)})" \
+            if tolerated_holds else ""
         if gate_mode and decision == "HOLD":
-            print(color(f"AGGREGATE  HOLD — {', '.join(holds)} · exit {exit_code}", RED))
+            print(color(f"AGGREGATE  HOLD — {', '.join(holds)}{tol} · exit {exit_code}", RED))
         elif gate_mode:
             extra = f" ({len(overridden)} overridden)" if overridden else ""
-            print(color(f"AGGREGATE  PROMOTE — {n} workload(s) clear{extra} · exit 0", GREEN))
+            if tolerated_holds:
+                # Not green. Nothing blocks the pipeline, but the estate is not clear
+                # and the headline must not imply that it is.
+                print(color(f"AGGREGATE  PROMOTE — {n - len(tolerated_holds)}/{n} enforced "
+                            f"and clear{extra}{tol} · exit 0", YELLOW))
+            else:
+                print(color(f"AGGREGATE  PROMOTE — {n} workload(s) clear{extra} · exit 0", GREEN))
         else:
             states = ", ".join(f"{s['name']}={s['state']}" for s in summaries)
             print(f"AGGREGATE  {n} workload(s) · {states} · {opens} open · exit {exit_code}")

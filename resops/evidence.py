@@ -13,7 +13,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-SCHEMA_VERSION = "3"  # v2: gate section; v3: framework crosswalk in `compliance`
+SCHEMA_VERSION = "4"  # v2: gate section; v3: framework crosswalk in `compliance`;
+                      # v4: optional gate.tolerance (the declared enforcement ratchet)
 
 # Each ResOps function spoken in the dialect a cloud-native engineer already
 # knows. Surfaced at runtime and in the bundle so the tool teaches as it runs.

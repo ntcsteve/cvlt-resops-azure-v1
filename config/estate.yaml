@@ -46,6 +46,16 @@ workloads:
     owner: data
     criticality: important
     fixture: config/demo/backup-failed.json  # PROTECTED   — last backup failed
+    # THE RATCHET — uncomment to see it. This is the exercise, not the default:
+    # the estate ships fully enforced so a room meets the honest verdict first.
+    #
+    #   enforce_from: 2027-01-01
+    #   tolerance_reason: "backup policy rebuild in flight"
+    #
+    # reporting-db still HOLDs, on screen and in the evidence. Only the AGGREGATE
+    # stops counting it, and only until that date arrives on its own. That is the
+    # difference between switching a gate on across a real estate and deleting it
+    # by Friday. See gate.tolerated() for why it is a date and not a flag.
 
   - name: edge-cache
     tier: tier2

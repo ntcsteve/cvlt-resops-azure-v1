@@ -74,6 +74,16 @@ def render_markdown(bundle: dict) -> str:
         lines += ["", f"**Promotion gate — Continuous Service:** {gate['decision']} — {reasons}"]
         if gate.get("acknowledged_risk"):
             lines.append(f"**Acknowledged risk:** {gate['acknowledged_risk']}")
+        # An auditor has to see what the programme chose not to enforce yet, and
+        # that the verdict above was NOT softened to accommodate it.
+        tolerance = gate.get("tolerance")
+        if tolerance:
+            when = tolerance.get("enforce_from", "?")
+            state = (f"declared, active until {when}" if tolerance.get("active")
+                     else f"EXPIRED {when} — now enforced")
+            why = f" Reason: {tolerance['reason']}." if tolerance.get("reason") else ""
+            lines.append(f"**Enforcement tolerance:** {state}.{why} The verdict above is "
+                         f"unchanged; a tolerance only defers whether it blocks promotion.")
 
     compliance = bundle.get("compliance") or {}
     frameworks = compliance.get("frameworks")

@@ -99,6 +99,18 @@ def render_metrics(summary: dict, bundles: list) -> str:
 
     lines += [
         "",
+        f"# HELP {PREFIX}_tolerated 1 if this workload has a live enforcement "
+        f"tolerance (declared, dated, excluded from the aggregate until it expires).",
+        f"# TYPE {PREFIX}_tolerated gauge",
+    ]
+    # Emitted for every workload, 0 included: this is the number that has to go
+    # DOWN, and a series that only appears when someone opts out cannot be trended.
+    for w in workloads:
+        lines.append(_metric("tolerated", {"workload": w.get("name")},
+                             1 if w.get("tolerated") else 0))
+
+    lines += [
+        "",
         f"# HELP {PREFIX}_attestation_age_days Days since anything verified the "
         f"recovery point. Absent means nothing ever has.",
         f"# TYPE {PREFIX}_attestation_age_days gauge",
@@ -119,6 +131,9 @@ def render_metrics(summary: dict, bundles: list) -> str:
             "workload": w.get("name"), "state": w.get("state"),
             "blocked_stage": w.get("blocked_stage"), "gate": w.get("gate"),
             "env": w.get("env"), "owner": w.get("owner"),
+            # Absent unless declared — _labels() drops empties, so an estate with
+            # no tolerances carries no extra label and no extra cardinality.
+            "enforce_from": w.get("enforce_from"),
         }, 1))
 
     tally = control_coverage(bundles)

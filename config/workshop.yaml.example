@@ -22,6 +22,17 @@ workload:
   location: eastus2             # optional
   # vm_group_id: 12345          # optional — only needed to gate a group with a non-standard name
 
+  # NOT YET ENFORCED — the adoption ratchet. Declare a DATE and this workload's
+  # HOLD stops blocking the aggregate exit code until that date arrives. It does
+  # NOT change the workload's own verdict: a HOLD still prints as a HOLD, still
+  # lands in the bundle, still shows in the report, and is counted in
+  # `resops_tolerated`. It is a date and not a flag on purpose — a flag is
+  # permanent the moment someone forgets it, a date expires by itself.
+  # Use it to switch the gate on across a real estate without everything going
+  # red on day one. Do not use it to ship past a gap you have no plan to close.
+  # enforce_from: 2026-10-01
+  # tolerance_reason: "backup policy rebuild in flight"
+
   # WHO ATTESTS this workload's recovery points are safe to restore from.
   # The restore drill runs /opt/app/verify.sh INSIDE the restored copy and writes
   # the result here; the Scan rung reads it. Opt-in by design: with no attester a
