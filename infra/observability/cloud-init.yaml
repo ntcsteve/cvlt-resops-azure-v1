@@ -1,0 +1,93 @@
+#cloud-config
+# Three containers, one compose file, no volumes.
+#
+#   pushgateway :9091   `resops metrics` POSTs here. A batch job publishing a
+#                       result is exactly what pushgateway is for — this is not
+#                       the "don't use pushgateway for scraping" anti-pattern.
+#   prometheus  :9090   scrapes localhost:9091 only. No service discovery, no
+#                       Azure credentials, no network path to any workload.
+#   grafana     :3000   the wall. Datasource provisioned from a file, not clicked.
+#
+# STATELESS ON PURPOSE. No volumes: destroy the VM and nothing is lost, because
+# the metrics are derived from evidence that lives in the repo. Rebuild is one
+# apply, and the numbers come back the next time anything runs `resops metrics`.
+
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+
+write_files:
+  - path: /opt/obs/prometheus.yml
+    permissions: "0644"
+    content: |
+      global:
+        scrape_interval: 30s
+      scrape_configs:
+        # The ONLY target. Everything reaches us by push; we never reach out.
+        - job_name: pushgateway
+          honor_labels: true      # keep the workload/framework labels as sent
+          static_configs:
+            - targets: ["pushgateway:9091"]
+
+  - path: /opt/obs/grafana-datasource.yml
+    permissions: "0644"
+    content: |
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+
+  - path: /opt/obs/grafana-dashboards.yml
+    permissions: "0644"
+    content: |
+      apiVersion: 1
+      providers:
+        - name: resops
+          folder: ResOps
+          type: file
+          allowUiUpdates: false     # dashboards are code, not clicks
+          options:
+            path: /var/lib/grafana/dashboards
+
+  - path: /opt/obs/docker-compose.yml
+    permissions: "0644"
+    content: |
+      services:
+        pushgateway:
+          image: prom/pushgateway:v1.9.0
+          restart: always
+          ports: ["9091:9091"]
+
+        prometheus:
+          image: prom/prometheus:v2.53.0
+          restart: always
+          volumes:
+            - /opt/obs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+          depends_on: [pushgateway]
+
+        grafana:
+          image: grafana/grafana:11.1.0
+          restart: always
+          ports: ["3000:3000"]
+          environment:
+            GF_SECURITY_ADMIN_USER: admin
+            GF_SECURITY_ADMIN_PASSWORD: "${grafana_password}"
+            GF_USERS_ALLOW_SIGN_UP: "false"
+            GF_AUTH_ANONYMOUS_ENABLED: "false"
+          volumes:
+            - /opt/obs/grafana-datasource.yml:/etc/grafana/provisioning/datasources/ds.yml:ro
+            - /opt/obs/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/db.yml:ro
+            - /opt/obs/dashboards:/var/lib/grafana/dashboards:ro
+          depends_on: [prometheus]
+
+runcmd:
+  - mkdir -p /opt/obs/dashboards
+  - systemctl enable --now docker
+  - docker compose -f /opt/obs/docker-compose.yml up -d
+  # A visible marker so `az vm run-command` can confirm the stack is up without
+  # anyone opening a browser first.
+  - sh -c 'sleep 20; docker compose -f /opt/obs/docker-compose.yml ps > /opt/obs/STATUS'

@@ -38,3 +38,7 @@ LOG.md
 *.egg-info/
 build/
 dist/
+
+# observability stack state (cattle — deploy before a workshop, destroy after)
+infra/observability/.terraform/
+infra/observability/*.tfstate*
