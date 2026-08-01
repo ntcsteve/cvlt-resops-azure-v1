@@ -32,6 +32,7 @@ NOTES.md
 
 # session handover/log — accumulate live tenant/subscription ids each session
 HANDOVER.md
+HANDOVER.prev.md   # rotated by /wrap-up — same live ids, same secrecy
 LOG.md
 
 # python packaging build artifacts
