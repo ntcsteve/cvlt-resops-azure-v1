@@ -4,6 +4,7 @@ The ResOps runner — three modes over the same read-only readiness ladder:
   python -m resops [config.yaml]          climb the ladder; exit = number of read FAILs
   python -m resops gate [config.yaml]     the promotion gate; exit 0 PROMOTE / 1 HOLD
   python -m resops verify [config.yaml]   audit the hash-chained trail; exit 0 intact
+  python -m resops metrics [config.yaml]  publish the last run as Prometheus text
 
 Each workload is placed on ONE rung of the readiness ladder —
 UNDISCOVERED → DISCOVERED → PROTECTED → MONITORED → RECOVERABLE → VALIDATED —
@@ -32,6 +33,7 @@ import yaml
 from .assurance.controls import load_controls
 from .assurance.findings import track_findings
 from .assurance.junit import write_junit
+from .assurance.metrics import render_metrics
 from .assurance.report import write_report
 from .client import AuthError, Client, load_credentials
 from .config import load_tiers, platform_url
@@ -64,7 +66,7 @@ def reads_from_fixture(rel_path: str) -> Reads:
 CONFIG_ERROR = 2  # exit code for bad config/auth, distinct from read FAILs / HOLD
 
 # Subcommands that take over from the default ladder climb.
-SUBCOMMANDS = ("gate", "verify", "list")
+SUBCOMMANDS = ("gate", "verify", "list", "metrics")
 
 USAGE = """resops — read-only resilience readiness ladder + promotion gate
 
@@ -74,6 +76,7 @@ Usage:
                                                promotion gate (exit 0 PROMOTE / 1 HOLD)
   python -m resops list [config]               list VM groups + ids (confirm your workload's group)
   python -m resops verify [config]             audit the hash-chained trail (exit 0 intact)
+  python -m resops metrics [config]            Prometheus exposition of the LAST run (stdout)
   python -m resops help                        show this message
 
 config defaults to config/workshop.yaml. Nothing here mutates your environment."""
@@ -133,9 +136,11 @@ def main(argv: list[str] | None = None) -> int:
             return die(f"workload '{w['name']}': tier '{t}' not in config/tiers.yaml"
                        f" — defined: {', '.join(known_tiers) or 'none'}")
 
-    # `verify` audits the hash-chained trail(s) — no tenant needed.
+    # `verify` and `metrics` both read what a previous run wrote — no tenant needed.
     if subcommand == "verify":
         return _verify(base_dir, workloads)
+    if subcommand == "metrics":
+        return _metrics(base_dir, workloads)
 
     # Offline demo: when every workload reads from a committed `fixture:`, no
     # tenant, token, or network is needed — the no-cloud "see it first" path. The
@@ -247,6 +252,29 @@ def _workloads(config: dict) -> tuple[list, bool]:
     return ([_normalize(single)] if single else []), True
 
 
+def _metrics(base_dir: Path, workloads: list) -> int:
+    """Print the LAST run's evidence as Prometheus text. No tenant, no network.
+
+    Deliberately does not re-judge: the gate already did that and wrote the
+    answer down. Judge once, publish many — so a scheduled `resops gate` in CI
+    can pipe this straight to a pushgateway without paying for a second pass, and
+    so a dashboard can never disagree with the evidence bundle beside it."""
+    summary_path = base_dir / "summary.json"
+    if not summary_path.exists():
+        return die(f"no run to publish: {_display(summary_path)} not found"
+                   f" — run `resops gate` first")
+    summary = json.loads(summary_path.read_text())
+
+    bundles = []
+    for w in workloads:
+        bundle_path = base_dir / _slug(w["name"]) / "bundle.json"
+        if bundle_path.exists():
+            bundles.append(json.loads(bundle_path.read_text()))
+
+    print(render_metrics(summary, bundles), end="")
+    return 0
+
+
 def _verify(base_dir: Path, workloads: list) -> int:
     paths = [base_dir / _slug(w["name"]) / "history.jsonl" for w in workloads]
     broken = []
@@ -341,7 +369,12 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
     return {
         "name": workload["name"], "criticality": workload["criticality"],
         "env": workload["env"], "owner": workload["owner"],
-        "state": ladder.state.name, "evidence": _display(paths[0]),
+        "state": ladder.state.name,
+        # Both already computed above; the summary is what the metrics lane reads,
+        # so anything a dashboard needs has to survive into it.
+        "blocked_stage": ladder.blocked_stage,
+        "attestation_age_days": metrics["attestation_age_days"],
+        "evidence": _display(paths[0]),
         "counts": bundle.summary_counts(),
         "open_findings": sum(f.status == "OPEN" for f in findings),
         "gate": verdict.decision if verdict else None,

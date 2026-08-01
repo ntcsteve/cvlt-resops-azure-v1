@@ -39,7 +39,8 @@
   "attestation": {
     "source": "restore-verify",
     "clean": false,
-    "detail": "14 encrypted (.locked) files present"
+    "detail": "14 encrypted (.locked) files present",
+    "at": 1785563583
   },
   "proof": {
     "jobId": 884812,

@@ -74,5 +74,6 @@ gate:
   # The live config/workshop.yaml keeps the real 7-day bar — this override is the
   # demo's alone.
   recovery_proof_max_age_days: 36500
+  attestation_max_age_days: 36500
   rpo_target_hours: 999999
   rto_target_minutes: 999999

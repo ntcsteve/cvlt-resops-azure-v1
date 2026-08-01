@@ -74,6 +74,35 @@ python3 -m resops gate config/estate.yaml
 python3 -m resops verify config/estate.yaml     # TAMPERED - breaks at entry 0
 ```
 
+### Put the estate on a wall
+
+```bash
+python3 -m resops gate    config/estate.yaml    # judge once…
+python3 -m resops metrics config/estate.yaml    # …publish many
+```
+```
+ resops_rung{workload="payments-api",criticality="critical"} 6
+ resops_promotable{workload="payments-api"} 1
+ resops_attestation_age_days{workload="identity-svc"} 47.0
+ resops_workload_info{workload="checkout-api",state="RECOVERABLE",blocked_stage="Scan"} 1
+ resops_control_coverage{framework="dora",control="Art. 11/12 (periodic testing…)",outcome="PASS"} 1
+```
+
+Reads `evidence/` from the last run - **no tenant, no network, no agent on any workload.** Pipe it at a Prometheus pushgateway from the same CI job that runs the gate, and a platform team can finally answer the question nobody can answer today: *how much of my estate is provably recoverable?*
+
+The compliance rollup is the part auditors ask for and nobody has:
+
+```
+ DORA Art. 8   asset identification            5/6  ████████▁▁
+ DORA Art. 12  backup policies                 5/6  ████████▁▁
+ DORA Art. 10  detection of anomalies          4/6  ██████▁▁▁▁
+ DORA Art. 12  restoration & recovery methods  3/6  █████▁▁▁▁▁
+ DORA Art. 12  integrity before recovery       2/6  ███▁▁▁▁▁▁▁
+ DORA Art. 11/12  periodic recovery testing    1/6  ██▁▁▁▁▁▁▁▁  ◀
+```
+
+Everyone can identify assets. Almost nobody can *prove* they tested recovery. **This is the only compliance view that gets less green the closer you look** - because it measures whether recovery was proven, not whether a policy exists. Cardinality is bounded by controls, not workloads, so it stays ~60 series at 6 workloads or 600. *(The mapping is indicative - it supports a resilience programme, not a formal attestation.)*
+
 ## The idea
 
 A workload sits on **one level** of a readiness ladder; the level *is* the verdict. You climb by clearing each stage, and the gate ships only what's proven recoverable.

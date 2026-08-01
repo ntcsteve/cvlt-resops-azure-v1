@@ -39,7 +39,8 @@
   "attestation": {
     "source": "restore-verify",
     "clean": true,
-    "detail": "code intact, baseline present, 3 customer records"
+    "detail": "code intact, baseline present, 3 customer records",
+    "at": 1785390783
   },
   "proof": {
     "jobId": 884730,
