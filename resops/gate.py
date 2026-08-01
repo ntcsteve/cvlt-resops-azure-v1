@@ -51,6 +51,7 @@ class GateVerdict:
 def gate(ladder: Ladder, policy: dict | None = None, *,
          allow_stale: bool = False, run_at: str = "",
          proof_age_days: float | None = None,
+         attestation_age_days: float | None = None,
          rpo_hours: float | None = None,
          rto_minutes: float | None = None,
          regressed: bool = False) -> GateVerdict:
@@ -71,6 +72,16 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
 
     # At VALIDATED: apply promotion-grade policy on top of proven recoverability.
     hard: list[str] = []
+    # A stale attestation is a HARD block, not an overridable one. "We verified
+    # this a year ago" says nothing about the point you would restore TODAY —
+    # unlike aged recovery proof, which at least proved the mechanism works. The
+    # bar is declared per tier (tiers.yaml attestation_max_age_days); undeclared
+    # means unenforced, and the age is recorded in evidence either way.
+    attest_max_age = policy.get("attestation_max_age_days")
+    if (attest_max_age is not None and attestation_age_days is not None
+            and attestation_age_days > attest_max_age):
+        hard.append(f"attestation stale ({attestation_age_days}d > {attest_max_age}d) "
+                    f"— nothing has verified this recovery point recently")
     if rpo_target is not None and rpo_hours is not None and rpo_hours > rpo_target:
         hard.append(f"rpo {rpo_hours}h > target {rpo_target}h")
     if rto_target is not None and rto_minutes is not None and rto_minutes > rto_target:

@@ -39,7 +39,8 @@ from .evidence import (
     DEVOPS_LENS, Bundle, append_history, history_entry, load_history, verify_history,
 )
 from .gate import gate
-from .reads import _age_days, _rpo_hours, _rto_minutes, list_vmgroups
+from .reads import (_age_days, _attestation_age_days, _rpo_hours, _rto_minutes,
+                    list_vmgroups)
 from .render import (
     DIM, GREEN, RED, YELLOW, color, ladder_to_results, render_detail, render_headline,
     render_vmgroups,
@@ -217,6 +218,9 @@ def _resolve_policy(workload: dict, config: dict) -> dict:
                 base["rpo_target_hours"] = tier["rpo_hours"]
             if "rto_target_minutes" not in base and "rto_minutes" in tier:
                 base["rto_target_minutes"] = tier["rto_minutes"]
+            if ("attestation_max_age_days" not in base
+                    and "attestation_max_age_days" in tier):
+                base["attestation_max_age_days"] = tier["attestation_max_age_days"]
     return base
 
 
@@ -295,6 +299,7 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
     # Numbers the clock-free classify() can't hold, measured here at the edge.
     metrics = {"rpo_hours": _rpo_hours(reads.vm),
                "proof_age_days": _age_days(reads.proof) if reads.proof else None,
+               "attestation_age_days": _attestation_age_days(reads.attestation),
                "rto_minutes": _rto_minutes(reads.proof) if reads.proof else None}
 
     results = ladder_to_results(ladder, tr, metrics)
@@ -305,7 +310,9 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
     if gate_mode:
         policy = _resolve_policy(workload, config)
         verdict = gate(ladder, policy, allow_stale=allow_stale, run_at=run_at,
-                       proof_age_days=metrics["proof_age_days"], rpo_hours=metrics["rpo_hours"],
+                       proof_age_days=metrics["proof_age_days"],
+                       attestation_age_days=metrics["attestation_age_days"],
+                       rpo_hours=metrics["rpo_hours"],
                        rto_minutes=metrics["rto_minutes"], regressed=tr.regressed)
 
     bundle = Bundle(target=target, run_at=run_at, results=results,

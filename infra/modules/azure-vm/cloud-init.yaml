@@ -52,6 +52,49 @@ write_files:
         sleep 30
       done
 
+  - path: /opt/app/verify.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      # WHAT "GOOD" LOOKS LIKE, declared by the workload that owns it.
+      #
+      # The drill restores a recovery point into isolation and runs this INSIDE the
+      # restored copy. The exit code is the attestation: 0 means a human-readable
+      # set of checks actually passed on the actual data. Nothing infers, nothing
+      # samples, nothing guesses from metadata — it opens the box and looks.
+      #
+      # This is the only attester we own end to end, and it is the only one that
+      # survived contact with this tenant: threat scan analysed zero files, and
+      # dedupe ratio has 40+ points of natural variance. Reading the data works.
+      #
+      # Every team writes their own. Ours checks four things.
+      set -uo pipefail
+      DATA=/var/lib/app/data
+      fail() { echo "FAIL: $*"; exit 1; }
+
+      # 1. the code came back
+      [ -x /opt/app/serve.sh ] || fail "/opt/app/serve.sh missing or not executable"
+      [ -s /opt/app/VERSION ]  || fail "/opt/app/VERSION missing"
+
+      # 2. the known-good marker survived — "what did we still trust?"
+      [ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing — this point predates
+      no known-good state"
+
+      # 3. the records are actually readable, not just present
+      [ -s "$DATA/customers.csv" ] || fail "customers.csv missing — records lost"
+      rows=$(($(wc -l < "$DATA/customers.csv") - 1))
+      [ "$rows" -ge 1 ] || fail "customers.csv has no data rows"
+      head -1 "$DATA/customers.csv" | grep -q '^customer,' \
+        || fail "customers.csv header is corrupt — not the schema we expect"
+
+      # 4. nothing that signals an encryption event
+      locked=$(find "$DATA" -name '*.locked' | wc -l)
+      [ "$locked" -eq 0 ] || fail "$locked encrypted (.locked) files present"
+      [ ! -f "$DATA/README_RECOVER.txt" ] || fail "ransom note present"
+
+      echo "OK: code intact, baseline present, $rows customer records, no encryption markers"
+      exit 0
+
   - path: /etc/systemd/system/resops-demo.service
     permissions: "0644"
     content: |

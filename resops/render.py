@@ -45,6 +45,11 @@ def ladder_to_results(ladder: Ladder, trend: Trend, metrics: dict | None = None)
             outcome = Outcome.FAIL if ladder.blocked_by_error else Outcome.GAP
         summary, evidence = rung.summary, dict(rung.evidence)
 
+        if fn == "scan" and rung.passed:
+            age = metrics.get("attestation_age_days")
+            if age is not None:
+                evidence["attestation_age_days"] = age
+                summary = f"{rung.summary} ({age}d ago)"
         if fn == "recover" and rung.passed and metrics.get("rpo_hours") is not None:
             evidence["rpo_hours"] = metrics["rpo_hours"]
             summary = f"recoverable — RPO {metrics['rpo_hours']}h, SLA Protected"

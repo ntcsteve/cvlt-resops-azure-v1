@@ -22,6 +22,17 @@ workload:
   location: eastus2             # optional
   # vm_group_id: 12345          # optional — only needed to gate a group with a non-standard name
 
+  # WHO ATTESTS this workload's recovery points are safe to restore from.
+  # The restore drill runs /opt/app/verify.sh INSIDE the restored copy and writes
+  # the result here; the Scan rung reads it. Opt-in by design: with no attester a
+  # workload is UNATTESTED and BLOCKS, which is the honest verdict for anything
+  # nobody has actually checked.
+  #
+  # Why a script and not a backup-product scan: in our tenant the threat scan
+  # analysed zero files on every run, and dedupe ratio has 40+ points of natural
+  # variance. Both were blind. Opening the recovery point and reading it is not.
+  # attestation_file: evidence/attestations/payments-api.json
+
 # ── Your platform — set once ─────────────────────────────────────────
 platform:
   # Your Metallic tenant URL + /commandcenter/api. No trailing slash.

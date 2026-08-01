@@ -430,9 +430,18 @@ def _gate_config_path(run_dir: str) -> str:
     base = REPO / "config" / "workshop.yaml"
     wcfg = yaml.safe_load(base.read_text()) if base.exists() else {}
     wcfg_workload = wcfg.get("workload") or {}
+    # Carry through every declared key the read lane understands. Listing them
+    # explicitly (rather than copying the whole block) keeps the live workload
+    # name from the terraform contract authoritative — but a key omitted here is
+    # a key silently dropped, which cost us a confusing UNATTESTED verdict when
+    # attestation_file was added and this wasn't.
+    passthrough = ("tier", "criticality", "env", "owner",
+                   "vm_group_id", "attestation_file", "promote_policy")
+    workload = {"name": w["vm_name"]}
+    workload.update({k: wcfg_workload[k] for k in passthrough if k in wcfg_workload})
     cfg = {
         "gate": wcfg.get("gate", {}),
-        "workload": {"name": w["vm_name"], "tier": wcfg_workload.get("tier")},
+        "workload": workload,
         "target": HOST,
     }
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:

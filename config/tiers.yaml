@@ -7,6 +7,8 @@ tiers:
     description: "Mission-critical — tightest RPO/RTO, isolated recovery."
     rpo_hours: 8          # max data loss  -> plan backup frequency + gate enforcement
     rto_minutes: 240      # max recovery time (4h) -> gate enforcement
+    attestation_max_age_days: 30   # how recently something must have OPENED a
+                                   # recovery point and verified its contents
     retention_days: 30
     secondary_copy: true
     isolated_recovery: true
@@ -15,9 +17,17 @@ tiers:
     description: "Standard production — relaxed RPO/RTO, no isolated recovery."
     rpo_hours: 24
     rto_minutes: 480      # 8h
+    attestation_max_age_days: 90
     retention_days: 30
     secondary_copy: true
     isolated_recovery: false
+
+# NOTE on attestation_max_age_days — the honest bit of this file.
+# Nobody restore-verifies every workload every day; it is too slow and too
+# expensive. So the policy is not "everything is verified", it is "for THIS tier,
+# something must have opened a recovery point and read it within N days". A tier
+# that declares no value is never checked for freshness — which is a legitimate
+# choice, made explicitly, with the age still recorded in the evidence bundle.
 
 # Promotion-gate freshness default. Consumed by _resolve_policy() as the base
 # recovery_proof_max_age_days when no workload-level override is declared.

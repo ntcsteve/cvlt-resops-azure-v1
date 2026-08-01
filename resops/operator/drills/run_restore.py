@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 from ...config import platform_url
@@ -61,6 +62,65 @@ def validate_azure(t: dict) -> bool:
     return healthy
 
 
+VERIFY_SCRIPT = "/opt/app/verify.sh"
+ATTESTATIONS = REPO / "evidence" / "attestations"
+
+
+def verify_recovered(t: dict) -> tuple[bool | None, str]:
+    """Run the workload's own verify script INSIDE the restored copy.
+
+    This is the attestation. Not a metadata proxy, not a vendor verdict — the
+    recovery point is opened in isolation and its data is read. The exit code is
+    the answer, and the script is one a participant can read in ten seconds.
+
+    Returns (clean, detail). clean is None when we could not run the check at
+    all, which is NOT the same as passing: no result blocks the Scan rung."""
+    print(f"\nAttesting the recovered copy: {VERIFY_SCRIPT} on {t['new_vm']}…")
+    result = az_json("vm", "run-command", "invoke",
+                     "-g", t["resource_group"], "-n", t["new_vm"],
+                     "--command-id", "RunShellScript",
+                     "--scripts", f"[ -x {VERIFY_SCRIPT} ] && {VERIFY_SCRIPT} "
+                                  f"|| {{ echo 'NO VERIFY SCRIPT'; exit 127; }}")
+    if not result:
+        return None, "could not run the verify script (guest agent unreachable?)"
+    message = "\n".join(m.get("message", "") for m in result.get("value", []))
+    stdout = message.split("[stderr]")[0]
+    line = next((l.strip() for l in stdout.splitlines()
+                 if l.strip().startswith(("OK:", "FAIL:", "NO VERIFY"))), "")
+    for l in stdout.splitlines():
+        if l.strip():
+            print("   ", l.strip()[:160])
+    if line.startswith("OK:"):
+        return True, line[3:].strip()
+    if line.startswith("FAIL:"):
+        return False, line[5:].strip()
+    return None, "verify script produced no verdict line"
+
+
+def write_attestation(vm_name: str, clean: bool | None, detail: str, job_id: str) -> Path:
+    """Persist the attestation where the read lane can find it.
+
+    The write lane produces this; `resops` consumes it only when a workload's
+    config points at it (workload.attestation_file). Explicit, opt-in, and
+    absent by default — so a workload with no attester blocks at Scan rather
+    than quietly passing."""
+    ATTESTATIONS.mkdir(parents=True, exist_ok=True)
+    path = ATTESTATIONS / f"{vm_name}.json"
+    path.write_text(json.dumps({
+        "source": "restore-verify",
+        "clean": clean,
+        "detail": detail,
+        # WHEN matters as much as WHETHER. An attestation from a year ago and one
+        # from ten minutes ago are not the same claim, and without this they look
+        # identical to the ladder — the same false-clean trap in different clothes.
+        # The gate enforces the age bar (tiers.yaml attestation_max_age_days).
+        "at": int(time.time()),
+        "restore_job": job_id,
+        "script": VERIFY_SCRIPT,
+    }, indent=2) + "\n")
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     host = (platform_url() or "").rstrip("/")          # the API URL — single source (config/workshop.yaml)
@@ -97,9 +157,21 @@ def main(argv: list[str] | None = None) -> int:
         print("\nCommvault job events (why the VM isn't healthy):")
         dump_events(client, job_id)
 
+    # A running VM is not a verified one. Open the recovery point and read it.
+    clean, detail = (None, "not attempted — VM never came up healthy")
+    if healthy:
+        clean, detail = verify_recovered(t)
+    path = write_attestation(t["source"], clean, detail, str(job_id))
+
+    verdict = {True: "PASS — attested clean",
+               False: "FAIL — attestation failed",
+               None: "UNATTESTED — could not verify"}[clean]
     print("\n=== DRILL VERDICT ===")
     print(f"  job status : {status}")
     print(f"  azure VM   : {'PASS — exists & running' if healthy else 'FAIL — not healthy'}")
+    print(f"  attestation: {verdict}")
+    print(f"               {detail}")
+    print(f"               → {path.relative_to(REPO)}")
 
     # Opt-in self-teardown so a repeatable drill never leaves infra behind.
     if "--cleanup" in argv and healthy:
@@ -112,7 +184,10 @@ def main(argv: list[str] | None = None) -> int:
         print("\n--cleanup: tearing down the restored VM…")
         teardown_vm(t["resource_group"], t["new_vm"])
 
-    return 0 if healthy else 2
+    # A restore that came back compromised is a failed drill, not a passed one.
+    if not healthy:
+        return 2
+    return 0 if clean else 3
 
 
 if __name__ == "__main__":

@@ -89,3 +89,48 @@ def test_allow_stale_does_not_excuse_being_below_validated():
 def test_default_freshness_applies_without_policy():
     assert gate(VALIDATED, proof_age_days=99).decision == "HOLD"      # default 7d
     assert gate(VALIDATED, proof_age_days=3).decision == "PROMOTE"
+
+
+# --------------------------------------------------------------------------- #
+# Attestation freshness — "somebody checked, once, a year ago" is not a pass.
+#
+# The ladder answers WHETHER a recovery point was attested. It cannot answer
+# WHEN, because classify() is clock-free. Without this bar, an attestation from
+# ten minutes ago and one from last year are indistinguishable — which is the
+# same false-clean trap we spent 2026-08-01 removing, wearing different clothes.
+# --------------------------------------------------------------------------- #
+def test_stale_attestation_holds():
+    v = gate(VALIDATED, {"attestation_max_age_days": 30},
+             proof_age_days=1, attestation_age_days=400)
+    assert v.decision == "HOLD"
+    assert "attestation stale" in v.reasons[0]
+    assert "400" in v.reasons[0]
+
+
+def test_fresh_attestation_promotes():
+    v = gate(VALIDATED, {"attestation_max_age_days": 30},
+             proof_age_days=1, attestation_age_days=3)
+    assert v.decision == "PROMOTE"
+
+
+def test_attestation_age_is_unenforced_unless_declared():
+    # Same deliberate choice as RPO: no declared bar means no bar. The age still
+    # rides along in the evidence bundle, so the gap stays visible.
+    v = gate(VALIDATED, {}, proof_age_days=1, attestation_age_days=9999)
+    assert v.decision == "PROMOTE"
+
+
+def test_stale_attestation_is_NOT_overridable():
+    # Aged recovery proof at least proved the mechanism works, so --allow-stale
+    # can consciously accept it. A stale attestation says nothing about the point
+    # you would restore today. There is no override, on purpose.
+    v = gate(VALIDATED, {"attestation_max_age_days": 30},
+             proof_age_days=1, attestation_age_days=400, allow_stale=True)
+    assert v.decision == "HOLD"
+
+
+def test_stale_attestation_reported_alongside_other_blocks():
+    v = gate(VALIDATED, {"attestation_max_age_days": 30, "rpo_target_hours": 8},
+             proof_age_days=1, attestation_age_days=400, rpo_hours=99)
+    assert v.decision == "HOLD"
+    assert len(v.reasons) == 2

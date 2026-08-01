@@ -27,7 +27,9 @@ to classify(). Keep network out of everything else.
 from __future__ import annotations
 
 import enum
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from .client import Client
 from .reads import (
@@ -63,6 +65,9 @@ class State(enum.Enum):
 # cloud-native lens per stage lives in evidence.DEVOPS_LENS, keyed by the
 # lower-cased stage name, and is rendered in --detail.)
 STAGES = ("Discover", "Protect", "Detect", "Recover", "Scan", "Validate")
+
+ROOT = Path(__file__).resolve().parent.parent   # repo root — resolves relative
+                                                # attestation_file paths in config
 
 
 @dataclass(frozen=True)
@@ -133,7 +138,7 @@ def gather(client: Client, workload: dict) -> Reads:
 
     vmgroup, vmgroup_error = _get(client, f"V4/VMGroup/{group_id}")
     vm, vm_error = _find_vm(client, vm_name)
-    attestation, attestation_error = _attest(client, vm)
+    attestation, attestation_error = _attest(client, vm, workload.get("attestation_file"))
     proof, proof_error = _recovery_proof(client, vm_name)
     return Reads(
         vm_name=vm_name,
@@ -144,26 +149,57 @@ def gather(client: Client, workload: dict) -> Reads:
     )
 
 
-def _attest(client: Client, vm: dict | None) -> tuple[dict | None, str]:
-    """Ask each attester in turn whether this recovery point is trustworthy.
+def _attest(client: Client, vm: dict | None,
+            attestation_file: str | None = None) -> tuple[dict | None, str]:
+    """Ask the attesters, strongest first, whether this recovery point is trustworthy.
 
-    Today there is one: the threat lane, and it can only ever report a NEGATIVE
-    (see reads.threat_attestation). So on a healthy tenant this returns None,
-    meaning nobody has attested anything — and the Scan rung says exactly that
-    rather than inventing a pass.
+    Order is deliberate. A NEGATIVE always wins: if the threat lane saw something,
+    that outranks any local pass. Otherwise we fall back to the restore-verify
+    attestation, which is the only source that can honestly say YES — because it
+    opened the recovery point and read the data.
 
-    The VM's own /VM record carries its CommCell pseudo-client id at
-    client.clientId — distinct from pseudoClient.clientId, which is the
-    hypervisor."""
+    restore-verify is opt-in: a workload must point at its file
+    (workload.attestation_file). Absent, nobody has attested anything, and the
+    Scan rung says so rather than inventing a pass."""
     if vm is None:
         return None, ""            # Recover already blocks; don't double-report
+
+    # The VM's own /VM record carries its CommCell pseudo-client id at
+    # client.clientId — distinct from pseudoClient.clientId, the hypervisor.
     client_id = (vm.get("client") or {}).get("clientId")
     if not client_id:
         return None, "VM record carries no CommCell client id"
     body, err = _get(client, "Client/Anomaly")
     if err:
         return None, err
-    return threat_attestation(body, client_id), ""
+    threat = threat_attestation(body, client_id)
+    if threat is not None:
+        return threat, ""          # a real negative outranks a local pass
+
+    return _restore_verify_attestation(attestation_file)
+
+
+def _restore_verify_attestation(path: str | None) -> tuple[dict | None, str]:
+    """Read the attestation the restore drill wrote, if this workload declares one.
+
+    The write lane produces it (drills/run_restore.py); the read lane consumes it
+    only when told to. That keeps the coupling explicit and opt-in — the same
+    shape as the offline demo's `fixture:` — instead of a hidden convention.
+    `clean: null` means the drill could not verify, which is not a pass."""
+    if not path:
+        return None, ""
+    p = Path(path)
+    if not p.is_absolute():
+        p = ROOT / p
+    if not p.exists():
+        return None, ""            # no drill has run yet — unattested, not failed
+    try:
+        data = json.loads(p.read_text())
+    except (OSError, ValueError) as err:
+        return None, f"attestation file unreadable: {err}"
+    if data.get("clean") is None:
+        return None, ""            # the drill ran but could not verify
+    return data, ""
 
 
 def _clip(text: str) -> str:

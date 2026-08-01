@@ -97,6 +97,16 @@ def _age_days(job_summary: dict) -> float | None:
     return None
 
 
+def _attestation_age_days(attestation: dict | None) -> float | None:
+    """How long ago the recovery point was actually verified.
+
+    "Attested clean" with no date is half a claim. Reads the clock, so it lives
+    here at the I/O edge — classify() stays clock-free and the gate applies the
+    per-tier bar."""
+    at = (attestation or {}).get("at")
+    return round((time.time() - at) / 86400, 1) if at else None
+
+
 def _rpo_hours(vm: dict | None) -> float | None:
     """Hours since the VM's last successful backup — the RPO age. Reads the clock,
     so it lives here at the I/O edge, not in the pure classify()."""
