@@ -299,7 +299,7 @@ We tried two shortcuts first and both were blind:
 
 | Attempt | Result |
 |---|---|
-| Threat scan on the backup | analysed **0 files** on every run *in our tenant* - and reported "clean". Probably our configuration (no file indexing on a streaming VM group), not a product limit - but unproven either way |
+| Threat scan on the backup | **never completed once** *in our tenant*. Every Threat Analysis job failed `no eligible subclients to process after applying filters`, and still does with file indexing enabled, on both streaming and snapshot VM groups. Not our configuration. Whether Azure VM image backups are eligible at all is an open question with the vendor |
 | Dedupe ratio as an integrity signal | the same idle VM ranges **57.9% - 99.7%**; 42 points of natural variance is noise, not signal |
 
 Both were *proxies*. There is no cheap way to know a backup is good - **you have to open it and look.** That is why almost nobody does it, and why almost nobody actually knows. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
@@ -394,10 +394,16 @@ Be careful which of these you repeat as fact. The project has already paid once 
                   the recovery point still poison
  PROVEN LOCALLY   the observability stack, 12/12 checks in Docker.
                   NEVER applied to Azure.
- NOT PROVEN       that threat scan cannot work here. What IS proven is that
-                  in our tenant those jobs analysed zero files and reported
-                  clean. The evidence points at configuration, not a product
-                  limit. Do not say "it does not work".
+ PROVEN           threat scan never completed once in our tenant. Every
+                  Threat Analysis job failed "no eligible subclients", under
+                  every configuration a tenant admin can set: file indexing
+                  on, streaming and snapshot groups, console- and API-created.
+                  It is NOT our configuration.
+ NOT PROVEN       that it cannot work on Azure VM image backups. The rule
+                  deciding eligibility is not visible to a tenant, and the
+                  vendor's own docs contradict each other on the point.
+                  Do not say "it does not work" - say what failed, and that
+                  the question is open.
  NOT SCOPED       Synthetic Recovery. Available in the tenant, never run.
  NOT WRITTEN      verify.sh worked examples for managed databases and object
                   storage. The contract transfers; the examples do not exist.

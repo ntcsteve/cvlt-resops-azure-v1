@@ -75,9 +75,11 @@ Everything above is bookkeeping until something can honestly say *this recovery 
 Two cheap proxies were tried and both were blind:
 
 ```
- threat scan on the backup    analysed 0 FILES on every run in our tenant,
-                              and reported clean. Probably our configuration
-                              rather than a product limit, but unproven either way.
+ threat scan on the backup    never completed once in our tenant. every
+                              Threat Analysis job failed "no eligible
+                              subclients", and still does with file indexing
+                              enabled. NOT our configuration, and the rule
+                              that decides eligibility is not one we can see.
  dedupe ratio as an           the same idle VM ranges 57.9%-99.7%.
    integrity signal           42 points of natural variance is noise, not signal.
 ```
@@ -93,7 +95,9 @@ And an attestation has a shelf life. "Verified once, a year ago" is not verified
 > **Absence of evidence is not evidence of absence.**
 > A check that ran nothing must never report a pass.
 
-We read "absent from the anomaly list" as "scanned and clean" for a month. Every threat job in that tenant had analysed zero files. `op threatscan` now refuses to report clean when `totalNumOfFiles` is 0, and the Scan rung blocks on an unattested point rather than inventing one.
+We read "absent from the anomaly list" as "scanned and clean" for a month. Not one of those jobs had ever completed. `op threatscan` now refuses to report clean when `totalNumOfFiles` is 0, and the Scan rung blocks on an unattested point rather than inventing one.
+
+The second lesson cost less and generalises further: **the job type shown in the console did not match the job type returned by the API.** Ten "completed" rows were a different operation entirely. Read your verifier's output from a second source before you believe it.
 
 This applies to your monitoring too. Go and check what your verifier actually verified.
 
