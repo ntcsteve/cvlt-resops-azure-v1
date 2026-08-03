@@ -484,7 +484,7 @@ grep -A 40 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
 
 Thirty lines. Four checks. Full contract in [VERIFY.md](VERIFY.md).
 
-## 4.2 · Write a check for YOUR shape · 35 min · WORKSHEET 4
+## 4.2 · Write a check for YOUR shape · 45 min · WORKSHEET 4
 
 **Pick the shape you actually run.** Not the one in the lab.
 
@@ -524,15 +524,10 @@ The right column is what a backup product already tells you. The left requires o
    it does. That comparison IS the evidence.
 ```
 
-## 4.3 · Teardown · 10 min
-
-```bash
-op teardown infra/workloads
 ```
-
-```
- ✓ YOU SHOULD SEE   terraform destroy complete
- ✗ IF NOT           tell the facilitator. it costs money until it is gone.
+ ✗ DO NOT TEAR DOWN   your workload is needed in M5 — the game day
+                      breaks and restores this same VM. you retire
+                      it at the close, and not before.
 ```
 
 **M4 output:** a verify contract for a workload you actually run.
@@ -673,6 +668,19 @@ Write the evidence outline: what would you show leadership, an auditor, and your
 # Close
 
 **20 minutes · WORKSHEET 6**
+
+**First, retire your workload.** It has done its job, and it costs money until it
+is gone. Start this now — it runs while you write.
+
+```bash
+op teardown infra/workloads
+```
+
+```
+ ✓ YOU SHOULD SEE   terraform destroy complete, before the close ends
+ ✗ IF NOT           tell the facilitator BEFORE you leave. it cannot be
+                    retired from anyone else's machine.
+```
 
 You have now walked all five steps. Write them down for something real.
 
