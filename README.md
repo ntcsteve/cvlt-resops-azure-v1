@@ -299,10 +299,32 @@ We tried two shortcuts first and both were blind:
 
 | Attempt | Result |
 |---|---|
-| Threat scan on the backup | **never completed once** *in our tenant*. Every Threat Analysis job failed `no eligible subclients to process after applying filters`, and still does with file indexing enabled, on both streaming and snapshot VM groups. Not our configuration. Whether Azure VM image backups are eligible at all is an open question with the vendor |
+| Threat scan on the backup | **never produced a verdict** *in our tenant*, across a month. It is not for want of configuration - see "what a threat scan needs" below - and the last blocker is vendor-side infrastructure, not us |
 | Dedupe ratio as an integrity signal | the same idle VM ranges **57.9% - 99.7%**; 42 points of natural variance is noise, not signal |
 
 Both were *proxies*. There is no cheap way to know a backup is good - **you have to open it and look.** That is why almost nobody does it, and why almost nobody actually knows. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
+
+#### What a threat scan on an Azure VM actually needs
+
+Written down because it cost a month, and because none of it is in one place in the vendor's documentation. Four things, all required together:
+
+```
+ 1  a STREAMING VM group            IntelliSnap creates a snapshot first,
+                                    and snapshots are not scannable
+ 2  file indexing ON that group     PUT v4/VmGroup/{id}
+                                      {"enableFileIndexing": true}
+                                    the WRITE field is enableFileIndexing;
+                                    the READ field is a different name and
+                                    does not reflect the write. That
+                                    mismatch is why this took so long.
+ 3  the VM listed AND associated    it must appear under the threat scan
+    in a threat scan group          group, Configured, with a backup
+ 4  the PER-RESOURCE trigger        POST ThreatIndicator/OnDemandScan
+```
+
+Point 4 is the one nobody guesses. The **plan-level** run (`TaskOperation` against the scan plan's schedule) fails at the eligibility filter with `[69:70] no eligible subclients` and never binds to a VSA subclient. The **per-resource** action on the Resources tab does bind, and reaches the scan phase. They are different code paths and only one of them works.
+
+With all four in place our jobs bind, reach `Process: FileScan`, and then stall on `[14:313]`, a remote-file-cache fault between two vendor-operated media agents. That is where it sits: correct on our side, unresolved on theirs, and still no verdict ever produced.
 
 An attestation also has a **shelf life**: "verified once, a year ago" is not verified. `config/tiers.yaml` sets `attestation_max_age_days` per tier (tier1 30d, tier2 90d), and a stale attestation is a hard HOLD with no override.
 
@@ -394,16 +416,17 @@ Be careful which of these you repeat as fact. The project has already paid once 
                   the recovery point still poison
  PROVEN LOCALLY   the observability stack, 12/12 checks in Docker.
                   NEVER applied to Azure.
- PROVEN           threat scan never completed once in our tenant. Every
-                  Threat Analysis job failed "no eligible subclients", under
-                  every configuration a tenant admin can set: file indexing
-                  on, streaming and snapshot groups, console- and API-created.
-                  It is NOT our configuration.
- NOT PROVEN       that it cannot work on Azure VM image backups. The rule
-                  deciding eligibility is not visible to a tenant, and the
-                  vendor's own docs contradict each other on the point.
-                  Do not say "it does not work" - say what failed, and that
-                  the question is open.
+ PROVEN           an Azure VM image backup CAN be made eligible for threat
+                  analysis, and the job binds and reaches its scan phase.
+                  Four things are required together and all four are ours:
+                  a streaming VM group, enableFileIndexing on that group,
+                  the VM listed and associated in a threat scan group, and
+                  the PER-RESOURCE trigger. See below.
+ NOT PROVEN       that threat scan can DETECT anything here. No scan has
+                  ever produced a verdict. Ours stall in the scan phase on
+                  a vendor-side media agent fault and fail after ~4 hours
+                  of retries. Never claim it works, and never claim it
+                  cannot - say it has never returned an answer.
  NOT SCOPED       Synthetic Recovery. Available in the tenant, never run.
  NOT WRITTEN      verify.sh worked examples for managed databases and object
                   storage. The contract transfers; the examples do not exist.

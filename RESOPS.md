@@ -75,11 +75,11 @@ Everything above is bookkeeping until something can honestly say *this recovery 
 Two cheap proxies were tried and both were blind:
 
 ```
- threat scan on the backup    never completed once in our tenant. every
-                              Threat Analysis job failed "no eligible
-                              subclients", and still does with file indexing
-                              enabled. NOT our configuration, and the rule
-                              that decides eligibility is not one we can see.
+ threat scan on the backup    never returned a verdict in a month. it CAN
+                              be made to run on an Azure VM (README lists the
+                              four things it needs), but ours stall in the
+                              scan phase on a vendor-side fault. a signal you
+                              cannot get an answer out of is not a signal.
  dedupe ratio as an           the same idle VM ranges 57.9%-99.7%.
    integrity signal           42 points of natural variance is noise, not signal.
 ```
@@ -98,6 +98,8 @@ And an attestation has a shelf life. "Verified once, a year ago" is not verified
 We read "absent from the anomaly list" as "scanned and clean" for a month. Not one of those jobs had ever completed. `op threatscan` now refuses to report clean when `totalNumOfFiles` is 0, and the Scan rung blocks on an unattested point rather than inventing one.
 
 The second lesson cost less and generalises further: **the job type shown in the console did not match the job type returned by the API.** Ten "completed" rows were a different operation entirely. Read your verifier's output from a second source before you believe it.
+
+The third is about method, and it is the expensive one. We spent a month, and then a full day, black-box testing a feature against an eligibility rule we could not see. Each experiment was cheap and the answer always felt one more away. **A single conversation with someone who knew the product produced the missing piece in five minutes.** When you cannot see the rule, stop experimenting and go and ask. That is not a failure of rigour, it is the correct move for the shape of the problem.
 
 This applies to your monitoring too. Go and check what your verifier actually verified.
 
