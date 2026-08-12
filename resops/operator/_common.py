@@ -11,7 +11,7 @@ from pathlib import Path
 
 from ..client import Client, load_credentials
 from ..config import load_platform
-from ..reads import vmgroup_name
+from ..reads import MAINTENANCE_MSG, is_html_body, vmgroup_name
 
 REPO = Path(__file__).resolve().parents[2]  # resops/operator/_common.py -> repo root
 
@@ -41,6 +41,20 @@ def write(method: str, path: str, **kwargs):
     if resp.status_code == 401:
         client.ensure_fresh_token()  # renews + updates the session's bearer token
         resp = client._session.request(method, url, timeout=60, **kwargs)
+    # EVERY write call site here either ignores the body or parses it as JSON, and
+    # each one guards on `status_code != 200` only. During a maintenance window that
+    # guard is useless: GETs come back 200 with an HTML page and POSTs come back 405
+    # with one, so callers sailed past and died on .json() with a raw traceback that
+    # reads as "the tool is broken" rather than "the vendor is down". Stop here, once.
+    # Live on 2026-08-12.
+    try:
+        resp.json()
+    except ValueError:
+        why = MAINTENANCE_MSG if is_html_body(resp.headers.get("content-type", ""), resp.text) \
+            else (f"HTTP {resp.status_code} with a body that is not JSON "
+                  f"({len(resp.text)} bytes)")
+        raise SystemExit(f"{method} {path}: {why}"
+                         f"  → wait and retry. Nothing was written.")
     return resp
 
 

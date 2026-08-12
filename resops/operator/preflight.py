@@ -12,6 +12,7 @@ import sys
 import requests
 
 from ._azure import az_json, regional_cores_free, vm_size_cores
+from ..reads import MAINTENANCE_MSG, is_html_body
 from ._common import CFG, HYP, client, contract, discovered
 
 
@@ -30,11 +31,17 @@ def check_az() -> tuple:
 
 def check_token() -> tuple:
     try:
-        ok = client.get("VM").status_code == 200
+        resp = client.get("VM")
     except requests.RequestException as e:
         return False, f"Commvault read failed ({e})  → fix: python3 -m resops list"
-    return (True, "Commvault token valid") if ok else \
-        (False, "Commvault read != 200  → fix: python3 -m resops list")
+    # 200 alone is not proof the API is up: a tenant in maintenance answers every
+    # route with 200 and an HTML page, and this check used to report "token valid"
+    # straight through an outage. Live on 2026-08-12.
+    if is_html_body(resp.headers.get("content-type", ""), resp.text):
+        return False, f"{MAINTENANCE_MSG}  → wait for the window to clear"
+    if resp.status_code != 200:
+        return False, "Commvault read != 200  → fix: python3 -m resops list"
+    return True, "Commvault token valid"
 
 
 def check_hypervisor() -> tuple:
