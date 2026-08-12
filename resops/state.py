@@ -291,9 +291,22 @@ def classify(reads: Reads) -> Ladder:
     if not restore_enabled:
         return stop(State.MONITORED, "Recover",
                     "restore activity is disabled for this VM", recover_ev, error=False)
+    # "N/A" (slaStatus 3) means Commvault has NOT EVALUATED SLA for this VM yet.
+    # That is a different fact from "SLA missed", and it needs a different fix, so
+    # it gets its own message. A freshly protected workload sits here until the
+    # periodic SLA calculation runs — proven live 2026-08-12: aug12-narwhal was
+    # N/A with a successful backup 12 minutes old, while three DELETED VMs in the
+    # same tenant still read "Protected".
+    # It still BLOCKS. An unevaluated SLA is not a met one, and inventing a pass
+    # here is the exact failure this ladder exists to refuse.
+    if sla in ("", "N/A"):
+        return stop(State.MONITORED, "Recover",
+                    "SLA not evaluated yet (N/A) — Commvault has not run its periodic "
+                    "SLA calculation for this workload; this is not a missed SLA",
+                    recover_ev, error=False)
     if sla != "Protected":
         return stop(State.MONITORED, "Recover",
-                    f"SLA not met — {sla or 'unknown'}", recover_ev, error=False)
+                    f"SLA not met — {sla}", recover_ev, error=False)
     cleared("Recover", "recoverable — SLA Protected", recover_ev)
 
     # ── Scan ── has ANYONE attested the point we'd restore from? ──────────────

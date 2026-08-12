@@ -136,6 +136,19 @@ def test_sla_not_met_stays_monitored():
     assert "SLA not met" in ladder.reason
 
 
+def test_sla_not_yet_evaluated_blocks_but_does_not_claim_a_miss():
+    """"N/A" (slaStatus 3) means Commvault has not evaluated SLA yet. It must still
+    BLOCK — an unevaluated SLA is not a met one — but it must not be reported as a
+    missed SLA, because the two have different fixes and "SLA not met" sends the
+    reader hunting a backup failure that does not exist. Live on 2026-08-12."""
+    for sla in ("N/A", ""):
+        ladder = classify(_full_reads(vm=_vm(sla=sla)))
+        assert ladder.state is State.MONITORED
+        assert ladder.blocked_stage == "Recover"
+        assert "not evaluated" in ladder.reason
+        assert "SLA not met" not in ladder.reason
+
+
 def test_restore_disabled_stays_monitored():
     ladder = classify(_full_reads(vm=_vm(restore=False)))
     assert ladder.state is State.MONITORED
