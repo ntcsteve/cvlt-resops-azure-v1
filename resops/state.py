@@ -202,6 +202,21 @@ def _restore_verify_attestation(path: str | None) -> tuple[dict | None, str]:
     return data, ""
 
 
+def _lag(seconds: float) -> str:
+    """A gap, in the unit a tired person can act on.
+
+    Rounding a two-minute gap to "0.0h" reads as a bug rather than a fact, and it
+    happened the first time this message fired live. The number matters — two
+    minutes and two days say very different things about a team's cadence — so
+    pick the unit rather than dropping it.
+    """
+    if seconds < 3600:
+        return f"{round(seconds / 60)} min"
+    if seconds < 86400:
+        return f"{seconds / 3600:.1f}h"
+    return f"{seconds / 86400:.1f}d"
+
+
 def _clip(text: str) -> str:
     """Trim a long API error to one line — at a word boundary, not mid-word."""
     if len(text) <= SUMMARY_CLIP:
@@ -364,11 +379,10 @@ def classify(reads: Reads) -> Ladder:
                     f"timestamp, so it cannot be shown to cover any recovery point",
                     scan_ev, error=False)
     if newest_point and attested_at < newest_point:
-        lag_h = round((newest_point - attested_at) / 3600.0, 1)
         return stop(State.RECOVERABLE, "Scan",
                     f"attestation does not cover the newest recovery point — "
-                    f"verified {lag_h}h before it was taken; re-run the drill",
-                    scan_ev, error=False)
+                    f"verified {_lag(newest_point - attested_at)} before it was taken; "
+                    f"re-run the drill", scan_ev, error=False)
     cleared("Scan", f"attested clean by {attestation.get('source')}", scan_ev)
 
     # ── Validate ── has a real restore PROVEN recovery for this VM? ───────────

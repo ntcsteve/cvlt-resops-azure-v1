@@ -4,7 +4,7 @@ Each test pins one rung: the reads that clear it, and the two ways it can block 
 a real gap (intent unmet) and a read error (we couldn't verify). A read error
 must NEVER produce a state above the rung below it.
 """
-from resops.state import Reads, State, classify, trend
+from resops.state import Reads, State, _lag, classify, trend
 
 VM = "vm01"
 
@@ -385,3 +385,12 @@ def test_trend_uses_most_recent_comparable_state():
     t = trend(State.PROTECTED, mixed)
     assert t.direction == "regressed"
     assert t.previous is State.VALIDATED
+
+def test_a_sub_hour_lag_reads_in_minutes_not_as_zero():
+    """It printed "verified 0.0h before it was taken" the first time it fired live,
+    for a two-minute gap. A rounded zero in a blocking reason reads as a broken
+    tool, and this string is what someone acts on at 2am."""
+    assert _lag(120) == "2 min"
+    assert _lag(3599) == "60 min"
+    assert _lag(2.6 * 3600) == "2.6h"
+    assert _lag(47 * 86400) == "47.0d"
