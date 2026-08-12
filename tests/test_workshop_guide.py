@@ -159,3 +159,72 @@ def test_the_guide_never_promises_a_live_step_will_work_offline():
         if live_command in text:
             assert "LIVE" in text, (
                 f"{live_command!r} appears in the guide with no LIVE marker anywhere")
+
+# --------------------------------------------------------------------------- #
+# The estate demo's SHAPE, pinned workload by workload.
+#
+# WHY THIS EXISTS. On 2026-08-12 a new rule at the Scan rung moved identity-svc
+# from "blocked at Validate" to "blocked at Scan", and 201 tests stayed green.
+# The commands still ran, the exit codes still matched, every substring the guide
+# quotes was still printed — and M1's entire lesson had changed, because that
+# lesson is not a substring. It is WHICH workload stops WHERE:
+#
+#   "checkout-api and identity-svc sit on the SAME rung for opposite reasons —
+#    one was tested and is contaminated, one was never tested. The rung hides
+#    that. The blocked stage names it."
+#
+# If two workloads stop at the same stage, that paragraph is false and the module
+# has no punchline. A substring check cannot see it. This can.
+# --------------------------------------------------------------------------- #
+ESTATE_LADDER = {
+    "payments-api": ("VALIDATED", None),          # promotes, the control
+    "checkout-api": ("RECOVERABLE", "Scan"),      # tested, and contaminated
+    "identity-svc": ("RECOVERABLE", "Validate"),  # verified, never proven
+    "reporting-db": ("PROTECTED", "Detect"),      # last backup failed
+    "edge-cache": ("MONITORED", "Recover"),       # SLA missed
+    "legacy-batch": ("UNDISCOVERED", "Discover"),  # never onboarded
+}
+
+
+def _parse_ladder(output: str) -> dict:
+    """{workload: (state, blocked_stage_or_None)} from the rendered gate output.
+
+    Deliberately parses what a ROOM SEES rather than calling the engine, because
+    the thing being protected is the guide's promise about the screen.
+    """
+    found, current = {}, None
+    for line in ANSI.sub("", output).splitlines():
+        stripped = line.strip()
+        if stripped.startswith("\u25b8 "):
+            current = stripped[2:].split()[0]
+            continue
+        if current and any(s in stripped for s in
+                           ("VALIDATED", "RECOVERABLE", "PROTECTED", "MONITORED",
+                            "UNDISCOVERED", "DISCOVERED", "TRUSTED")):
+            state = next(w for w in stripped.split() if w.isupper() and w.isalpha())
+            stage = stripped.split("blocked at ")[1].split()[0] if "blocked at " in stripped else None
+            found[current] = (state, stage)
+            current = None
+    return found
+
+
+def test_the_estate_demo_stops_each_workload_where_the_guide_says():
+    code, output = _run("python3 -m resops gate config/estate.yaml")
+    assert code == 1
+    actual = _parse_ladder(output)
+    assert actual == ESTATE_LADDER, (
+        "the estate demo changed shape. M1 teaches WHICH workload stops WHERE, so "
+        "a moved rung rewrites the lesson without touching WORKSHOP.md.\n"
+        f"  expected {ESTATE_LADDER}\n  actual   {actual}")
+
+
+def test_the_two_recoverable_workloads_stop_for_DIFFERENT_reasons():
+    """M1's punchline, asserted directly. Same rung, different stage. If these two
+    ever collapse onto one stage the module loses the point it exists to make."""
+    contaminated = ESTATE_LADDER["checkout-api"]
+    never_proven = ESTATE_LADDER["identity-svc"]
+    assert contaminated[0] == never_proven[0] == "RECOVERABLE"
+    assert contaminated[1] != never_proven[1]
+    code, output = _run("python3 -m resops gate config/estate.yaml")
+    actual = _parse_ladder(output)
+    assert actual["checkout-api"][1] != actual["identity-svc"][1]

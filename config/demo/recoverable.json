@@ -1,5 +1,5 @@
 {
-  "_comment": "Canned reads \u2014 protected, monitored, SLA met, restorable on paper. But no restore has ever been run, so recovery is assumed rather than proven. This is where most real estates sit. Blocks at Validate, state RECOVERABLE.",
+  "_comment": "Canned reads \u2014 protected, monitored, SLA met, and verified clean, but recovery itself never PROVEN. Blocks at Validate, state RECOVERABLE. NOTE the attestation is deliberately NEWER than the last backup (4h vs 5h): since 2026-08-12 the Scan rung requires an attestation to COVER the point it vouches for, and this fixture is about the Validate rung, not that one. It was days_ago 47, which now correctly blocks at Scan instead and quietly changed M1s lesson. What it models: the drill ran and verified the data, but its restore job has aged out of the last-10-restore-jobs window _recovery_proof scans, so recovery is attested and not proven.",
   "vm_name": "identity-svc-vm01",
   "vmgroup": {
     "name": "estate-shared-vg",
@@ -43,7 +43,7 @@
     "clean": true,
     "detail": "code intact, baseline present, 3 customer records",
     "at": {
-      "days_ago": 47
+      "hours_ago": 4
     }
   },
   "proof": null,
