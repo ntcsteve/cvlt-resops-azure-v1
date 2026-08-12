@@ -51,3 +51,6 @@ infra/observability/*.tfstate*
 # delivers the day, not something to publish under a vendor-positioned
 # workshop. Shared directly with facilitators, like HANDOVER and NOTES.
 FACILITATOR.md
+
+# macOS finder droppings
+.DS_Store
