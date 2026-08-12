@@ -177,7 +177,14 @@ def main(argv: list[str] | None = None) -> int:
     print("  token ready")
 
     resp = bearer_session(client.access_token).post(f"{host}/CreateTask", data=json.dumps(payload), timeout=60)
-    print(f"\nPOST /CreateTask → HTTP {resp.status_code}: {resp.text[:200]}")
+    # SANITISE BEFORE PRINTING. This tenant returns JSON containing bare carriage
+    # returns: {\r"taskId":809089,"jobIds":[\r"8163492"\r]\r}. Printed raw, every
+    # \r rewinds the cursor to column 0 and the line overwrites itself, rendering
+    # as `}8163492"809089,"jobIds":[0: {` — which reads exactly like a crash, on
+    # every single restore, including in front of a workshop room. Nothing was
+    # ever wrong; the terminal was faithfully drawing a line that kept rewinding.
+    body = resp.text[:200].replace("\r", "").replace("\n", " ")
+    print(f"\nPOST /CreateTask → HTTP {resp.status_code}: {body}")
     if resp.status_code != 200:
         return 1
     job_id = (resp.json().get("jobIds") or [None])[0]
@@ -227,8 +234,14 @@ def main(argv: list[str] | None = None) -> int:
         # VM (connect, check the data) before it's torn down — the "aha" moment.
         # Headless/CI (no tty) skips the pause so automation stays unattended.
         if sys.stdin.isatty() and "--no-pause" not in argv:
+            # "Go look / connect" invited something the architecture forbids: this
+            # VM has no public IP, no inbound NSG rule and no open ports, and
+            # WORKSHOP.md M4.1 teaches exactly that, in the same session. Offer
+            # what is actually possible.
             print(f"\n  ✓ RECOVERED: {t['new_vm']} is running in Azure (RG {t['resource_group']}).")
-            input("    Go look / connect, then press Enter to tear it down… ")
+            print("    Inspect it in the portal or with `az vm show` — it has no public IP,")
+            print("    so there is nothing to connect to, by design.")
+            input("    Press Enter to tear it down… ")
         print("\n--cleanup: tearing down the restored VM…")
         teardown_vm(t["resource_group"], t["new_vm"])
 

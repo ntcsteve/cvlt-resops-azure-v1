@@ -30,7 +30,16 @@ def poll_job(client, job_id, timeout: int = 600, every: int = 20) -> str:
         reason = f"  ↳ {pending}" if pending and status == "Waiting" else ""
         print(f"  [{waited:4}s] {status} {summary.get('percentComplete')}%{reason}", flush=True)
         if status == "Waiting" and first_wait:
-            print("         (waiting for a media agent slot — normal on first run, typically 5–15 min)",
+            # THE ORIGIN OF A NUMBER NOBODY MEASURED. This said "typically 5-15
+            # min", and loop.sh, FACILITATOR.md and WORKSHOP.md all quoted it, so
+            # correcting the copies without correcting this would simply reseed
+            # them. Measured on this tenant across 16 real jobs: the longest wait
+            # was 80 SECONDS. The long tail is real but rare — one media agent
+            # failover once took 27 minutes — so both numbers are stated. A
+            # replacement figure that only says "fast" is the same error pointing
+            # the other way.
+            print("         (waiting for a media agent slot — measured here: under 90s in "
+                  "16 of 16 jobs, but a media agent failover once took 27 min. Do not kill it.)",
                   flush=True)
             first_wait = False
         if any(t in status for t in TERMINAL):

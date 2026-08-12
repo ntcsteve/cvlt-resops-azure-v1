@@ -299,8 +299,20 @@ def _cli_restore(run_dir: str) -> None:
     verdict, the command exits. Nothing else in op.py has to remember to check."""
     code = restore(run_dir)
     if code != _DRILL_OK:
-        sys.exit(f"RESTORE DRILL DID NOT PASS — {_DRILL_VERDICT.get(code, f'exit {code}')}."
-                 f"  The attestation was not written clean, so the Scan rung will block.")
+        # sys.exit(<string>) PRINTS the string and exits 1, ALWAYS. Passing the
+        # message that way collapsed the drill's deliberate four-way contract
+        # (0 clean / 1 could not run / 2 unhealthy / 3 dirty) into a single 1, so
+        # "fix your environment and retry" and "the backup is poison, do not
+        # retry" — which this command's own messages exist to keep apart — became
+        # indistinguishable to anything reading the code. Observed live
+        # 2026-08-12: a dirty drill exited 1, not 3.
+        # Print, then exit with the number. Same idiom as `gate` and
+        # `_cli_threatscan`: when a command's exit code IS the verdict, the
+        # verdict is the number, not just the prose.
+        print(f"RESTORE DRILL DID NOT PASS — {_DRILL_VERDICT.get(code, f'exit {code}')}."
+              f"  The attestation was not written clean, so the Scan rung will block.",
+              file=sys.stderr)
+        sys.exit(code)
 
 
 # --------------------------------------------------------------------------- #
@@ -516,7 +528,14 @@ def incident(run_dir: str) -> None:
                          f"  → fix: is the VM running? az vm get-instance-view -g {rg} -n {vm_name}")
     for msg in result.get("value", []):
         print(msg.get("message", "").strip())
-    print(f"\n{vm_name} is now UNTRUSTED. Next: op backup, then op threatscan.")
+    # ADVISE ONLY AS FAR AS EVERY CALLER AGREES. This used to end "then op
+    # threatscan", which is right for loop.sh and WRONG for the workshop, whose
+    # M5 never runs a scan: a participant who followed it would get a HOLD reading
+    # "failed threatscan" instead of the "failed restore-verify — 14 encrypted
+    # (.locked) files present" their guide promises, at the sharpest moment of the
+    # day. Sequencing belongs to the caller, which knows its own path; this command
+    # cannot. Both paths agree on `op backup`, so the advice stops there.
+    print(f"\n{vm_name} is now UNTRUSTED. Next: op backup.")
 
 
 # --------------------------------------------------------------------------- #
@@ -594,7 +613,12 @@ def remediate(run_dir: str) -> None:
             f"\n  → if stash_present=NO above, `op incident` ran before stashing existed"
             f" (or never ran), so the originals it deleted cannot be put back."
             f"\n  → recover from a backup instead: op restore {run_dir}")
-    print(f"\n{vm_name} is clean again. Next: op backup, then op gate.")
+    # Same rule as `incident` above, and this one was wrong for BOTH callers:
+    # loop.sh goes backup -> threatscan -> restore -> gate, and the workshop path
+    # would go backup -> restore -> gate. "then op gate" skipped the drill in
+    # either case, which is the one step that produces the attestation the gate
+    # reads. Stop at the step everyone agrees on.
+    print(f"\n{vm_name} is clean again. Next: op backup.")
 
 
 def climb(run_dir: str) -> None:

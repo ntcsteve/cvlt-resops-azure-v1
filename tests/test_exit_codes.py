@@ -51,21 +51,42 @@ def test_EVERY_NON_ZERO_VERDICT_LEAVES_THE_PROCESS_NON_ZERO(code, monkeypatch):
     thing: nothing was proven, so the command must not report success."""
     with pytest.raises(SystemExit) as exc:
         _cli(code, monkeypatch)
-    # SystemExit carrying a string exits 1 and prints it. What must never happen
-    # is code 0 or None.
     assert exc.value.code not in (0, None)
 
 
 @pytest.mark.parametrize("code", [op._DRILL_COULD_NOT_RUN,
                                   op._DRILL_UNHEALTHY,
                                   op._DRILL_DIRTY])
-def test_each_failure_says_which_one_it_was(code, monkeypatch):
-    """At 2am "the drill failed" is not actionable. "could not run" means fix the
-    environment and re-run; "not clean" means the drill worked and the backup is
-    the problem. Opposite next actions, so they must not share a message."""
+def test_the_exit_code_is_the_drill_s_own_verdict(code, monkeypatch):
+    """THE CODE, NOT JUST THE PROSE.
+
+    This used to be `sys.exit(<message>)`, which PRINTS the message and exits 1
+    unconditionally. So the drill's deliberate four-way contract collapsed: all
+    three failures reported 1, and "fix your environment and retry" became
+    indistinguishable from "the backup is poison, do not retry" to anything
+    reading the code. Observed live 2026-08-12 — a dirty drill exited 1, not 3.
+
+    `gate` and `_cli_threatscan` both exit with the number. This one now does
+    too, so the idiom has no silent exception."""
     with pytest.raises(SystemExit) as exc:
         _cli(code, monkeypatch)
-    assert op._DRILL_VERDICT[code] in str(exc.value.code)
+    assert exc.value.code == code, "op restore must surface the drill's own code"
+
+
+@pytest.mark.parametrize("code", [op._DRILL_COULD_NOT_RUN,
+                                  op._DRILL_UNHEALTHY,
+                                  op._DRILL_DIRTY])
+def test_each_failure_says_which_one_it_was(code, monkeypatch, capsys):
+    """At 2am "the drill failed" is not actionable. "could not run" means fix the
+    environment and re-run; "not clean" means the drill worked and the backup is
+    the problem. Opposite next actions, so they must not share a message.
+
+    The message now goes to stderr rather than riding on SystemExit, so read it
+    there. Both halves matter: a human needs the words, a pipeline needs the code
+    (pinned by the test above)."""
+    with pytest.raises(SystemExit):
+        _cli(code, monkeypatch)
+    assert op._DRILL_VERDICT[code] in capsys.readouterr().err
 
 
 def test_the_three_failure_messages_are_distinct():
