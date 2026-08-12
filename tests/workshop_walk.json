@@ -1,0 +1,46 @@
+{
+  "_what_this_is": [
+    "An ATTESTATION about WORKSHOP.md's live half, in exactly the sense the Scan",
+    "rung means it: a claim about ONE state of the code, which must be NEWER than",
+    "the code it vouches for. test_workshop_walk.py enforces that.",
+    "",
+    "It does NOT claim the guide is correct. It claims someone checked, and when.",
+    "The distinction is the whole point: absence of a walk is not a pass.",
+    "",
+    "TO UPDATE: walk the live boxes against a real run, then set walked_commit to",
+    "the HEAD you walked. Do not bump the SHA to make a red test go green."
+  ],
+  "walked_at": "2026-08-12",
+  "walked_commit": "af521f3",
+  "verified": {
+    "M4.1  op gate -> \u25cf\u25cf\u25cf\u25cf\u25cf\u25cf VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
+    "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
+    "M5.2  op incident -> BASELINE marker still present: yes": "loop passes + live walk",
+    "M5.3  op restore -> FAIL: 14 encrypted (.locked) files present": "live walk, job 8163492",
+    "M5.3  op gate -> \u25cf\u25cf\u25cf\u25cf\u2717\u00b7 RECOVERABLE blocked at Scan, HOLD exit 1": "live walk",
+    "M5.3  the HOLD names restore-verify, NOT threatscan": "live walk. The loop cannot produce this: it inserts a threat scan, whose negative outranks the drill's verdict."
+  },
+  "not_verified": {
+    "close  op teardown -> terraform destroy complete": "never run end to end. The only live box still unwalked."
+  },
+  "re_observed_at_af521f3": {
+    "_why": [
+      "af521f3 changed what op restore prints, AFTER the walk above. This guard",
+      "caught that on its first run. Rather than bump the SHA, the changed",
+      "output was re-run live (job 8163659) and observed. These are the lines",
+      "that were checked, not assumed:"
+    ],
+    "POST /CreateTask renders legibly": "was }8163492\"809089,\"jobIds\":[0: { \u2014 the \\r sanitise works",
+    "the teardown pause text, exactly as M5.3 quotes it": "including the no-public-IP explanation",
+    "poll_job's media agent message carries both numbers": "typical and the 27-min tail",
+    "the exit-0 path still completes and tears down": "job 8163659"
+  },
+  "carried_over_not_re_observed": {
+    "M5.3 RESTORE DRILL DID NOT PASS message": [
+      "Observed at 6061a86 during the live walk. af521f3 changed the EXIT CODE",
+      "(1 -> the drill's own 1/2/3) but not this message string, which is the",
+      "same f-string. M5.3's box quotes the words and says only that a non-zero",
+      "exit is correct, which holds for either code. Judged unaffected."
+    ]
+  }
+}
