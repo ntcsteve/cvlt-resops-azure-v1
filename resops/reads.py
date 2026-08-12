@@ -7,7 +7,6 @@ matching rung, never a crash.
 """
 from __future__ import annotations
 
-import json
 import time
 
 import requests
@@ -15,7 +14,6 @@ import requests
 from .client import MAINTENANCE_MSG, Client, is_html_response
 
 SUMMARY_CLIP = 80        # max chars of verbose API error text in a one-line summary
-MAX_RESTORE_SCAN = 10    # how many recent restore jobs we inspect for recovery proof
 
 
 def _get(client: Client, path: str) -> tuple[dict, str]:
@@ -68,27 +66,42 @@ def find_vmgroup_id(client: Client, name: str) -> tuple[int | None, str]:
     return None, ""
 
 
-def _recovery_proof(client: Client, vm_name: str) -> tuple[dict | None, str]:
-    """Latest restore job that involved this VM. Returns (jobSummary, error);
-    jobSummary is None if no restore on record. Restore jobs are excluded from
-    the default /Job list, so we ask for them explicitly, then confirm each one
-    references our source VM via job detail."""
-    body, err = _get(client, "Job?jobFilter=Restore")
+def _recovery_proof(client: Client, attestation: dict | None) -> tuple[dict | None, str]:
+    """The restore job the DRILL ITSELF recorded, confirmed against the vendor.
+
+    WHY THIS IS A LOOKUP AND NOT A SEARCH. This used to ask for the last ten
+    restore jobs and take the newest whose detail JSON mentioned the VM name. On
+    2026-08-12 a Command Center FILE DOWNLOAD satisfied both conditions: two
+    files, 194 bytes, streamed to a Commvault-operated host. `jobFilter=Restore`
+    includes downloads, and the VM name is in their detail. So the Validate rung
+    reported "recovery proven", the gate PROMOTED, exit 0. Nothing was restored,
+    no VM was booted, verify.sh never ran.
+
+    THE DEFECT WAS NOT THE MATCHING RULE. It was asking an OPEN-WORLD list a
+    question only a CLOSED-WORLD record can answer. We do not control what that
+    filter returns, so any rule over it is a guess about a category we cannot
+    enumerate. Tightening it (exclude opType 196, require localizedOperationName
+    == "Restore") would only have made us better at guessing, and would have left
+    every job kind we have never produced still able to walk through.
+
+    The drill already knows which job it ran: run_restore.write_attestation
+    records it. So look THAT job up, and ask the vendor to confirm it terminated
+    the way the drill claims. Anything else is not proof, whatever kind it is.
+
+    Returns (jobSummary, error). None means nothing has proven recovery, which is
+    a gap and never a pass.
+    """
+    job_id = (attestation or {}).get("restore_job")
+    if not job_id:
+        return None, ""          # no drill has recorded one: unproven, not failed
+    body, err = _get(client, f"Job/{job_id}")
     if err:
         return None, err
-    jobs = sorted(body.get("jobs", []),
-                  key=lambda j: j.get("jobSummary", {}).get("jobId", 0), reverse=True)
-    for job in jobs[:MAX_RESTORE_SCAN]:
-        summary = job.get("jobSummary", {})
-        detail, derr = _get(client, f"Job/{summary.get('jobId')}")
-        if derr:
-            continue
-        # String search across the full JSON — works because the VM name appears
-        # in a known source field, but could false-match a substring in log/comment
-        # fields. Rebuild as a structured field check when the API shape is pinned.
-        if vm_name and vm_name in json.dumps(detail):
-            return summary, ""
-    return None, ""
+    summary = (body.get("jobs") or [{}])[0].get("jobSummary", {})
+    if not summary:
+        return None, (f"the attestation names restore job {job_id}, which the "
+                      f"CommCell has no record of")
+    return summary, ""
 
 
 def _age_days(job_summary: dict) -> float | None:

@@ -2,11 +2,14 @@
 
 classify()'s truth table (test_state.py) assumes well-formed Reads; these tests
 cover the I/O path that BUILDS a Reads: the right GETs, parsing the VM out of the
-list, scanning restore jobs for proof, and turning every failed read into an
-error string (never an exception) so classify() can block on the right rung.
+list, looking up the drill's own restore job for proof, and turning every failed
+read into an error string (never an exception) so classify() can block on the
+right rung.
 """
+import json
+
 from resops import client, reads
-from resops.reads import list_vmgroups
+from resops.reads import _recovery_proof, list_vmgroups
 from resops.state import gather
 
 WL = {"vm_group_id": 35311, "vm_name": "vm-rwk-ws-0610a-vm01"}
@@ -38,7 +41,10 @@ class FakeClient:
 
 def _vm(name="vm-rwk-ws-0610a-vm01"):
     return {"name": name, "slaCategoryDescription": "Protected",
-            "isRestoreActivityEnabled": True, "lastSuccessfulBackupTime": 1781299030}
+            "isRestoreActivityEnabled": True, "lastSuccessfulBackupTime": 1781299030,
+            # the pseudo-client id _attest() needs before it will reach the
+            # restore-verify fallback
+            "client": {"clientId": 17394}}
 
 
 def _routes(**over):
@@ -47,18 +53,32 @@ def _routes(**over):
         # the by-name resolver lists groups, then fetches the matched id
         "v4/vmgroups": (200, {"vmGroups": [{"vmGroup": {"id": 35311, "name": "resops-resolveme-vg"}}]}),
         "VM": (200, {"vmStatusInfoList": [_vm()]}),
-        "Job?jobFilter=Restore": (200, {"jobs": [{"jobSummary": {"jobId": 7540314, "status": "Completed"}}]}),
-        "Job/7540314": (200, {"src": "vm-rwk-ws-0610a-vm01"}),
+        "Client/Anomaly": (200, {}),          # nothing recorded: attests nothing
+        # proof is now a LOOKUP of the job the attestation names, not a search
+        "Job/7540314": (200, {"jobs": [{"jobSummary": {"jobId": 7540314,
+                                                       "status": "Completed"}}]}),
     }
     routes.update(over)
     return routes
 
 
-def test_gather_collects_all_three_lanes():
-    reads = gather(FakeClient(_routes()), WL)
+def _attestation_file(tmp_path, restore_job="7540314", **over):
+    """A restore-verify attestation on disk, as the drill writes it."""
+    data = {"source": "restore-verify", "clean": True, "detail": "ok",
+            "at": 1781299999, "restore_job": restore_job, "script": "/opt/app/verify.sh"}
+    data.update(over)
+    p = tmp_path / "attestation.json"
+    p.write_text(json.dumps(data))
+    return str(p)
+
+
+def test_gather_collects_all_three_lanes(tmp_path):
+    wl = dict(WL, attestation_file=_attestation_file(tmp_path))
+    reads = gather(FakeClient(_routes()), wl)
     assert reads.vm_name == "vm-rwk-ws-0610a-vm01"
     assert reads.vmgroup["name"] == "Steve-VM-Group" and reads.vmgroup_error == ""
     assert reads.vm["name"] == "vm-rwk-ws-0610a-vm01" and reads.vm_error == ""
+    assert reads.attestation["restore_job"] == "7540314"
     assert reads.proof["jobId"] == 7540314 and reads.proof_error == ""
 
 
@@ -83,14 +103,67 @@ def test_vm_absent_from_list_is_none_without_error():
     assert reads.vm is None and reads.vm_error == ""
 
 
-def test_proof_requires_the_job_detail_to_reference_our_vm():
-    # restore job exists, but its detail names a different VM → no proof
-    routes = _routes(**{"Job/7540314": (200, {"src": "some-other-vm"})})
-    assert gather(FakeClient(routes), WL).proof is None
+# --------------------------------------------------------------------------- #
+# _recovery_proof — the Validate rung's evidence.
+#
+# THE BUG THESE EXIST TO PREVENT, observed live 2026-08-12. This used to ask for
+# the last ten restore jobs and take the newest whose detail JSON mentioned the VM
+# name. A Command Center FILE DOWNLOAD (job 8162459: two files, 194 bytes, sent to
+# a Commvault-operated host) matched both conditions, because jobFilter=Restore
+# includes downloads and the VM name is in their detail. The ladder reported
+# ●●●●●● VALIDATED "recovery proven" and the gate PROMOTED, exit 0, on a workload
+# nothing had restored.
+#
+# The rule is now a LOOKUP of the job the drill itself recorded, so the shape of
+# the vendor's job list cannot decide our verdict. These tests pin that, using the
+# real job ids from that night.
+# --------------------------------------------------------------------------- #
+def test_a_file_download_is_not_proof_of_recovery():
+    """THE REGRESSION. Job 8162459 is the real download that promoted a workload.
+    Even though it is newer than the drill, nothing may consult it: proof comes
+    from the attestation, and the attestation names 8162077."""
+    routes = _routes(**{
+        "Job/8162077": (200, {"jobs": [{"jobSummary": {"jobId": 8162077,
+                                                       "status": "Completed"}}]}),
+        # present, newer, and irrelevant — a lookup never sees it
+        "Job/8162459": (200, {"jobs": [{"jobSummary": {"jobId": 8162459,
+                                                       "status": "Completed"}}]}),
+        # the vendor list the old code consumed, with the download newest. Its
+        # presence must not influence the verdict: that is the whole point.
+        "Job?jobFilter=Restore": (200, {"jobs": [
+            {"jobSummary": {"jobId": 8162459, "status": "Completed"}},
+            {"jobSummary": {"jobId": 8162077, "status": "Completed"}}]}),
+    })
+    proof, err = _recovery_proof(FakeClient(routes), {"restore_job": "8162077"})
+    assert err == ""
+    assert proof["jobId"] == 8162077, "the drill's own job must be the proof"
 
 
-def test_proof_read_error_propagates():
-    reads = gather(FakeClient(_routes(**{"Job?jobFilter=Restore": (401, {})})), WL)
+def test_an_attestation_with_no_job_id_proves_nothing():
+    """Absence of evidence is not evidence of absence. An attester that did not
+    record WHICH job it ran has not identified anything, so this is a gap."""
+    proof, err = _recovery_proof(FakeClient(_routes()), {"source": "restore-verify",
+                                                         "clean": True})
+    assert proof is None and err == ""
+
+
+def test_no_attestation_at_all_proves_nothing():
+    proof, err = _recovery_proof(FakeClient(_routes()), None)
+    assert proof is None and err == ""
+
+
+def test_a_job_the_commcell_cannot_confirm_fails_closed():
+    """The attestation is our own artefact. If the vendor has no record of the job
+    it names, we have a claim and no confirmation, which must never read as proof."""
+    routes = _routes(**{"Job/9999999": (200, {"jobs": []})})
+    proof, err = _recovery_proof(FakeClient(routes), {"restore_job": "9999999"})
+    assert proof is None
+    assert "9999999" in err and "no record" in err
+
+
+def test_proof_read_error_propagates(tmp_path):
+    wl = dict(WL, attestation_file=_attestation_file(tmp_path))
+    reads = gather(FakeClient(_routes(**{"Job/7540314": (401, {})})), wl)
     assert reads.proof is None and reads.proof_error == "HTTP 401"
 
 

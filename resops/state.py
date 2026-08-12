@@ -84,7 +84,7 @@ class Reads:
     # None means NOBODY has — which is a gap, never a pass. {"source", "clean", ...}
     attestation: dict | None = None
     attestation_error: str = ""
-    proof: dict | None = None                     # latest restore job summary for this VM
+    proof: dict | None = None                     # the drill's OWN restore job, confirmed
     proof_error: str = ""
 
 
@@ -139,7 +139,10 @@ def gather(client: Client, workload: dict) -> Reads:
     vmgroup, vmgroup_error = _get(client, f"V4/VMGroup/{group_id}")
     vm, vm_error = _find_vm(client, vm_name)
     attestation, attestation_error = _attest(client, vm, workload.get("attestation_file"))
-    proof, proof_error = _recovery_proof(client, vm_name)
+    # Proof comes FROM the attestation, not from a search of vendor job history.
+    # The drill recorded the job it ran; we look that one up and confirm it. See
+    # reads._recovery_proof for the download that satisfied the old search.
+    proof, proof_error = _recovery_proof(client, attestation)
     return Reads(
         vm_name=vm_name,
         vmgroup=vmgroup, vmgroup_error=vmgroup_error,
@@ -388,7 +391,7 @@ def classify(reads: Reads) -> Ladder:
     # ── Validate ── has a real restore PROVEN recovery for this VM? ───────────
     if reads.proof_error:
         return stop(State.RECOVERABLE, "Validate",
-                    f"could not read restore jobs: {reads.proof_error}",
+                    f"could not confirm the restore job: {reads.proof_error}",
                     {"vm_name": vm_name}, error=True)
     proof = reads.proof
     if proof is None:
