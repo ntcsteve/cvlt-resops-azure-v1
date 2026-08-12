@@ -32,9 +32,19 @@ def _proof(status="Completed"):
     return {"jobId": 7540314, "status": status}
 
 
-def _scan(*, clean=True, source="threatscan", detail="", **extra):
-    """An attestation — the shape reads.threat_attestation returns."""
-    return {"source": source, "clean": clean, "detail": detail, **extra}
+def _scan(*, clean=True, source="threatscan", detail="", at=1_700_000_060, **extra):
+    """An attestation about ONE recovery point.
+
+    `at` defaults to just AFTER _vm()'s lastSuccessfulBackupTime, because that is
+    the only order reality produces: the drill restores a recovery point and then
+    verifies it, so a genuine attestation is always newer than the point it
+    describes. Omitting `at`, or setting it earlier than the newest point, blocks
+    at Scan — see the coverage tests below.
+
+    Note on `source`: threat_attestation() never returns clean=True (it reports
+    negatives or nothing), so a clean fixture stands in for restore-verify.
+    """
+    return {"source": source, "clean": clean, "detail": detail, "at": at, **extra}
 
 
 def _full_reads(**overrides) -> Reads:
@@ -187,6 +197,62 @@ def test_a_positive_attestation_clears_the_rung():
     assert scan.passed is True
     assert scan.evidence["attested_clean"] is True
     assert scan.evidence["attested_by"] == "threatscan"
+
+
+# --------------------------------------------------------------------------- #
+# COVERAGE — does the attestation describe the point we would actually restore?
+#
+# THE BUG THESE GUARD, and it was ours, live, on 2026-08-12. The gate returned
+# ●●●●●● VALIDATED · PROMOTE · exit 0 for a workload whose newest recovery point
+# held two EICAR files and fourteen encrypted ones, because the attestation was
+# clean, 51 minutes older than that point, and only 0.0 days old. It then wrote a
+# framework-mapped compliance report saying the same thing.
+#
+# An attestation is a claim about ONE recovery point. Age is policy and lives in
+# the gate. Coverage is capability and lives here. The numbers below are the real
+# ones from that run, scaled to the fixture clock.
+# --------------------------------------------------------------------------- #
+def test_an_attestation_older_than_the_newest_point_does_not_cover_it():
+    # backup at 1_700_003_600, attestation 51 minutes earlier. The exact shape of
+    # the live failure: clean, recent, and about a point that no longer matters.
+    ladder = classify(_full_reads(vm=_vm(last_success=1_700_003_600),
+                                  attestation=_scan(clean=True, at=1_700_000_540)))
+    assert ladder.state is State.RECOVERABLE
+    assert ladder.blocked_stage == "Scan"
+    assert "does not cover" in ladder.reason
+    scan = next(r for r in ladder.rungs if r.stage == "Scan")
+    assert scan.evidence["attested_at"] == 1_700_000_540
+    assert scan.evidence["newest_recovery_point"] == 1_700_003_600
+
+
+def test_an_attestation_newer_than_the_newest_point_clears():
+    # The drill runs AFTER the backup it verifies, which is the only real order.
+    ladder = classify(_full_reads(vm=_vm(last_success=1_700_003_600),
+                                  attestation=_scan(clean=True, at=1_700_003_700)))
+    assert ladder.state is State.VALIDATED
+    assert ladder.blocked_stage is None
+
+
+def test_a_clean_attestation_with_no_timestamp_fails_closed():
+    """Without a timestamp an attestation cannot be shown to cover anything, so
+    it must not clear the rung. Fails closed rather than assuming it is current."""
+    att = _scan(clean=True)
+    del att["at"]
+    ladder = classify(_full_reads(attestation=att))
+    assert ladder.state is State.RECOVERABLE
+    assert ladder.blocked_stage == "Scan"
+    assert "no timestamp" in ladder.reason
+
+
+def test_coverage_never_overrides_a_dirty_verdict():
+    """A dirty attestation blocks as DIRTY, not as uncovered. The reader needs the
+    worse fact, and the two have different fixes."""
+    ladder = classify(_full_reads(vm=_vm(last_success=1_700_003_600),
+                                  attestation=_scan(clean=False, detail="14 encrypted files",
+                                                    at=1_700_000_540)))
+    assert ladder.blocked_stage == "Scan"
+    assert "14 encrypted files" in ladder.reason
+    assert "does not cover" not in ladder.reason
 
 
 def test_the_evidence_names_who_attested():

@@ -329,13 +329,45 @@ def classify(reads: Reads) -> Ladder:
                     "recovery point is UNATTESTED — nothing has verified it is safe "
                     "to restore from", {"vm_name": vm_name, "attested_by": None},
                     error=False)
+    attested_at = attestation.get("at")
+    newest_point = vm.get("lastSuccessfulBackupTime") or 0
     scan_ev = {"attested_by": attestation.get("source"),
                "attested_clean": attestation.get("clean"),
-               "detail": attestation.get("detail", "")}
+               "detail": attestation.get("detail", ""),
+               "attested_at": attested_at,
+               "newest_recovery_point": newest_point}
     if not attestation.get("clean"):
         return stop(State.RECOVERABLE, "Scan",
                     f"recovery point failed {attestation.get('source')} — "
                     f"{attestation.get('detail', 'not clean')}",
+                    scan_ev, error=False)
+
+    # ── COVERAGE ── does this attestation actually describe the point we would
+    # restore from? An attestation is a claim about ONE recovery point, not a
+    # property of the workload. We used to judge it by age alone, and on
+    # 2026-08-12 that let a clean attestation written at 05:21 vouch for a
+    # recovery point taken at 06:12 holding two EICAR files and fourteen
+    # encrypted ones. The gate returned PROMOTE and wrote a framework-mapped
+    # report saying so.
+    #
+    # AGE is policy and belongs to the gate (tiers.yaml). COVERAGE is
+    # capability and belongs here: a newer recovery point that nothing has
+    # opened is simply unverified, whatever the clock says. Comparing two
+    # timestamps we already hold keeps classify() pure.
+    #
+    # This is strict on purpose. Every new backup leaves the newest point
+    # unverified until a drill runs, which is TRUE and is what `enforce_from`
+    # exists to let a team declare rather than hide.
+    if not isinstance(attested_at, (int, float)):
+        return stop(State.RECOVERABLE, "Scan",
+                    f"attestation from {attestation.get('source')} carries no "
+                    f"timestamp, so it cannot be shown to cover any recovery point",
+                    scan_ev, error=False)
+    if newest_point and attested_at < newest_point:
+        lag_h = round((newest_point - attested_at) / 3600.0, 1)
+        return stop(State.RECOVERABLE, "Scan",
+                    f"attestation does not cover the newest recovery point — "
+                    f"verified {lag_h}h before it was taken; re-run the drill",
                     scan_ev, error=False)
     cleared("Scan", f"attested clean by {attestation.get('source')}", scan_ev)
 
