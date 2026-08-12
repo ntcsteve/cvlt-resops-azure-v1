@@ -30,6 +30,10 @@ tfplan
 # private working journal — keep local, not for the public repo
 NOTES.md
 
+# cold-start briefing — names live subscription/tenant ids, same secrecy as
+# HANDOVER. This is the file a fresh session reads FIRST.
+START-HERE.md
+
 # session handover/log — accumulate live tenant/subscription ids each session
 HANDOVER.md
 # rotated by /wrap-up — same live ids, same secrecy. NOTE: gitignore has
