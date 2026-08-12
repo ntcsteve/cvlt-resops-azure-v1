@@ -50,7 +50,7 @@
 #
 #   1. The SECOND threatscan is mandatory. The anomaly is a per-CLIENT record,
 #      not a per-recovery-point one. Cleaning the VM does not clear it; only a
-#      fresh scan overwrites it. Skip step 11 and the gate HOLDs forever no
+#      fresh scan overwrites it. Skip step 12 and the gate HOLDs forever no
 #      matter how clean the drill comes back.
 #
 #   2. restore must be the LAST thing that touches recovery points. Its
@@ -58,14 +58,21 @@
 #      drill re-breaks coverage. Measured live on 2026-08-12: an attestation
 #      written 28 min before the newest backup, correctly refused.
 #
-# WHAT TO EXPECT, from 13 real jobs measured on 2026-08-12:
+# WHAT TO EXPECT, measured across the two passes actually run on 2026-08-12:
 #
-#   backup           0.8 min median, 1.4 max   (NOT the 5-27 min folklore; the
-#                                               one 27-min job was a media agent
-#                                               failover, an outlier in 13)
-#   threat analysis  3.1 min
-#   restore job      1.4 min, plus VM boot + verify + teardown around it
-#   one pass         ~25 min       two passes  ~50 min
+#   backup           1.3 to 2.3 min over 6 jobs, at 20s poll granularity so these
+#                    are upper bounds. An earlier 9-job sample the same day gave
+#                    "0.8 min median / 1.4 max" and FIVE OF SIX tonight exceeded
+#                    that stated maximum, so plan for ~1.5 min and do not be
+#                    surprised by 2.5. Still nothing like the 5-27 min folklore,
+#                    which came from a single media agent failover.
+#   threat analysis  3.0 min typical, one 5.7 min outlier in 4
+#   restore job      1.4 min, from the job's own start/end times, plus VM boot
+#                    + verify + teardown around it
+#   one pass         ~20 min       two passes  ~40 min
+#
+# Every number above is from a run that completed. Timings quoted from memory or
+# from a sample that predates a change have been wrong here twice.
 #
 # THE TWO RISKS, both vendor-side:
 #
@@ -97,7 +104,13 @@ run() {
   local what=$1; shift
   STEP=$((STEP+1))
   say "step $STEP  $what   (expect exit $want)  $(stamp)"
-  "$@" 2>&1 | tee -a "$LOG"
+  # STDIN IS CLOSED FOR EVERY STEP, and that is the point of the script. The
+  # restore drill pauses on `input()` when sys.stdin.isatty(), so run from a
+  # terminal step 13 stops and waits for a keypress: a script that "cannot
+  # improvise" sitting there while a human decides something. The pause is right
+  # for a person running `op restore` by hand and wrong here, and </dev/null is
+  # how you say "nobody is watching" without changing the drill.
+  "$@" < /dev/null 2>&1 | tee -a "$LOG"
   local got=${pipestatus[1]}      # zsh: lowercase, and [1] is the command not tee
   if [[ $got -ne $want ]]; then
     print -r -- "\n>>> STOP at step $STEP ($what): exit $got, expected $want" | tee -a "$LOG"
