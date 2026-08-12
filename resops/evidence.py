@@ -187,11 +187,27 @@ def history_entry(run_at: str, target: str, results: list,
         for key in ("rpo_hours", "sla_status"):
             if key in result.evidence:
                 metrics[key] = result.evidence[key]
+    # WHY, not just WHICH. The chain used to record that a stage was a GAP and
+    # never what was found, so six months later it could prove "scan was a GAP at
+    # 04:17 on 12 Aug" and nothing about WHAT blocked it. The finding did exist —
+    # in report.md, which is not sealed. So the reason lived in the file anyone
+    # could edit and was missing from the one that proves it was not edited.
+    #
+    # ACPO Good Practice Guide, Principle 3: "An audit trail or other record of
+    # all processes applied to digital evidence should be created and preserved.
+    # An independent third party should be able to examine those processes and
+    # achieve the same result." A label cannot satisfy that. A reason can.
+    #
+    # Both keys are ALWAYS present, None when nothing blocked, because a
+    # sometimes-absent key is one more thing to reason about at 2am.
+    blocker = next((r for r in results if r.outcome is not Outcome.PASS), None)
     entry = {
         "run_at": run_at,
         "target": target,
         "outcomes": {r.function: r.outcome.label for r in results},
         "metrics": metrics,
+        "blocked_at": blocker.function if blocker else None,
+        "reason": blocker.summary if blocker else None,
     }
     if state is not None:
         entry["state"] = state
