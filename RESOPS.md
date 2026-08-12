@@ -106,7 +106,14 @@ The second lesson cost more and generalises further: **we identified an operatio
 
 The third is about method, and it is the expensive one. We spent a month, and then a full day, black-box testing a feature against an eligibility rule we could not see. Each experiment was cheap and the answer always felt one more away. **A single conversation with someone who knew the product produced the missing piece in five minutes.** When you cannot see the rule, stop experimenting and go and ask. That is not a failure of rigour, it is the correct move for the shape of the problem.
 
-This applies to your monitoring too. Go and check what your verifier actually verified.
+The fourth is ours, in this repo's own code, and it is the one we would least like to have found. **The top rung of this ladder, the one that says recovery is *proven*, accepted a 194-byte file download as proof.** It asked the vendor's job history for the newest restore job mentioning this workload, and a console file download satisfied both conditions honestly: the restore filter includes downloads, and the workload's name is in the record. Nothing was restored. Nothing was booted. Our own check never ran. The gate said PROMOTE and exited 0.
+
+The tempting fix is to tighten the match, and that is the same mistake one level up. The real error was **asking an open-world list a question only a closed-world record can answer.** We do not control what that filter returns, so any rule over it is a guess about a category we cannot enumerate — and meanwhile the drill that did the work had already written down the exact job it ran.
+
+> **Do not re-derive what you were told.**
+> When your own code did the work and recorded it, that record is the evidence. The vendor's job is to confirm it, not to be searched for it.
+
+This applies to your monitoring too. Go and check what your verifier actually verified — and note that we only found ours by *deliberately trying to fool it*, not by reading it. It had looked correct for as long as it had existed.
 
 ## Adopting it
 
@@ -124,7 +131,7 @@ L1 is the whole adoption story: read-only, physically cannot mutate your environ
 
 ## Honest limits
 
-- **The adapter is vendor-specific.** `client.py` + `reads.py`, 384 lines. The ladder, gate, evidence, crosswalk and metrics are not. Porting means implementing those reads, not rewriting the engine. No second adapter exists yet, so treat that as a clean seam rather than a proven claim.
+- **The adapter is vendor-specific.** `client.py` + `reads.py`, ~450 lines. The ladder, gate, evidence, crosswalk and metrics are not. Porting means implementing those reads, not rewriting the engine. No second adapter exists yet, so treat that as a clean seam rather than a proven claim.
 - **The reference workload is a VM.** A bash service and a CSV. The *contract* transfers to a managed database or a bucket unchanged; worked examples for those are not written yet.
 - **Restore-verify costs real money at production data volume.** The answer is sampling plus a per-tier freshness bar, not verifying everything every day. There is no cost model here yet.
 - **The compliance crosswalk is indicative.** It supports a resilience programme. It is not a formal attestation.

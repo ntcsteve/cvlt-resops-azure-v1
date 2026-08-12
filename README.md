@@ -428,6 +428,10 @@ Be careful which of these you repeat as fact. The project has already paid once 
                   four attestation verdicts - unattested, dirty, stale, clean
  PROVEN LIVE      the compromised-backup path: every vendor signal green,
                   the recovery point still poison
+ PROVEN LIVE      the write lane is REPEATABLE. Two consecutive passes of the
+                  14-step loop, 2026-08-12, every exit code as expected - three
+                  of them non-zero by design - with no step re-run and no
+                  improvising by the person running it.
  PROVEN LOCALLY   the observability stack, 12/12 checks in Docker.
                   NEVER applied to Azure.
  PROVEN           threat scan DETECTS malware in an Azure VM image backup
@@ -450,4 +454,4 @@ Be careful which of these you repeat as fact. The project has already paid once 
 
 ## Maintainer
 
-Maintained by [@ntcsteve](https://github.com/ntcsteve). Open an issue for questions, corrections, or if you get an adapter working against a different data-protection platform - the ladder, gate, evidence and metrics are vendor-neutral, and `client.py` + `reads.py` (384 lines) are the only coupled files.
+Maintained by [@ntcsteve](https://github.com/ntcsteve). Open an issue for questions, corrections, or if you get an adapter working against a different data-protection platform - the ladder, gate, evidence and metrics are vendor-neutral, and `client.py` + `reads.py` (~450 lines) are the only coupled files.
