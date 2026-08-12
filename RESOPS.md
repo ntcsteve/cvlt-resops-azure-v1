@@ -72,19 +72,20 @@ The first four names are the loop's, verbatim. The one thing this adds is splitt
 
 Everything above is bookkeeping until something can honestly say *this recovery point is safe to restore from*. That is the only genuinely difficult question in resilience, and it is where we spent the most and learned the most.
 
-Two cheap proxies were tried and both were blind:
+Two cheap proxies were tried. One is noise. The other works, and is still not enough on its own:
 
 ```
- threat scan on the backup    never returned a verdict in a month. it CAN
-                              be made to run on an Azure VM (README lists the
-                              four things it needs), but ours stall in the
-                              scan phase on a vendor-side fault. a signal you
-                              cannot get an answer out of is not a signal.
+ threat scan on the backup    WORKS. 2026-08-12: two planted EICAR files
+                              found inside an Azure VM image backup, with a
+                              clean scan either side of the dirty one. It
+                              also missed fourteen encrypted files that
+                              verify.sh caught. A second attester, not a
+                              substitute.
  dedupe ratio as an           the same idle VM ranges 57.9%-99.7%.
    integrity signal           42 points of natural variance is noise, not signal.
 ```
 
-Both were proxies. **There is no cheap way to know a backup is good. You have to open it and look.** That is why almost nobody does it, and why almost nobody actually knows.
+**There is no way to know a backup is good without opening it and looking.** The vendor's scan does open it, and looks for what *it* recognises. Only your own check knows whether *your* service still works. That is why you want both, and why almost nobody has either.
 
 So the attester is [`verify.sh`](VERIFY.md): the restore drill opens the recovery point in isolation and runs the workload's *own* check inside the restored copy. The one line it prints, `OK:` or `FAIL:`, is the attestation. Thirty lines of shell anyone in the room can read.
 
@@ -95,9 +96,13 @@ And an attestation has a shelf life. "Verified once, a year ago" is not verified
 > **Absence of evidence is not evidence of absence.**
 > A check that ran nothing must never report a pass.
 
-We read "absent from the anomaly list" as "scanned and clean" for a month. Not one of those jobs had ever completed. `op threatscan` now refuses to report clean when `totalNumOfFiles` is 0, and the Scan rung blocks on an unattested point rather than inventing one.
+We read "absent from the anomaly list" as "scanned and clean" for a month. The Scan rung now blocks on an unattested point rather than inventing one.
 
-The second lesson cost less and generalises further: **the job type shown in the console did not match the job type returned by the API.** Ten "completed" rows were a different operation entirely. Read your verifier's output from a second source before you believe it.
+The rule survived a correction; the story we told about it did not. We also spent six weeks asserting those scans had never examined anything, on the strength of a field that job type does not populate at all. On 2026-08-12 one of them found two planted EICAR files. **The rule was right for a reason we had wrong**, which is its own lesson about how comfortable a good rule can make you.
+
+The second lesson cost more and generalises further: **we identified an operation by a field that was never meant to name it.** `opType` and `jobType` describe the job *kind*; `localizedOperationName` describes the *operation*, and for threat analysis those two permanently disagree inside the same record. We read `opType`, concluded "file indexing, not a scan", and built six weeks on it. The console had been right the whole time.
+
+> Before you conclude what something *is* from one field, find out what that field was for.
 
 The third is about method, and it is the expensive one. We spent a month, and then a full day, black-box testing a feature against an eligibility rule we could not see. Each experiment was cheap and the answer always felt one more away. **A single conversation with someone who knew the product produced the missing piece in five minutes.** When you cannot see the rule, stop experimenting and go and ask. That is not a failure of rigour, it is the correct move for the shape of the problem.
 

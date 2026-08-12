@@ -65,9 +65,12 @@ write_files:
       # and looks. (The drill parses that line, not the exit code; keep the two in
       # agreement and keep every message on ONE line. Contract: VERIFY.md.)
       #
-      # This is the only attester we own end to end, and it is the only one that
-      # survived contact with this tenant: threat scan analysed zero files, and
-      # dedupe ratio has 40+ points of natural variance. Reading the data works.
+      # This is the only attester we own end to end, and the only one that can
+      # say YES. It is not the only one that works. On 2026-08-12 the vendor's
+      # threat scan found two planted EICAR files in this VM's backup and missed
+      # fourteen encrypted ones; this script found the fourteen and never saw the
+      # two. Neither is sufficient alone, which is the argument for both.
+      # Dedupe ratio was tried and killed: 40+ points of variance on an idle VM.
       #
       # Every team writes their own. Ours checks four things.
       set -uo pipefail

@@ -164,9 +164,13 @@ def test_no_successful_backup_stays_monitored():
 #
 # The rung the workshop turns on, and the rung that taught us the hardest lesson.
 # It used to clear whenever no anomaly was recorded — which sounds reasonable and
-# is wrong, because a scan that never ran records no anomaly either. Live proof
-# on 2026-08-01: every scan in the tenant had analysed zero files, so every
-# "clean" was hollow. An unattested recovery point is now a BLOCK.
+# is wrong, because a scan that never ran records no anomaly either. An
+# unattested recovery point is now a BLOCK.
+#
+# The lesson survived a correction. For six weeks we also believed no scan here
+# had ever examined anything; on 2026-08-12 one reported two planted EICAR files.
+# The rule was right, the reason given for it was not, and the tests below never
+# depended on the reason.
 # --------------------------------------------------------------------------- #
 def test_an_unattested_point_blocks_the_rung():
     # THE regression guard. Nobody checked, so nobody may promote.

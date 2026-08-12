@@ -312,9 +312,13 @@ def classify(reads: Reads) -> Ladder:
     # ── Scan ── has ANYONE attested the point we'd restore from? ──────────────
     # An unattested recovery point is not a clean one. This rung used to clear on
     # the absence of a recorded anomaly, which sounds reasonable and is wrong: a
-    # scan that never ran also records no anomaly. Live proof, 2026-08-01 — every
-    # scan in the tenant had analysed zero files, so every "clean" was hollow.
-    # An attester must say something it actually checked, or this rung blocks.
+    # scan that never ran also records no anomaly. An attester must say something
+    # it actually checked, or this rung blocks.
+    #
+    # 2026-08-12: a real scan finally reported a real detection here, so the rung
+    # now has two working attesters instead of one. It changes nothing above. A
+    # signal that arrives is a negative you can trust; a signal that is silent
+    # still attests nothing.
     if reads.attestation_error:
         return stop(State.RECOVERABLE, "Scan",
                     f"could not read attestation: {reads.attestation_error}",

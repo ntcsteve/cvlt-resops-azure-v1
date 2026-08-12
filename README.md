@@ -299,30 +299,44 @@ We tried two shortcuts first and both were blind:
 
 | Attempt | Result |
 |---|---|
-| Threat scan on the backup | **never produced a verdict** *in our tenant*, across a month. It is not for want of configuration - see "what a threat scan needs" below - and the last blocker is vendor-side infrastructure, not us |
+| Threat scan on the backup | **works** - proven 2026-08-12: two planted EICAR files found inside an Azure VM image backup, with a clean scan either side of the dirty one. It missed fourteen encrypted files that `verify.sh` caught. A second attester, not a substitute |
 | Dedupe ratio as an integrity signal | the same idle VM ranges **57.9% - 99.7%**; 42 points of natural variance is noise, not signal |
 
-Both were *proxies*. There is no cheap way to know a backup is good - **you have to open it and look.** That is why almost nobody does it, and why almost nobody actually knows. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
+There is no way to know a backup is good without opening it - **you have to look inside.** The vendor's scan does look, for what *it* recognises. Only your own check knows whether *your* service still works. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
 
 #### What a threat scan on an Azure VM actually needs
 
-Written down because it cost a month, and because none of it is in one place in the vendor's documentation. Four things, all required together:
+Less than we spent six weeks believing. A scan found two planted EICAR files on a VM group `op protect` had created and nobody had touched:
 
 ```
- 1  a STREAMING VM group            IntelliSnap creates a snapshot first,
-                                    and snapshots are not scannable
- 2  file indexing ON that group     PUT v4/VmGroup/{id}
-                                      {"enableFileIndexing": true}
-                                    the WRITE field is enableFileIndexing;
-                                    the READ field is a different name and
-                                    does not reflect the write. That
-                                    mismatch is why this took so long.
- 3  the VM listed AND associated    it must appear under the threat scan
-    in a threat scan group          group, Configured, with a backup
- 4  the PER-RESOURCE trigger        POST ThreatIndicator/OnDemandScan
+ collectFileDetailsforGranularRecovery   False
+ enableFileIndexing                      never set
+ IntelliSnap                             off
+ Indexing V2                             on        ← the one documented
+                                                     prerequisite, already on
 ```
 
-Point 4 is the one nobody guesses. The **plan-level** run (`TaskOperation` against the scan plan's schedule) fails at the eligibility filter with `[69:70] no eligible subclients` and never binds to a VSA subclient. The **per-resource** action on the Resources tab does bind, and reaches the scan phase. They are different code paths and only one of them works.
+**It works on the defaults.** This section previously listed four requirements including `enableFileIndexing`. That was wrong: we never set that field on the group that worked.
+
+The VM does need to be listed in a threat scan group with a scan plan attached, and association can be automatic. Beyond that, two triggers work and one does not:
+
+```
+ POST TaskOperation                  plan-level. fans out one job per subclient
+   {opType RUN, subtaskEntity[…],    in the group. derive taskId from the scan
+    taskIds[…]}                      plan and subtaskId from Schedules.
+ POST ThreatIndicator/OnDemandScan   per-resource. ONE VM, ONE job id returned.
+   {clients[{tdPlan, client{…}}],    Does NOT require the VM to appear in the
+    type 0, levelType 1}             Resources tab yet. UNDOCUMENTED - absent
+                                     from the API reference and the vendor SDK.
+ POST EDiscoveryClients/             creates a Threat Hunting job that never
+   OnDemandAnalytics                 binds to a VSA subclient and reports "no
+                                     new backup data". This is the one the
+                                     vendor SDK uses. Dead end for VMs.
+```
+
+Read the verdict from `GET Client/Anomaly`, keyed on the VM's `client.clientId`, at `vsaSecurityScanAnomalyInfo.malwareItemsCount`. **Never read job success as clean** - a re-scan of a poisoned point with no new backup data completes with no error and no verdict.
+
+And if a scan fails, suspect the group before the product. A group whose VM has been deleted fails every time with `[14:313]`, while identically configured groups in the same tenant succeed.
 
 With all four in place our jobs bind, reach `Process: FileScan`, and then stall on `[14:313]`, a remote-file-cache fault between two vendor-operated media agents. That is where it sits: correct on our side, unresolved on theirs, and still no verdict ever produced.
 
@@ -416,18 +430,17 @@ Be careful which of these you repeat as fact. The project has already paid once 
                   the recovery point still poison
  PROVEN LOCALLY   the observability stack, 12/12 checks in Docker.
                   NEVER applied to Azure.
- PROVEN           an Azure VM image backup CAN be made eligible for threat
-                  analysis, and the job binds and reaches its scan phase.
-                  Four things are required together and all four are ours:
-                  a streaming VM group, enableFileIndexing on that group,
-                  the VM listed and associated in a threat scan group, and
-                  the PER-RESOURCE trigger. See below.
- NOT PROVEN       that threat scan can DETECT anything here. No scan has
-                  ever produced a verdict. Ours stall in the scan phase on
-                  a vendor-side media agent fault and fail after ~4 hours
-                  of retries. Never claim it works, and never claim it
-                  cannot - say it has never returned an answer.
- NOT SCOPED       Synthetic Recovery. Available in the tenant, never run.
+ PROVEN           threat scan DETECTS malware in an Azure VM image backup
+                  here, on default settings. 2026-08-12: two planted EICAR
+                  files found, error 91:711, malwareItemsCount 2, with a
+                  clean scan either side of the dirty one.
+ NOT PROVEN       that its ENCRYPTION detection fires. Fourteen high-entropy
+                  .locked files went unreported in the same scan that found
+                  the EICAR. verify.sh caught all fourteen and missed the
+                  EICAR. Neither attester is sufficient alone.
+ NOT SCOPED       Synthetic and Forensic recovery. Both are documented, both
+                  are offered in the restore wizard for this VM, neither has
+                  been executed here.
  NOT WRITTEN      verify.sh worked examples for managed databases and object
                   storage. The contract transfers; the examples do not exist.
  NO MODEL         the cost of restore-verify at production data volume.

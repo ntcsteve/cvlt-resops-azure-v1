@@ -195,10 +195,14 @@ def threat_attestation(body: dict, commcell_client_id: int) -> dict | None:
     THE MISTAKE THIS FUNCTION EXISTS TO PREVENT. Client/Anomaly reports
     EXCEPTIONS. A client absent from that list has no *recorded anomaly*, which
     is NOT the same as "was scanned and found clean". We read absence as an
-    all-clear for a month; the live run on 2026-08-01 showed every scan in this
-    tenant had analysed zero files, so the clean verdicts meant nothing at all.
-    Absence of evidence is not evidence of absence, and a recoverability tool
-    that confuses the two is worse than no tool.
+    all-clear for a month. Absence of evidence is not evidence of absence, and a
+    recoverability tool that confuses the two is worse than no tool.
+
+    SECOND CORRECTION, 2026-08-12. We then spent six weeks believing the scans
+    here had never analysed anything, on the strength of totalNumOfFiles, which
+    this job type does not populate at all. A scan reported two planted EICAR
+    files, so that claim is withdrawn. The rule above is unchanged and was always
+    right; the accusation attached to it was not.
 
     So this only ever reports a NEGATIVE it can actually see:
         anomalies recorded   -> attested, clean=False
