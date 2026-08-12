@@ -131,7 +131,7 @@ L1 is the whole adoption story: read-only, physically cannot mutate your environ
 
 ## Honest limits
 
-- **The adapter is vendor-specific.** `client.py` + `reads.py`, ~450 lines. The ladder, gate, evidence, crosswalk and metrics are not. Porting means implementing those reads, not rewriting the engine. No second adapter exists yet, so treat that as a clean seam rather than a proven claim.
+- **The vendor coupling is wider than the adapter, and this correction is recent.** `client.py` + `reads.py` (~450 lines) do the I/O, and `gate()`, the evidence chain, the crosswalk, the metrics and the renderer are genuinely vendor-neutral. **But `classify()` — the ladder itself — reads Commvault's field names directly** (`slaCategoryDescription`, `lastSuccessfulBackupTime`, `vmBackupInfo`, `lastBackup.failureReason`). So porting today is not "implement those reads": it is "implement reads that emulate Commvault's JSON shape", which asks a porter to learn a foreign vendor's schema to satisfy an engine that claims not to care about it. A neutral facts seam between the adapter and the ladder is designed and not built. Until it is, treat portability as an *intention* rather than a clean seam, and certainly not a proven claim.
 - **The reference workload is a VM.** A bash service and a CSV. The *contract* transfers to a managed database or a bucket unchanged; worked examples for those are not written yet.
 - **Restore-verify costs real money at production data volume.** The answer is sampling plus a per-tier freshness bar, not verifying everything every day. There is no cost model here yet.
 - **The compliance crosswalk is indicative.** It supports a resilience programme. It is not a formal attestation.

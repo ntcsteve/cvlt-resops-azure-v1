@@ -454,4 +454,6 @@ Be careful which of these you repeat as fact. The project has already paid once 
 
 ## Maintainer
 
-Maintained by [@ntcsteve](https://github.com/ntcsteve). Open an issue for questions, corrections, or if you get an adapter working against a different data-protection platform - the ladder, gate, evidence and metrics are vendor-neutral, and `client.py` + `reads.py` (~450 lines) are the only coupled files.
+Maintained by [@ntcsteve](https://github.com/ntcsteve). Open an issue for questions, corrections, or if you get an adapter working against a different data-protection platform.
+
+**Be warned about what porting costs today.** `gate()`, the evidence chain, the crosswalk, the metrics and the renderer are genuinely vendor-neutral. `client.py` + `reads.py` (~450 lines) do the I/O. But `classify()` - the ladder - reads Commvault's field names directly, so an adapter must currently produce Commvault-shaped dicts rather than simply supplying facts. A neutral seam between the two is designed and not built. That is the first thing to fix if you are porting, and an issue saying so would be welcome.

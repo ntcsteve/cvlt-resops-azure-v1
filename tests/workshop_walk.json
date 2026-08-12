@@ -11,7 +11,7 @@
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
   "walked_at": "2026-08-12",
-  "walked_commit": "af521f3",
+  "walked_commit": "7eea421",
   "verified": {
     "M4.1  op gate -> \u25cf\u25cf\u25cf\u25cf\u25cf\u25cf VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
@@ -22,7 +22,6 @@
     "close  op teardown -> destroy complete": "live, 2026-08-12. 17 GXMD snapshots swept, 11 terraform resources destroyed, NetworkWatcher removed, CV group DELETE returned 202 pending approval. Verified independently afterwards: 0 VMs, 0 resops RGs, 0 disks, 0 snapshots, 0 in terraform state."
   },
   "not_verified": {},
-
   "_all_live_boxes_walked": [
     "As of 2026-08-12 the ENTIRE live half of WORKSHOP.md has been walked.",
     "That had been deferred for seven sessions."
@@ -46,5 +45,15 @@
       "same f-string. M5.3's box quotes the words and says only that a non-zero",
       "exit is correct, which holds for either code. Judged unaffected."
     ]
+  },
+  "reviewed_not_re_walked": {
+    "_why": [
+      "The guard fired on 7eea421, which added a 'Fix:' clause to three rung",
+      "reasons. REVIEWED rather than re-walked, because Azure is empty and the",
+      "affected output is fully reproducible offline. What was checked:"
+    ],
+    "M5.4 quotes the Scan line": "WORKSHOP.md line ~651 shows '\u21b3 recovery point is UNATTESTED' in ABBREVIATED form, and did so before this change too. The longer text is still a true prefix, so the box is not contradicted. Verified by running `resops gate config/incident.yaml` and comparing.",
+    "no other box quotes a changed line": "The Validate and Recover reasons appear nowhere in a '\u2713 YOU SHOULD SEE' box. The 'recovery point failed <source>' branch that M5.3 and M1 DO quote was not touched by 7eea421.",
+    "caught by the guard, not by review": "The first draft of the Scan fix ran past 150 chars and hurt M5.4's four-way comparison. That is why the fix is now an imperative. The guard is the only reason it was noticed."
   }
 }
