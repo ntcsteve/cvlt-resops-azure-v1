@@ -558,7 +558,16 @@ op backup   infra/workloads
 ```
  ✓ YOU SHOULD SEE   planted: 2 EICAR files, 14 .locked files, 1 note
                     BASELINE marker still present: yes
-                    then a backup job, queueing 5-15 min. THIS IS NORMAL.
+                    then a full listing of the data directory
+
+ ⏱ HOW LONG         op incident ~30s · op backup ~2 min
+                    A backup CAN queue for a media agent slot. Measured
+                    here it never exceeded 90s, but a failover once took
+                    27 min. If it sits on "Waiting", that is the queue.
+                    DO NOT KILL IT.
+
+ ✗ IF NOT           `op: command not found` means you skipped
+                    `source .venv/bin/activate`. Go back to Before you start.
 ```
 
 **Watch your backup job in the console while it queues.**
@@ -578,11 +587,44 @@ op gate    infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE
+ ⏸ IT WILL PAUSE    the drill restores your VM, checks it, then STOPS:
+
+                      ✓ RECOVERED: <name>-restore is running in Azure
+                        Press Enter to tear it down…
+
+                    That is deliberate. Look at it in the portal first if
+                    you want. It has no public IP, so there is nothing to
+                    connect to, by design. Press Enter when you are done.
+
+ ✓ YOU SHOULD SEE   from op restore —
 
    FAIL: 14 encrypted (.locked) files present
+
+   === DRILL VERDICT ===
+     job status : Completed
+     azure VM   : PASS — exists & running
+     attestation: FAIL — attestation failed
+
+   RESTORE DRILL DID NOT PASS — the restored copy is not clean —
+   verify.sh said so inside it.
+
+                    then from op gate —
+
    ●●●●✗·  RECOVERABLE  blocked at Scan
+   ↳ recovery point failed restore-verify — 14 encrypted (.locked) files present
+   ↓ regressed VALIDATED→RECOVERABLE
    HOLD  exit 1
+```
+
+```
+ ✗ IF NOT   op restore exiting NON-ZERO here is CORRECT — it is the drill
+            refusing to certify a compromised copy, not a broken command.
+
+            If the HOLD says "failed threatscan" instead of
+            "failed restore-verify", you ran `op threatscan` at some point.
+            A threat finding outranks the drill's own verdict, so you are
+            seeing a different (also correct) refusal. The lesson survives;
+            your output just will not match the box above.
 ```
 
 **Score your prediction now.**

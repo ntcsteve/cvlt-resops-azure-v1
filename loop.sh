@@ -67,8 +67,9 @@
 #                    surprised by 2.5. Still nothing like the 5-27 min folklore,
 #                    which came from a single media agent failover.
 #   threat analysis  3.0 min typical, one 5.7 min outlier in 4
-#   restore job      1.4 min, from the job's own start/end times, plus VM boot
-#                    + verify + teardown around it
+#   restore job      1.4-1.6 min in 5 of 6, ONE at 3.5, from the jobs' own
+#                    start/end times. Plus VM boot + verify + teardown around it,
+#                    so budget ~4 min wall clock and do not be surprised by 6.
 #   one pass         ~20 min       two passes  ~40 min
 #
 # Every number above is from a run that completed. Timings quoted from memory or
