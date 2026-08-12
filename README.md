@@ -253,7 +253,7 @@ terraform -chdir=infra/workloads apply
 
 ```bash
 op preflight infra/workloads   # read-only gate: az · token · hypervisor · discovered · vCPU
-op climb     infra/workloads   # protect → backup → threatscan → restore → lands at VALIDATED
+op climb     infra/workloads   # protect → backup → restore → lands at VALIDATED
 op gate      infra/workloads   # the verdict → PROMOTE (0) / HOLD (1) + compliance crosswalk
 op teardown  infra/workloads   # protection group + snapshot, terraform destroy, region NetworkWatcher
 #   op status infra/workloads  # the level, anytime (read-only)

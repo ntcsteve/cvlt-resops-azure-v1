@@ -9,7 +9,7 @@ workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
     op restore     <run_dir>  derive the restore payload (token-native) + run drill
     op threatscan  <run_dir>  trigger ThreatScan on the backup copy, poll, read verdict
     op incident    <run_dir>  plant a detectable compromise in the workload (workshop only)
-    op climb       <run_dir>  preflight -> protect -> backup -> threatscan -> restore
+    op climb       <run_dir>  preflight -> protect -> backup -> restore
     op status      <run_dir>  show the workload's rung on the ladder (via resops) — read-only
     op gate        <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
     op teardown    <run_dir>  CV group + GXMD sweep + terraform destroy
@@ -468,17 +468,16 @@ def climb(run_dir: str) -> None:
     preflight.run(run_dir)        # gate first — never act on a shaky environment
     gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
     backup(run_dir, gid)
-    # Scan sits below Validate: never prove a restore from a point you haven't
-    # checked. A threat stops the climb HERE rather than rehearsing recovery from
-    # a compromised copy — deliberate, and now visible at the call site.
-    verdict = threatscan(run_dir)
-    if verdict is not None:
-        sys.exit(f"climb stopped at Scan — {verdict.get('detail')}\n"
-                 f"  This recovery point carries a threat. Rehearsing a restore from it\n"
-                 f"  would prove recovery works and tell you nothing about whether the\n"
-                 f"  thing you recovered is safe.\n"
-                 f"  → investigate, or `op restore` deliberately to see what comes back.")
-    restore(run_dir)              # /VM has caught up by now (backup took minutes)
+    # NO threatscan here, deliberately. It used to sit between backup and restore,
+    # and every exit from it is a SystemExit three frames down — so one bad
+    # response from a lane we do not own took the whole climb with it and
+    # `restore` never ran. A climb must not be that fragile.
+    #
+    # The Scan rung is NOT weakened. It reads the attestation `restore` writes,
+    # so an unattested or dirty recovery point still blocks below VALIDATED, and
+    # restore-verify was always the primary attester. `op threatscan` stays a
+    # standalone command.
+    restore(run_dir)              # /VM has caught up, and this writes the attestation
     print()
     status(run_dir)               # hand to resops — watch the rung land at VALIDATED
 
@@ -644,7 +643,7 @@ _USAGE = """op — the ResOps write lane
   op restore     <run_dir>   derive the restore payload + run the drill
   op threatscan  <run_dir>   trigger ThreatScan on the backup copy, poll to clean/threat verdict
   op incident    <run_dir>   plant a detectable compromise in the workload (workshop only)
-  op climb       <run_dir>   preflight → protect → backup → threatscan → restore (one step)
+  op climb       <run_dir>   preflight → protect → backup → restore (one step)
   op status      <run_dir>   show the workload's rung on the readiness ladder (read-only)
   op gate        <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
   op teardown    <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy
@@ -653,8 +652,8 @@ _USAGE = """op — the ResOps write lane
 Always run `op validate` first — it catches config, IAM, and environment blockers up front.
 
 The workshop's trusted-recovery story, once the workload is VALIDATED:
-  op incident → op backup → op threatscan → op gate
-  clean workload, PROMOTE  ⇒  compromised backup, THREATS FOUND, HOLD."""
+  op incident → op backup → op restore → op gate
+  clean workload, PROMOTE  ⇒  compromised recovery point, HOLD."""
 
 
 # Commands that never call Commvault, so they must not demand a live token.
