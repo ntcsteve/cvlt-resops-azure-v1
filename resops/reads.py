@@ -171,6 +171,20 @@ def default_copy_id(body: dict) -> int | None:
 
 ANOMALY_COUNTS = ("infectedFilesCount", "fingerPrintFilesCount")
 
+# The REAL dirty payload, observed live for the first time on 2026-08-12. Two EICAR
+# files were planted in aug12-narwhal, backed up, and scanned; Client/Anomaly then
+# reported the client with:
+#
+#   {"anomalyType": 8192, "appType": 106,
+#    "vsaSecurityScanAnomalyInfo": {"malwareItemsCount": 2}}
+#
+# None of ANOMALY_COUNTS above appears in that shape, so the fail-closed guard
+# fired and the gate HELD — correctly, but for the wrong reason, and it would have
+# held identically for a workload with malwareItemsCount 0. That guard was written
+# in July precisely because this payload had never been seen. It earned its place.
+_VSA_SCAN_INFO = "vsaSecurityScanAnomalyInfo"
+_VSA_MALWARE_COUNT = "malwareItemsCount"
+
 
 def threat_attestation(body: dict, commcell_client_id: int) -> dict | None:
     """An ATTESTATION about a recovery point, derived from GET Client/Anomaly.
@@ -195,6 +209,16 @@ def threat_attestation(body: dict, commcell_client_id: int) -> dict | None:
     for entry in body.get("anomalyClients", []):
         if (entry.get("client") or {}).get("clientId") != commcell_client_id:
             continue
+        # The VSA scan shape (see _VSA_SCAN_INFO above). Checked FIRST because it is
+        # the only one this tenant has ever actually produced.
+        vsa = entry.get(_VSA_SCAN_INFO)
+        if isinstance(vsa, dict) and isinstance(vsa.get(_VSA_MALWARE_COUNT), int):
+            malware = vsa[_VSA_MALWARE_COUNT]
+            if malware <= 0:
+                return None      # scanned, nothing recorded — attests NOTHING, never clean
+            return {"source": "threatscan", "clean": False,
+                    "detail": f"{malware} malware item(s) found in the recovery point",
+                    "malwareItemsCount": malware}
         if not any(key in entry for key in ANOMALY_COUNTS):
             return {"source": "threatscan", "clean": False,
                     "detail": "listed as an anomaly client in a shape we don't "

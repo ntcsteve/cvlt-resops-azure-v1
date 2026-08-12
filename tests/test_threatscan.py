@@ -101,6 +101,39 @@ def test_an_unrecognised_shape_fails_closed():
     assert "don't" in att["detail"] or "recognise" in att["detail"]
 
 
+# The VSA payload below is VERBATIM from GET Client/Anomaly on 2026-08-12, the first
+# time this project ever observed a real detection: two EICAR files were planted in
+# aug12-narwhal, backed up, and threat-scanned. Until that day the dirty shape had
+# never been seen, the parser did not know this key, and the fail-closed guard was
+# the only thing standing between us and a false CLEAN. Do not "simplify" these.
+def _vsa(count):
+    return {"anomalyClients": [{"client": {"clientId": 12345},
+                                "anomalyType": 8192, "appType": 106,
+                                "vsaSecurityScanAnomalyInfo": {"malwareItemsCount": count}}]}
+
+
+def test_vsa_malware_count_is_a_real_negative():
+    att = threat_attestation(_vsa(2), 12345)
+    assert att["clean"] is False
+    assert att["malwareItemsCount"] == 2
+    assert "2 malware" in att["detail"]
+
+
+def test_vsa_zero_malware_attests_NOTHING():
+    """Listed by the scan with a zero count means it recorded no malware. That is
+    NOT "scanned and clean" — it is the absence this whole module exists to refuse
+    to over-read. orders-api and cherry-turtles were both live examples on the day."""
+    assert threat_attestation(_vsa(0), 12345) is None
+
+
+def test_vsa_shape_does_not_swallow_the_fail_closed_guard():
+    """A VSA record whose count is missing or non-numeric must still fail closed
+    rather than fall through to a None that reads as "nothing to report"."""
+    body = {"anomalyClients": [{"client": {"clientId": 12345},
+                                "vsaSecurityScanAnomalyInfo": {"somethingElse": 1}}]}
+    assert threat_attestation(body, 12345)["clean"] is False
+
+
 def test_another_clients_anomalies_do_not_taint_ours():
     body = {"anomalyClients": [{"client": {"clientId": 99999},
                                 "infectedFilesCount": 500, "fingerPrintFilesCount": 500}]}
