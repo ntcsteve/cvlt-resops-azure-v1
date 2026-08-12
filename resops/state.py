@@ -305,7 +305,8 @@ def classify(reads: Reads) -> Ladder:
                   "last_successful_backup_time": last_success, "vm_guid": vm.get("strGUID")}
     if not last_success:
         return stop(State.MONITORED, "Recover",
-                    "no successful backup — nothing to recover from", recover_ev, error=False)
+                    "no successful backup — nothing to recover from. Fix: run a backup",
+                    recover_ev, error=False)
     if not restore_enabled:
         return stop(State.MONITORED, "Recover",
                     "restore activity is disabled for this VM", recover_ev, error=False)
@@ -345,7 +346,8 @@ def classify(reads: Reads) -> Ladder:
     if attestation is None:
         return stop(State.RECOVERABLE, "Scan",
                     "recovery point is UNATTESTED — nothing has verified it is safe "
-                    "to restore from", {"vm_name": vm_name, "attested_by": None},
+                    "to restore from. Fix: run a restore drill",
+                    {"vm_name": vm_name, "attested_by": None},
                     error=False)
     attested_at = attestation.get("at")
     newest_point = vm.get("lastSuccessfulBackupTime") or 0
@@ -396,7 +398,8 @@ def classify(reads: Reads) -> Ladder:
     proof = reads.proof
     if proof is None:
         return stop(State.RECOVERABLE, "Validate",
-                    f"recovery never proven for {vm_name}", {"vm_name": vm_name}, error=False)
+                    f"recovery never proven for {vm_name}. Fix: run a restore drill",
+                    {"vm_name": vm_name}, error=False)
     job_id = proof.get("jobId")
     pstatus = proof.get("status", "")
     validate_ev = {"last_drill_job": job_id, "status": pstatus}
