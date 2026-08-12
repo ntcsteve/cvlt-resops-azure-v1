@@ -18,11 +18,15 @@
     "M5.2  op incident -> BASELINE marker still present: yes": "loop passes + live walk",
     "M5.3  op restore -> FAIL: 14 encrypted (.locked) files present": "live walk, job 8163492",
     "M5.3  op gate -> \u25cf\u25cf\u25cf\u25cf\u2717\u00b7 RECOVERABLE blocked at Scan, HOLD exit 1": "live walk",
-    "M5.3  the HOLD names restore-verify, NOT threatscan": "live walk. The loop cannot produce this: it inserts a threat scan, whose negative outranks the drill's verdict."
+    "M5.3  the HOLD names restore-verify, NOT threatscan": "live walk. The loop cannot produce this: it inserts a threat scan, whose negative outranks the drill's verdict.",
+    "close  op teardown -> destroy complete": "live, 2026-08-12. 17 GXMD snapshots swept, 11 terraform resources destroyed, NetworkWatcher removed, CV group DELETE returned 202 pending approval. Verified independently afterwards: 0 VMs, 0 resops RGs, 0 disks, 0 snapshots, 0 in terraform state."
   },
-  "not_verified": {
-    "close  op teardown -> terraform destroy complete": "never run end to end. The only live box still unwalked."
-  },
+  "not_verified": {},
+
+  "_all_live_boxes_walked": [
+    "As of 2026-08-12 the ENTIRE live half of WORKSHOP.md has been walked.",
+    "That had been deferred for seven sessions."
+  ],
   "re_observed_at_af521f3": {
     "_why": [
       "af521f3 changed what op restore prints, AFTER the walk above. This guard",
