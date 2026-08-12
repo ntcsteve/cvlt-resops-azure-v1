@@ -274,6 +274,35 @@ def restore(run_dir: str) -> int:
     return run_restore.main(["--cleanup"])
 
 
+# The drill's exit codes, named once so callers stop matching on bare integers.
+_DRILL_OK, _DRILL_COULD_NOT_RUN, _DRILL_UNHEALTHY, _DRILL_DIRTY = 0, 1, 2, 3
+
+_DRILL_VERDICT = {
+    _DRILL_COULD_NOT_RUN: "the drill could not run to a verdict — nothing was proven",
+    _DRILL_UNHEALTHY: "the restored copy came back unhealthy — this is a FAILED drill",
+    _DRILL_DIRTY: "the restored copy is not clean — verify.sh said so inside it",
+}
+
+
+def _cli_restore(run_dir: str) -> None:
+    """`op restore` as a standalone command: exit with the drill's verdict.
+
+    THIS WRAPPER EXISTS BECAUSE op.main() DISCARDS RETURN VALUES. run_restore.main
+    has a deliberate four-way exit contract (0 clean / 1 could not run / 2 restored
+    unhealthy / 3 restored dirty), and `restore` returned it faithfully into a
+    caller that threw it away — so every one of those outcomes exited 0. Run as a
+    module the drill honours its own codes (`sys.exit(main())`); routed through
+    `op` they all vanished. When the drill failed on the OS-disk bug on
+    2026-08-12, `op restore` exited 0.
+
+    Same shape as `gate` and `_cli_threatscan`: when a command's exit code IS the
+    verdict, the command exits. Nothing else in op.py has to remember to check."""
+    code = restore(run_dir)
+    if code != _DRILL_OK:
+        sys.exit(f"RESTORE DRILL DID NOT PASS — {_DRILL_VERDICT.get(code, f'exit {code}')}."
+                 f"  The attestation was not written clean, so the Scan rung will block.")
+
+
 # --------------------------------------------------------------------------- #
 # threatscan — trigger a ThreatScan job on the workload's backup copy,
 # poll to completion, read the verdict. Explicit participant step (rung 3) so
@@ -396,6 +425,24 @@ _EICAR = ("X5O!P%@AP[4\\PZX54(P^)7CC)7}$"
           "EICAR-STANDARD-ANTIVIRUS-TEST-FILE!"
           "$H+H*")
 
+# The guest paths, declared ONCE. `incident` dirties them and `remediate` cleans
+# and restores them, so the two scripts MUST agree — and they are 70 lines apart in
+# separate heredocs, where a change to one and not the other is invisible: remediate
+# would tidy a directory incident never touched and report success. That is exactly
+# the class of drift this codebase kept finding on 2026-08-12. cloud-init.yaml also
+# creates DATA_DIR; that copy lives across a real boundary (Terraform provisions the
+# guest) and cannot be shared, so it stays a documented coupling.
+_DATA_DIR = "/var/lib/app/data"                  # also in infra/.../cloud-init.yaml
+_STASH_DIR = "/var/lib/app/.incident-stash"      # where incident parks originals
+
+
+def _guest_paths(script: str) -> str:
+    """Fill a guest script's {data_dir}/{stash_dir} placeholders. Same .replace
+    idiom as {eicar} — these scripts are raw strings full of shell ${braces}, so
+    .format() is not an option."""
+    return script.replace("{data_dir}", _DATA_DIR).replace("{stash_dir}", _STASH_DIR)
+
+
 # Runs inside the guest via the Azure agent. Two distinct signals, because
 # ThreatScan looks for both and we want the demo to survive either one missing:
 #   malware      — the EICAR pattern, matched by signature
@@ -403,8 +450,8 @@ _EICAR = ("X5O!P%@AP[4\\PZX54(P^)7CC)7}$"
 #                  is what mass encryption actually looks like on disk
 _INCIDENT_SCRIPT = r"""
 set -eu
-DATA=/var/lib/app/data
-STASH=/var/lib/app/.incident-stash
+DATA={data_dir}
+STASH={stash_dir}
 mkdir -p "$DATA"
 
 # 1. the signature-detectable artifact
@@ -462,7 +509,7 @@ def incident(run_dir: str) -> None:
     result = az_json("vm", "run-command", "invoke",
                      "-g", rg, "-n", vm_name,
                      "--command-id", "RunShellScript",
-                     "--scripts", _INCIDENT_SCRIPT.replace("{eicar}", _EICAR),
+                     "--scripts", _guest_paths(_INCIDENT_SCRIPT).replace("{eicar}", _EICAR),
                      timeout=300)
     if not result:
         raise SystemExit(f"incident failed — could not run the command on {vm_name}"
@@ -479,8 +526,8 @@ def incident(run_dir: str) -> None:
 # --------------------------------------------------------------------------- #
 _REMEDIATE_SCRIPT = r"""
 set -u
-DATA=/var/lib/app/data
-STASH=/var/lib/app/.incident-stash
+DATA={data_dir}
+STASH={stash_dir}
 
 # 1. remove exactly what `op incident` planted. Nothing else is touched.
 rm -f "$DATA"/*.locked "$DATA/README_RECOVER.txt" \
@@ -529,7 +576,7 @@ def remediate(run_dir: str) -> None:
     result = az_json("vm", "run-command", "invoke",
                      "-g", rg, "-n", vm_name,
                      "--command-id", "RunShellScript",
-                     "--scripts", _REMEDIATE_SCRIPT, timeout=300)
+                     "--scripts", _guest_paths(_REMEDIATE_SCRIPT), timeout=300)
     if not result:
         raise SystemExit(f"remediate failed — could not run the command on {vm_name}"
                          f"  → fix: is the VM running? "
@@ -563,7 +610,13 @@ def climb(run_dir: str) -> None:
     # so an unattested or dirty recovery point still blocks below VALIDATED, and
     # restore-verify was always the primary attester. `op threatscan` stays a
     # standalone command.
-    restore(run_dir)              # /VM has caught up, and this writes the attestation
+    # /VM has caught up, and this writes the attestation. Complete-or-raise, like
+    # every other step here: a drill that did not reach a clean verdict must stop
+    # the climb rather than let `status` render a ladder built on nothing.
+    code = restore(run_dir)
+    if code != _DRILL_OK:
+        raise SystemExit(f"climb stops at the restore drill — "
+                         f"{_DRILL_VERDICT.get(code, f'exit {code}')}")
     print()
     status(run_dir)               # hand to resops — watch the rung land at VALIDATED
 
@@ -716,7 +769,7 @@ def validate(run_dir: str) -> None:
 
 
 CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
-        "backup": backup, "restore": restore, "threatscan": _cli_threatscan,
+        "backup": backup, "restore": _cli_restore, "threatscan": _cli_threatscan,
         "incident": incident, "remediate": remediate, "climb": climb, "status": status,
         "gate": gate, "teardown": teardown}
 

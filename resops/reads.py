@@ -12,32 +12,10 @@ import time
 
 import requests
 
-from .client import Client
+from .client import MAINTENANCE_MSG, Client, is_html_response
 
 SUMMARY_CLIP = 80        # max chars of verbose API error text in a one-line summary
 MAX_RESTORE_SCAN = 10    # how many recent restore jobs we inspect for recovery proof
-
-
-def is_html_body(content_type: str, body: str) -> bool:
-    """True when a response body is HTML rather than the JSON this API returns.
-
-    STATUS CODE IS NOT ENOUGH, and this is the whole reason the function exists. A
-    Metallic tenant in maintenance answers GETs with **HTTP 200** and an HTML page,
-    and answers some POSTs with **405** and an HTML page. Neither is distinguishable
-    from a real response by status alone, which is exactly how preflight reported
-    "Commvault token valid" while the API was entirely down, and how every write
-    call site sailed past its `status_code != 200` guard and died on .json() with a
-    raw traceback. Observed live 2026-08-12.
-
-    Pure, so it is testable. Callers decide what to do; they just stop guessing.
-    """
-    if "html" in (content_type or "").lower():
-        return True
-    return (body or "").lstrip()[:1] == "<"
-
-
-MAINTENANCE_MSG = ("the tenant is serving an HTML page, not the API — almost always a "
-                   "maintenance window. This is not a token, config or code problem")
 
 
 def _get(client: Client, path: str) -> tuple[dict, str]:
@@ -48,7 +26,7 @@ def _get(client: Client, path: str) -> tuple[dict, str]:
         return {}, str(err)
     if resp.status_code != 200:
         return {}, f"HTTP {resp.status_code}"
-    if is_html_body(resp.headers.get("content-type", ""), resp.text):
+    if is_html_response(resp):
         return {}, MAINTENANCE_MSG
     try:
         body = resp.json()

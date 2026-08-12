@@ -12,7 +12,7 @@ import sys
 import requests
 
 from ._azure import az_json, regional_cores_free, vm_size_cores
-from ..reads import MAINTENANCE_MSG, is_html_body
+from ..client import MAINTENANCE_MSG, is_html_response
 from ._common import CFG, HYP, client, contract, discovered
 
 
@@ -37,7 +37,7 @@ def check_token() -> tuple:
     # 200 alone is not proof the API is up: a tenant in maintenance answers every
     # route with 200 and an HTML page, and this check used to report "token valid"
     # straight through an outage. Live on 2026-08-12.
-    if is_html_body(resp.headers.get("content-type", ""), resp.text):
+    if is_html_response(resp):
         return False, f"{MAINTENANCE_MSG}  → wait for the window to clear"
     if resp.status_code != 200:
         return False, "Commvault read != 200  → fix: python3 -m resops list"

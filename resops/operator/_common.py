@@ -11,7 +11,8 @@ from pathlib import Path
 
 from ..client import Client, load_credentials
 from ..config import load_platform
-from ..reads import MAINTENANCE_MSG, is_html_body, vmgroup_name
+from ..client import MAINTENANCE_MSG, is_html_response
+from ..reads import vmgroup_name
 
 REPO = Path(__file__).resolve().parents[2]  # resops/operator/_common.py -> repo root
 
@@ -50,7 +51,7 @@ def write(method: str, path: str, **kwargs):
     try:
         resp.json()
     except ValueError:
-        why = MAINTENANCE_MSG if is_html_body(resp.headers.get("content-type", ""), resp.text) \
+        why = MAINTENANCE_MSG if is_html_response(resp) \
             else (f"HTTP {resp.status_code} with a body that is not JSON "
                   f"({len(resp.text)} bytes)")
         raise SystemExit(f"{method} {path}: {why}"

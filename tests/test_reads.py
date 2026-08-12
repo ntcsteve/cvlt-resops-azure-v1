@@ -5,7 +5,7 @@ cover the I/O path that BUILDS a Reads: the right GETs, parsing the VM out of th
 list, scanning restore jobs for proof, and turning every failed read into an
 error string (never an exception) so classify() can block on the right rung.
 """
-from resops import reads
+from resops import client, reads
 from resops.reads import list_vmgroups
 from resops.state import gather
 
@@ -112,7 +112,12 @@ def test_list_vmgroups_propagates_error():
     assert groups == [] and err == "HTTP 403"
 
 # --------------------------------------------------------------------------- #
-# is_html_body — the guard that exists because STATUS CODE IS NOT ENOUGH.
+# is_html_response — the guard that exists because STATUS CODE IS NOT ENOUGH.
+#
+# It lives in client.py because it is a transport question, not a workload one.
+# It is tested here, next to the read path that depends on it, so the unit answer
+# and the rung-level consequence stay in one place — and so FakeResponse is not
+# duplicated into a second file for four assertions.
 #
 # On 2026-08-12 the tenant went into maintenance mid-session and answered GETs
 # with HTTP 200 + an HTML page, and some POSTs with 405 + an HTML page. preflight
@@ -120,24 +125,24 @@ def test_list_vmgroups_propagates_error():
 # sailed past its `status_code != 200` check and died on .json().
 # --------------------------------------------------------------------------- #
 def test_html_content_type_is_not_an_api_response():
-    assert reads.is_html_body("text/html; charset=UTF-8", "") is True
+    assert client.is_html_response(FakeResponse(200, {}, content_type="text/html; charset=UTF-8")) is True
 
 
 def test_an_html_body_is_caught_even_with_no_content_type():
-    assert reads.is_html_body("", "<!DOCTYPE html><html>...") is True
-    assert reads.is_html_body(None, "\r\n  <html>") is True
+    assert client.is_html_response(FakeResponse(200, {}, content_type="", text="<!DOCTYPE html><html>...")) is True
+    assert client.is_html_response(FakeResponse(200, {}, content_type=None, text="\r\n  <html>")) is True
 
 
 def test_real_json_is_not_mistaken_for_html():
-    assert reads.is_html_body("application/json", '{"vmGroups": []}') is False
-    assert reads.is_html_body("application/json;charset=utf-8", "[]") is False
+    assert client.is_html_response(FakeResponse(200, {}, text='{"vmGroups": []}')) is False
+    assert client.is_html_response(FakeResponse(200, {}, content_type="application/json;charset=utf-8", text="[]")) is False
 
 
 def test_an_empty_body_is_not_html():
     # Not HTML, so not diagnosed as maintenance. Callers that need JSON still fail,
     # with the generic "body is not JSON" message, which is the honest distinction.
-    assert reads.is_html_body("", "") is False
-    assert reads.is_html_body(None, None) is False
+    assert client.is_html_response(FakeResponse(200, {}, content_type="", text="")) is False
+    assert client.is_html_response(FakeResponse(200, {}, content_type=None, text=None)) is False
 
 
 def test_a_maintenance_page_blocks_the_read_instead_of_passing_as_success():

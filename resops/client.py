@@ -20,6 +20,30 @@ TIMEOUT_SECONDS = 30
 # Browser-like UA is REQUIRED — the Metallic WAF 403s the default requests UA.
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) cvlt-resops/1.0"
 
+MAINTENANCE_MSG = ("the tenant is serving an HTML page, not the API — almost always a "
+                   "maintenance window. This is not a token, config or code problem")
+
+
+def is_html_response(resp) -> bool:
+    """True when a response carries HTML rather than the JSON this API returns.
+
+    STATUS CODE IS NOT ENOUGH, and this is the whole reason the function exists. A
+    Metallic tenant in maintenance answers GETs with **HTTP 200** and an HTML page,
+    and answers some POSTs with **405** and an HTML page. Neither is distinguishable
+    from a real response by status alone, which is exactly how preflight reported
+    "Commvault token valid" while the API was entirely down, and how every write
+    call site sailed past its `status_code != 200` guard and died on .json() with a
+    raw traceback. Observed live 2026-08-12.
+
+    Lives here, in the HTTP layer, because it is a transport question and not a
+    question about any workload. Does no I/O — it only reads two attributes off a
+    response already in hand — so it is testable with a fake. Callers decide what
+    to do about the answer; they just stop guessing.
+    """
+    if "html" in (resp.headers.get("content-type", "") or "").lower():
+        return True
+    return (resp.text or "").lstrip()[:1] == "<"
+
 
 class AuthError(Exception):
     """Could not obtain or renew a usable access token."""
