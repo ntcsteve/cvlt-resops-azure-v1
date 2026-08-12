@@ -86,6 +86,14 @@ platform:
   #   → {"tier1": 42, "tier2": 99} — use the id for your workload's tier
   plan_id: <plan-id>
 
+  # The THREAT SCAN plan, from Secure > Threat scan > Plans. A DIFFERENT
+  # object from plan_id above, which is the protection plan. Used only by
+  # `op threatscan`; omit it and that command stops with the fix rather than
+  # scanning nothing. Both detections must be enabled ON THE PLAN, and the
+  # plan's own options.threatAnalysisFlags reads 0 either way, so check the
+  # console and not the API.
+  scan_plan_id: <threat-scan-plan-id>
+
   # Manage > Storage > Libraries > pool display name (a string, not an ID)
   storage_pool_name: <managed-storage-pool-name>
 

@@ -37,9 +37,9 @@ import time
 
 import yaml
 
-from ..reads import default_copy_id, storage_pool_id, threat_attestation
+from ..reads import threat_attestation
 from ._azure import az_json, az_ok
-from .commvault import job_summary, poll_job, succeeded
+from .commvault import poll_job, succeeded
 from . import preflight
 from ._common import CFG, HOST, HYP, REPO, client, contract, find_vm, group_id, write
 from .drills import run_restore
@@ -288,26 +288,6 @@ def _commcell_client_id(vm_name: str) -> int:
     return vm["client"]["clientId"]
 
 
-def _storage_pool_id(pool_name: str) -> int:
-    """The pool's id, or stop with the fix. Parsing lives in reads.storage_pool_id."""
-    pool_id = storage_pool_id(client.get("StoragePool").json(), pool_name)
-    if pool_id is None:
-        raise SystemExit(f"storage pool {pool_name!r} not found in StoragePool list"
-                         f"  → fix: config/workshop.yaml platform.storage_pool_name")
-    return pool_id
-
-
-def _backup_copy_id(plan_id: int) -> int:
-    """The copy id that actually holds backed-up data, resolved via the PLAN's own
-    storage policy. Parsing lives in reads.default_copy_id."""
-    plan = client.get(f"V2/Plan/{plan_id}").json()["plan"]
-    policy_id = plan["storage"]["storagePolicy"]["storagePolicyId"]
-    copy_id = default_copy_id(client.get(f"StoragePolicy/{policy_id}").json())
-    if copy_id is None:
-        raise SystemExit(f"storage policy {policy_id} (plan {plan_id}) has no default copy")
-    return copy_id
-
-
 def _threatscan_verdict(commcell_client_id: int) -> dict | None:
     """The scan's attestation for this client, or None if it attests nothing.
     Parsing lives in reads.threat_attestation."""
@@ -315,74 +295,78 @@ def _threatscan_verdict(commcell_client_id: int) -> dict | None:
 
 
 def threatscan(run_dir: str) -> dict | None:
-    """Run a threat scan over the workload's backup copy and RETURN the verdict.
+    """Trigger a threat scan for THIS workload and return what the tenant recorded.
 
-    None means no threat was recorded — which is weaker than "clean", and the
-    0-file guard below is what stops that difference being papered over.
+    Two calls, both proven live 2026-08-12 and NEITHER DOCUMENTED by the vendor —
+    absent from a 6,798-URL API reference and from Commvault's own Python SDK. That
+    is stated here because it is a maintenance liability, not a footnote. If either
+    route changes, this command breaks, the Scan rung reports nothing, and nothing
+    silently passes. See HANDOVER.prev.md section 0b.
 
-    Returns rather than exits, so the stop is visible at every call site. This
-    function used to terminate the process from three levels down, which made
-    `climb()` read as though it simply carried on. It does not, and now it says so.
+      WRITE  POST ThreatIndicator/OnDemandScan   one VM, one job id returned
+      READ   GET  Client/Anomaly                 keyed on the VM's client.clientId
+
+    THE JOB IS POLLED ONLY TO KNOW THE ATTEMPT FINISHED. It is never the verdict.
+    A re-scan of a poisoned recovery point with no new backup data completes with
+    no error code and no findings — observed three times on one workload. Job
+    success and cleanliness are unrelated facts here.
+
+    The verdict is the persistent per-client record, and threat_attestation treats
+    a zero count as attesting NOTHING rather than as clean, because the client
+    stays in that list with 0 after remediation.
+
+    Returns the recorded negative, or None. None is not a pass. It never was.
     """
     w = contract(run_dir)
     vm_name = w["vm_name"]
-    pool_name = CFG.get("storage_pool_name")
-    if not pool_name:
-        raise SystemExit("platform.storage_pool_name missing from workshop.yaml"
-                         "  → fix: add the managed storage pool's name, exactly as it"
-                         " appears in the console (Manage > Storage)")
-    cid = _commcell_client_id(vm_name)
-    pool_id = _storage_pool_id(pool_name)
-    copy_id = _backup_copy_id(CFG["plan_id"])
-    payload = {
-        "client": {"clientId": cid},
-        "timeRange": {"fromTime": 0, "toTime": int(time.time()) + 3600},  # +1h clock-skew buffer
-        "threatAnalysisFlags": 3,   # 1=malware 2=file-anomaly 3=both
-        "backupDetails": [{"copyId": copy_id, "storagePoolId": pool_id}],
-    }
-    r = write("POST", "EDiscoveryClients/OnDemandAnalytics", json=payload)
-    if r.status_code not in (200, 202):
-        raise SystemExit(f"threatscan trigger failed: HTTP {r.status_code} {r.text[:200]}")
-    body = r.json()
-    # EDiscoveryClients returns jobId (singular); handle jobIds (plural list) defensively
-    job_id = body.get("jobId") or (body.get("jobIds") or [None])[0]
-    if not job_id:
-        raise SystemExit(f"threatscan trigger succeeded but no job ID in response: {body}")
-    print(f"threatscan job {job_id}  (client {cid}, pool {pool_id}, copy {copy_id})…")
-    result = poll_job(client, job_id, timeout=900, every=20)
-    print(f"threatscan {result}")
-    if "Completed" not in result:
-        # A failed scan is NOT a clean scan. Stop rather than let the climb continue
-        # on a recovery point nobody actually checked.
-        raise SystemExit(f"threatscan job {job_id} ended with {result!r} — no verdict, so"
-                         f" the recovery point is UNVERIFIED (not clean)"
-                         f"  → fix: open job {job_id} in the console for the reason;"
-                         f" a scan-server slot or an unsupported agent are the usual ones")
-    # A job can report "Completed" having analysed NOTHING. On 2026-08-01 every
-    # scan in this tenant came back "no new backup data to analyze" with zero
-    # files — and we called it CLEAN. A scan that examined nothing attests
-    # nothing, and saying otherwise is the single most dangerous thing this tool
-    # could do. Check what it actually looked at before believing the verdict.
-    summary = job_summary(client, job_id)
-    analysed = summary.get("totalNumOfFiles") or 0
-    if not analysed:
-        why = (summary.get("pendingReason") or "").replace("<br/>", " | ").strip()
+    scan_plan = CFG.get("scan_plan_id")
+    if not scan_plan:
         raise SystemExit(
-            f"threatscan job {job_id} analysed 0 files — the recovery point is "
-            f"UNVERIFIED, not clean.\n"
-            f"  reason: {why or 'none given'}\n"
-            f"  → this tenant's VSA backups may not be eligible for threat analysis; "
-            f"check file indexing on the VM group before trusting any scan verdict")
+            "platform.scan_plan_id missing from workshop.yaml"
+            "  -> fix: add the THREAT SCAN plan's id, from Secure > Threat scan >"
+            " Plans. NOT the protection plan id: they are different objects, and the"
+            " protection plan will be accepted and scan nothing.")
+    cid = _commcell_client_id(vm_name)
 
-    time.sleep(5)  # allow Metallic anomaly index to flush before reading verdict
+    # The VM does NOT need to appear in the Resources tab first. This was fired
+    # against a clientId with no row there and it bound correctly. That tab is a
+    # materialised view on a slow cycle, and waiting for it would make this command
+    # unusable on a workload built the same morning.
+    payload = {"clients": [{"tdPlan": {"planId": scan_plan},
+                            "client": {"entityType": 3, "_type_": 3,
+                                       "clientId": cid,
+                                       "applicationId": _VSA_APP_ID}}],
+               "type": 0, "levelType": 1}
+    r = write("POST", "ThreatIndicator/OnDemandScan", json=payload)
+    body = r.json()
+    if body.get("errorCode"):
+        raise SystemExit(f"threatscan trigger refused: {body.get('errorString')!r} "
+                         f"(errorCode {body.get('errorCode')}) {body.get('jobErrorList')}")
+    job_id = (body.get("jobIds") or [None])[0]
+    if not job_id:
+        raise SystemExit(f"threatscan trigger returned no job id: {body}")
+    print(f"threatscan job {job_id}  (client {cid}, scan plan {scan_plan})...")
+
+    status = poll_job(client, job_id, timeout=900, every=20)
+    print(f"threatscan attempt {status}")
+    if not succeeded(status):
+        # No fresh look at the data. The persistent record may still hold an OLDER
+        # verdict, and reporting that as though this scan produced it would be the
+        # same lie in a new place.
+        raise SystemExit(
+            f"threatscan job {job_id} ended {status!r} - this recovery point was NOT"
+            f" examined, so it is UNVERIFIED and not clean"
+            f"\n  -> open job {job_id} in the console. A group whose VM has been"
+            f" deleted fails every time with [14:313]; suspect a stale group before"
+            f" you suspect the product.")
+
     verdict = _threatscan_verdict(cid)
     if verdict is None:
-        print(f"verdict: CLEAN  ({analysed} files analysed, no anomalies recorded)")
+        print("verdict: no threat recorded for this workload - which is NOT the same"
+              " as clean, and does not clear the Scan rung on its own")
         return None
-    print(f"verdict: THREATS FOUND  ({analysed} files analysed — {verdict.get('detail')})")
+    print(f"verdict: THREATS FOUND - {verdict.get('detail')}")
     return verdict
-
-
 def _cli_threatscan(run_dir: str) -> None:
     """`op threatscan` as a standalone command: exit 1 when threats are found, so
     it can gate a pipeline.
