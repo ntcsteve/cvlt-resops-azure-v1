@@ -9,6 +9,7 @@ workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
     op restore     <run_dir>  derive the restore payload (token-native) + run drill
     op threatscan  <run_dir>  trigger ThreatScan on the backup copy, poll, read verdict
     op incident    <run_dir>  plant a detectable compromise in the workload (workshop only)
+    op remediate   <run_dir>  undo op incident in place and re-verify
     op climb       <run_dir>  preflight -> protect -> backup -> restore
     op status      <run_dir>  show the workload's rung on the ladder (via resops) — read-only
     op gate        <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
@@ -419,6 +420,7 @@ _EICAR = ("X5O!P%@AP[4\\PZX54(P^)7CC)7}$"
 _INCIDENT_SCRIPT = r"""
 set -eu
 DATA=/var/lib/app/data
+STASH=/var/lib/app/.incident-stash
 mkdir -p "$DATA"
 
 # 1. the signature-detectable artifact
@@ -427,8 +429,17 @@ printf '%s' '{eicar}' > "$DATA/.hidden_payload"
 
 # 2. what mass encryption looks like: high-entropy files, extension changed,
 #    originals removed. customers.csv is the one participants will miss.
+#
+#    The original is STASHED first, outside $DATA so verify.sh and the drill never
+#    see it, purely so `op remediate` can put back EXACTLY what was taken. The
+#    alternative was to hardcode the known-good rows in a second place and keep
+#    them in step with cloud-init by hand — and verify.sh only checks the header
+#    and a row count, so that drift would have been invisible. Stashing makes the
+#    inverse exact instead of approximate.
+mkdir -p "$STASH"
 for f in customers.csv orders.ndjson; do
   if [ -f "$DATA/$f" ]; then
+    cp -p "$DATA/$f" "$STASH/$f"
     head -c 4096 /dev/urandom > "$DATA/$f.locked"
     rm -f "$DATA/$f"
   fi
@@ -475,6 +486,84 @@ def incident(run_dir: str) -> None:
     for msg in result.get("value", []):
         print(msg.get("message", "").strip())
     print(f"\n{vm_name} is now UNTRUSTED. Next: op backup, then op threatscan.")
+
+
+# --------------------------------------------------------------------------- #
+# remediate — the exact inverse of incident, so the lab is a LOOP and not a
+# one-way trip. Until this existed the dirty->clean transition was done by hand,
+# four times in one session, differently each time.
+# --------------------------------------------------------------------------- #
+_REMEDIATE_SCRIPT = r"""
+set -u
+DATA=/var/lib/app/data
+STASH=/var/lib/app/.incident-stash
+
+# 1. remove exactly what `op incident` planted. Nothing else is touched.
+rm -f "$DATA"/*.locked "$DATA/README_RECOVER.txt" \
+      "$DATA/invoice_overdue.doc" "$DATA/.hidden_payload"
+
+# 2. put back exactly what it took. cp, not mv: re-running must be safe, and a
+#    half-finished remediation that consumed the stash would be unrecoverable.
+restored=0
+if [ -d "$STASH" ]; then
+  for f in "$STASH"/*; do
+    [ -e "$f" ] || continue
+    cp -p "$f" "$DATA/$(basename "$f")" && restored=$((restored + 1))
+  done
+fi
+
+echo "removed the planted artefacts; restored $restored file(s) from the stash"
+echo "locked_remaining=$(find "$DATA" -name '*.locked' | wc -l)"
+echo "stash_present=$([ -d "$STASH" ] && echo yes || echo NO)"
+
+# 3. the workload's own check decides whether this worked. Same contract as the
+#    drill: the OK:/FAIL: line is the verdict, not the exit code.
+if [ -x /opt/app/verify.sh ]; then /opt/app/verify.sh; else echo 'NO VERIFY SCRIPT'; fi
+"""
+
+
+def remediate(run_dir: str) -> None:
+    """Undo `op incident` and prove the workload is good again.
+
+    Not a restore. This repairs the LIVE workload in place so the next backup
+    produces a clean recovery point — which is what closes the loop
+    incident -> backup -> scan -> HOLD -> remediate -> backup -> scan -> PROMOTE.
+    Recovering from a backup instead is `op restore`, and it answers a different
+    question.
+
+    Targeted the same way as `op incident`: the VM comes from the terraform
+    contract for this run_dir, so it cannot reach anything else. Idempotent — safe
+    on a workload that is already clean.
+
+    RAISES if verify.sh does not report OK afterwards, because a remediation that
+    did not achieve its purpose must not read as success. That is the same
+    convention every other step in this lane follows.
+    """
+    w = contract(run_dir)
+    vm_name, rg = w["vm_name"], w["resource_group"]
+    print(f"remediate: repairing {vm_name} ({rg}) in place")
+    result = az_json("vm", "run-command", "invoke",
+                     "-g", rg, "-n", vm_name,
+                     "--command-id", "RunShellScript",
+                     "--scripts", _REMEDIATE_SCRIPT, timeout=300)
+    if not result:
+        raise SystemExit(f"remediate failed — could not run the command on {vm_name}"
+                         f"  → fix: is the VM running? "
+                         f"az vm get-instance-view -g {rg} -n {vm_name}")
+    output = "\n".join(m.get("message", "") for m in result.get("value", []))
+    for line in output.splitlines():
+        if line.strip():
+            print("   ", line.strip()[:160])
+
+    verdict = next((l.strip() for l in output.splitlines()
+                    if l.strip().startswith(("OK:", "FAIL:", "NO VERIFY"))), "")
+    if not verdict.startswith("OK:"):
+        raise SystemExit(
+            f"\nremediate did NOT restore {vm_name} to a good state: {verdict or 'no verdict'}"
+            f"\n  → if stash_present=NO above, `op incident` ran before stashing existed"
+            f" (or never ran), so the originals it deleted cannot be put back."
+            f"\n  → recover from a backup instead: op restore {run_dir}")
+    print(f"\n{vm_name} is clean again. Next: op backup, then op gate.")
 
 
 def climb(run_dir: str) -> None:
@@ -644,7 +733,7 @@ def validate(run_dir: str) -> None:
 
 CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
         "backup": backup, "restore": restore, "threatscan": _cli_threatscan,
-        "incident": incident, "climb": climb, "status": status,
+        "incident": incident, "remediate": remediate, "climb": climb, "status": status,
         "gate": gate, "teardown": teardown}
 
 _USAGE = """op — the ResOps write lane
@@ -656,6 +745,7 @@ _USAGE = """op — the ResOps write lane
   op restore     <run_dir>   derive the restore payload + run the drill
   op threatscan  <run_dir>   trigger ThreatScan on the backup copy, poll to clean/threat verdict
   op incident    <run_dir>   plant a detectable compromise in the workload (workshop only)
+  op remediate   <run_dir>   undo op incident in place, and prove it with verify.sh
   op climb       <run_dir>   preflight → protect → backup → restore (one step)
   op status      <run_dir>   show the workload's rung on the readiness ladder (read-only)
   op gate        <run_dir>   promotion gate → PROMOTE / HOLD  (exit 0 / 1)
@@ -674,7 +764,7 @@ The workshop's trusted-recovery story, once the workload is VALIDATED:
 # is exactly when you reach for them. incident is pure Azure (terraform contract +
 # az run-command); making it fail on a stale token would block the one command whose
 # whole job is to break things locally.
-_NO_TOKEN_NEEDED = ("validate", "preflight", "incident")
+_NO_TOKEN_NEEDED = ("validate", "preflight", "incident", "remediate")
 
 
 def main() -> None:
