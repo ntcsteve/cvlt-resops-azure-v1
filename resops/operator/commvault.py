@@ -38,3 +38,23 @@ def poll_job(client, job_id, timeout: int = 600, every: int = 20) -> str:
         time.sleep(every)
         waited += every
     return "TIMEOUT"
+
+
+def succeeded(status: str) -> bool:
+    """Did the job reach a terminal state that produced what we asked for?
+
+    THIS EXISTS BECAUSE "TIMEOUT" IS NOT A JOB STATUS. poll_job returns it when
+    it stopped waiting, which means the job may still be running and we never saw
+    an outcome. We cannot claim a result we did not observe, so it is a failure —
+    and it lives in the same return channel as real statuses, so every reader had
+    to remember to special-case it by hand. One reader did (the restore drill,
+    with a three-way string match) and one did not (backup, which returned it and
+    exited 0). Deciding this in one place is the whole point.
+
+    "Completed w/ one or more warnings" and "…errors" both contain "Completed"
+    and count as success HERE, because the job produced data. Whether that data
+    is any good is judged elsewhere and independently: the Detect rung reads the
+    group's own lastBackup status, and verify.sh opens the restored copy and
+    looks. This function judges the JOB and nothing else.
+    """
+    return "Completed" in (status or "")

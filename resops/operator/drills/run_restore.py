@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 
 from ...config import platform_url
-from ..commvault import poll_job
+from ..commvault import poll_job, succeeded
 from ._drill import (authed_client, az_json, bearer_session, load_restore_payload,
                      regional_cores_free, restore_target, vm_size_cores)
 from .cleanup_restore import teardown_vm
@@ -181,7 +181,9 @@ def main(argv: list[str] | None = None) -> int:
 
     status = poll_job(client, job_id, timeout=540)
     print(f"\nJob {job_id} terminal status: {status!r}")
-    if status == "TIMEOUT" or "Failed" in status or "Killed" in status:
+    # One shared question instead of a hand-written list of statuses: TIMEOUT was
+    # matched here by name, and any status added later would have been missed.
+    if not succeeded(status):
         print("Commvault reported a problem — events:")
         dump_events(client, job_id)
 

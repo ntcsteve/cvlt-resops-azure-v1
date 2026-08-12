@@ -38,7 +38,7 @@ import yaml
 
 from ..reads import default_copy_id, storage_pool_id, threat_attestation
 from ._azure import az_json, az_ok
-from .commvault import job_summary, poll_job
+from .commvault import job_summary, poll_job, succeeded
 from . import preflight
 from ._common import CFG, HOST, HYP, REPO, client, contract, find_vm, group_id, write
 from .drills import run_restore
@@ -161,6 +161,19 @@ def backup(run_dir: str, gid: int | None = None) -> str:
     print(f"backup job {job} on group {gid}…")
     status = poll_job(client, job)
     print(f"backup {status}")
+    # STOP, do not return a status nobody checks. This used to hand the caller a
+    # string and exit 0, so `climb` carried on to restore an OLDER recovery point
+    # and attested THAT. The ladder still caught it at Detect, so it was never a
+    # false promotion — but ten minutes were spent proving something about the
+    # wrong point, and the output read as though the climb had worked.
+    # Every other step in this lane completes or raises. Now this one does too.
+    if not succeeded(status):
+        raise SystemExit(
+            f"backup job {job} ended {status!r} — NOTHING NEW WAS PROTECTED, so a"
+            f" restore or a gate run now would be about an older recovery point"
+            f"\n  → open job {job} in the console for the reason. A 'Waiting' job"
+            f" that never starts is usually a media agent slot; 'collect file is"
+            f" missing' means discovery moved agents and the backup will restart.")
     return status
 
 
