@@ -112,8 +112,14 @@ def verify_recovered(t: dict) -> tuple[bool | None, str]:
     result = az_json("vm", "run-command", "invoke",
                      "-g", t["resource_group"], "-n", t["new_vm"],
                      "--command-id", "RunShellScript",
-                     "--scripts", f"[ -x {VERIFY_SCRIPT} ] && {VERIFY_SCRIPT} "
-                                  f"|| {{ echo 'NO VERIFY SCRIPT'; exit 127; }}")
+                     # if/else, NOT `[ -x … ] && script || { … }`. With && / || a
+                     # script that RUNS and exits non-zero falls into the || branch,
+                     # so a FAIL: verdict printed "NO VERIFY SCRIPT" and exited 127 —
+                     # claiming the attester was missing at the exact moment it had
+                     # just done its job. Live on aug12-narwhal 2026-08-12. Invisible
+                     # for a month because only a DIRTY run exits non-zero.
+                     "--scripts", f"if [ -x {VERIFY_SCRIPT} ]; then {VERIFY_SCRIPT}; "
+                                  f"else echo 'NO VERIFY SCRIPT'; exit 127; fi")
     if not result:
         return None, "could not run the verify script (guest agent unreachable?)"
     message = "\n".join(m.get("message", "") for m in result.get("value", []))
