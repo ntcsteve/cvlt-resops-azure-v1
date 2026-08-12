@@ -227,13 +227,34 @@ def _restore_payload(w: dict, subclient_id: int, disk_name: str,
                 "commonOpts": {"notifyUserOnJobCompletion": False}}}]}}
 
 
+def _os_disk(vm_guid: str) -> dict:
+    """The VM's OS disk, chosen by the API's OWN isOSDisk flag.
+
+    NEVER take disks[0]. For an Azure VSA backup the first entry is the VM's
+    config blob — name "<vm>.json", isOSDisk false, type "" — and sending that as
+    the restore disk makes Commvault reject the job with "No OS disk found.
+    Please check if OS disk was filtered as part of backup", which reads like a
+    BACKUP problem and is not one. Proven live on aug12-narwhal 2026-08-12;
+    cherry-turtles has the identical two-entry shape, so disks[0] was always
+    wrong and only ever worked by luck of ordering.
+    """
+    disks = client.get(f"v2/vsa/vm/{vm_guid}/disks").json().get("disks") or []
+    for d in disks:
+        if d.get("isOSDisk"):
+            return d
+    raise SystemExit(f"no disk with isOSDisk=true for {vm_guid} — cannot build a restore"
+                     f" payload  → disks returned: {[d.get('name') for d in disks]}")
+
+
 def restore(run_dir: str) -> int:
     w = contract(run_dir)
     vm = require_vm(w["vm_name"])
     subclient_id = vm["vmSubClientEntity"]["subclientId"]            # the proven derivation
-    disk = client.get(f"v2/vsa/vm/{w['vm_guid']}/disks").json()["disks"][0]
+    disk = _os_disk(w["vm_guid"])
     to_time = int(time.time()) + 3600   # +1h clock-skew buffer: CommServ browse needs toTime > server time
-    payload = _restore_payload(w, subclient_id, disk["name"], disk.get("type", "Standard_LRS"), to_time)
+    # `or` not a dict default: the config-blob entry carries type "", which is
+    # present-but-empty, so .get("type", fallback) would hand Commvault an empty string.
+    payload = _restore_payload(w, subclient_id, disk["name"], disk.get("type") or "Standard_LRS", to_time)
     run_restore.PAYLOAD_PATH.write_text(json.dumps(payload, indent=2))
     print(f"restore payload derived (subclient {subclient_id}, disk {disk['name']!r}) -> {run_restore.PAYLOAD_PATH}")
     return run_restore.main(["--cleanup"])
