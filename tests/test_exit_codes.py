@@ -102,3 +102,40 @@ def test_the_guest_paths_the_two_scripts_use_are_the_same_paths():
         assert f"STASH={op._STASH_DIR}" in body, name
         assert "{data_dir}" not in body and "{stash_dir}" not in body, \
             f"{name} would reach the guest with an unfilled placeholder"
+
+
+# --------------------------------------------------------------------------- #
+# Now that a TIMEOUT hard-fails the drill, the timeout VALUE became load-bearing.
+# It used to be harmless: poll_job gave up at 540s, returned "TIMEOUT", and the
+# drill sailed on and exited 0. With that hole closed, a too-short timeout no
+# longer hides — it manufactures a failure, and a team that sees green-on-retry
+# learns to re-run things until they pass. That is worse than the original bug.
+#
+# These pin the RELATIONSHIP, not the number. Tuning 900 up is fine; making the
+# restore wait less patiently than a backup is not.
+# --------------------------------------------------------------------------- #
+def test_the_restore_drill_waits_at_least_as_long_as_a_backup():
+    """A restore queues behind a media agent slot exactly like a backup does. If
+    it gives up sooner, the drill fails on a wait the backup lane would have sat
+    through, and the failure is ours, not the tenant's. It was 540s against the
+    backup lane's 600s — the LOWEST timeout in the codebase, on the operation that
+    waits longest."""
+    import inspect
+
+    from resops.operator.commvault import poll_job
+    from resops.operator.drills.run_restore import RESTORE_POLL_TIMEOUT
+
+    backup_default = inspect.signature(poll_job).parameters["timeout"].default
+    assert RESTORE_POLL_TIMEOUT >= backup_default, (
+        f"the restore drill gives up at {RESTORE_POLL_TIMEOUT}s while a backup is "
+        f"allowed {backup_default}s, so the drill will fail on waits the backup "
+        f"lane tolerates")
+
+
+def test_the_restore_drill_waits_out_the_delay_it_warns_you_about():
+    """poll_job prints "waiting for a media agent slot — typically 5-15 min" on the
+    first Waiting tick. A timeout inside the window we tell the operator to expect
+    is the tool contradicting its own advice, which at 2am costs more than the
+    wait would have."""
+    from resops.operator.drills.run_restore import RESTORE_POLL_TIMEOUT
+    assert RESTORE_POLL_TIMEOUT >= 15 * 60

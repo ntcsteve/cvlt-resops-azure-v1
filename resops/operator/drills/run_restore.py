@@ -30,6 +30,11 @@ from .cleanup_restore import teardown_vm
 REPO = Path(__file__).resolve().parents[3]            # resops/operator/drills/ -> repo root
 PAYLOAD_PATH = Path(__file__).resolve().parent / "restore_headless.json"
 
+# How long to wait for the restore job. A restore queues behind a media agent slot
+# exactly like a backup does, so this must never be SHORTER than what a backup is
+# given, or the drill invents failures the backup lane would have waited through.
+RESTORE_POLL_TIMEOUT = 900
+
 
 def cores_ok(t: dict) -> bool:
     need = vm_size_cores(t["location"], t["vm_size"])
@@ -179,7 +184,15 @@ def main(argv: list[str] | None = None) -> int:
     if not job_id:
         print("  no job id in response — nothing to poll"); return 1
 
-    status = poll_job(client, job_id, timeout=540)
+    # 900s, matching `op threatscan`, and NOT the 540s this used to be. Both wait on
+    # the same scarce thing: a media agent slot. poll_job's own progress message says
+    # that wait is "typically 5-15 min", so 540s gave up inside the window it tells
+    # you to expect — the lowest timeout in the codebase sitting on the operation
+    # that waits longest. Now that a TIMEOUT correctly fails the drill instead of
+    # passing silently, too-short means a false failure, which is how a team learns
+    # to re-run things until they go green. See RESTORE_POLL_TIMEOUT in
+    # tests/test_exit_codes.py for the relationship this must keep.
+    status = poll_job(client, job_id, timeout=RESTORE_POLL_TIMEOUT)
     print(f"\nJob {job_id} terminal status: {status!r}")
     # One shared question instead of a hand-written list of statuses: TIMEOUT was
     # matched here by name, and any status added later would have been missed.
