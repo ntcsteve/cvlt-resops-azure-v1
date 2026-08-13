@@ -403,8 +403,11 @@ Everything above works offline against committed fixtures. The moment you point 
 ### The data-protection tenant
 
 ```
- backup job "Waiting" for 5-15 min is NORMAL   it is queueing for a media
-                                               agent. do not kill it.
+ backup job sitting on "Waiting" is NORMAL     it is queueing for a media
+                                               agent. do not kill it. measured
+                                               here: under 90s in 16 of 16
+                                               jobs, but one failover took
+                                               27 min. both numbers are true.
  tokens die on a hard wall                     renewal fails with HTTP 500
                                                "Renew request placed after
                                                the permissible time limit",

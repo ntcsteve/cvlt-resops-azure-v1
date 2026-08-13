@@ -59,7 +59,7 @@ Domains 4 and 5 are where the mechanism matters most, because they are the two t
  discover                      →    Discover    onboarded for protection?
  protect                       →    Protect     a policy attached?
  detect (anomalies/changes)    →    Detect      last backup clean?
- recover (clean trusted data)  →    Recover     is there a recent recovery point?
+ recover (clean trusted data)  →    Recover     is there a restorable recovery point?
                                     Scan        is that point TRUSTWORTHY?
  restore (business systems)    →    Validate    did a real restore prove it?
 ```
