@@ -391,28 +391,53 @@ Discussion. No commands.
 
 ## 3.1 · Ship or hold? · 20 min
 
-A real threat scan job, from a real tenant.
+A real recovery point, from a real tenant. This is what you would be restoring from.
 
 ```
- status       Completed
+ backup       Completed
  anomalies    none recorded
  verdict      ?
 ```
 
 **Vote. Out loud, hands up, before anything else is said.**
 
-Then open the job yourself and find one field nobody reads:
+Then open the recovery point yourself and find the field nobody reads —
+`threatStatsForRecovery`:
 
 ```
- totalNumOfFiles     ?
- pendingReason       ?
+ totalFiles          ?
+ totalCleanFiles     ?
+ maliciousFiles      ?
+```
+
+Compare it against a point that *was* scanned:
+
+```
+ SCANNED       totalFiles 68398 · totalCleanFiles 68396 · maliciousFiles 2
+ NEVER SCANNED the totalFiles key IS NOT THERE AT ALL
 ```
 
 ```
  ? THE RULE THIS PRODUCES
    Absence of evidence is not evidence of absence.
    A check that ran nothing must never report a pass.
+
+   "no anomalies recorded" did not mean clean.
+   It meant NOTHING HAD LOOKED.
 ```
+
+**And the other half, from the same tenant on the same day.** The scan that *did*
+run found the 2 planted EICAR files and reported `encryptedFiles: 0` on a recovery
+point holding **14 encrypted ones**. Our own thirty-line `verify.sh` found those 14
+and never saw the EICAR.
+
+```
+ threat scan   found the 2 EICAR       missed the 14 encrypted
+ verify.sh     found the 14 encrypted  missed the 2 EICAR
+```
+
+Neither is sufficient alone. That is why both exist, and why a negative from either
+one blocks.
 
 You will then be shown the two places that rule is enforced in code, rather than asserted on a slide.
 
