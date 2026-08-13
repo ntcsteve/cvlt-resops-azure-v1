@@ -2,10 +2,21 @@
 How we talk to Commvault — all the auth/HTTP noise lives here so the read layer
 and the ladder stay readable.
 
-Read-only by design: the client only ever reads (get / ensure_fresh_token /
-access_token) — no post/put/delete. A platform team can adopt the ladder knowing
-it physically cannot mutate their environment. Mutating lanes (the restore drill)
-are a separate, opt-in surface — never this client.
+Read-only by design, and precisely: the client reads tenant state with GET and
+nothing else. It makes exactly ONE non-GET call in the whole module — `_renew()`
+POSTs to `V4/AccessToken/Renew` to trade a refresh token for a fresh access token.
+That is an auth call against our own session; it creates, changes and deletes
+nothing in the customer's environment.
+
+Stated this precisely because the docstring used to say "no post/put/delete",
+which was literally false and would have read as sloppy to exactly the person the
+guarantee is meant to reassure. The property a platform team is buying is "this
+cannot mutate MY environment", and that is true.
+
+`tests/test_read_only.py` enforces it: the read-only star may not import
+subprocess, may not import the write lane, and may not gain a second mutating HTTP
+call. Add one and the suite fails. Mutating lanes (the restore drill) are a
+separate, opt-in surface — never this client.
 """
 from __future__ import annotations
 
