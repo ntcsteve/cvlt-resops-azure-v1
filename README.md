@@ -172,7 +172,7 @@ Each stage is the step that lifts a workload onto the next level - and each is a
 | Discover | onboarded for protection? | `DISCOVERED` | service discovery |
 | Protect  | a policy attached? | `PROTECTED` | GitOps drift detection |
 | Detect   | last backup clean? | `MONITORED` | observability / alerting |
-| Recover  | recoverable now (RPO/SLA)? | `RECOVERABLE` | rollback readiness / SLOs |
+| Recover  | is there a restorable point? | `RECOVERABLE` | rollback readiness / SLOs |
 | Scan     | is the point you'd restore from clean? | `TRUSTED` | scanning an artifact before deploy |
 | Validate | recovery *proven* by a real restore? | `VALIDATED` | **chaos drill / game day** |
 | Improve  | did the level move since last run? | *(trend)* | regression gate |

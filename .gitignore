@@ -38,7 +38,8 @@ START-HERE.md
 HANDOVER.md
 # rotated by /wrap-up — same live ids, same secrecy. NOTE: gitignore has
 # no trailing comments; a pattern with one on the same line matches NOTHING.
-HANDOVER.prev.md
+# FIELD-NOTES.md was HANDOVER.prev.md until 2026-08-13. Holds live ids.
+FIELD-NOTES.md
 LOG.md
 
 # python packaging build artifacts
