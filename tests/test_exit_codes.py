@@ -24,7 +24,22 @@ command exits.
 These tests never touch Azure or Commvault. They replace `restore` with a stub
 that returns a code, which is the whole surface under test.
 """
+from pathlib import Path
+
 import pytest
+
+# The write lane loads config/workshop.yaml AT IMPORT TIME, and that file is
+# gitignored because it holds live ids. Without this guard a fresh clone dies with
+# INTERNALERROR during collection and NO test runs at all — not even the 200-odd
+# read-lane tests that need nothing but a checkout. Found 2026-08-13 by actually
+# cloning the public repo and running the README's own first instruction.
+#
+# Skip loudly rather than crash. The message names the file and the fix, because a
+# new engineer's very first command should not fail with a stack trace.
+if not (Path(__file__).resolve().parent.parent / "config" / "workshop.yaml").exists():
+    pytest.skip("needs config/workshop.yaml (gitignored — copy "
+                "config/workshop.yaml.example and fill it in). The write lane "
+                "cannot be imported without it.", allow_module_level=True)
 
 from resops.operator import op
 
