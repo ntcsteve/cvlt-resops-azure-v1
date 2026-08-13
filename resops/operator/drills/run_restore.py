@@ -135,6 +135,33 @@ def verify_recovered(t: dict) -> tuple[bool | None, str]:
     return parse_verdict(stdout)
 
 
+def verdict_code(healthy: bool, clean: bool | None) -> int:
+    """The drill's four-way contract, as a pure function.
+
+        0  restored, healthy, and verify.sh said clean
+        1  the drill could not run to a verdict
+        2  restored, but the copy came back unhealthy
+        3  restored and healthy, but NOT clean
+
+    THREE verdicts feed this, not two. `clean` is True / False / None, and None
+    means the attester never reached a verdict — a guest agent that did not
+    answer, a script that died before printing. That is NOT the same fact as
+    "it looked and the copy is dirty", and the two carry opposite instructions:
+    1 says fix the environment and retry, 3 says this recovery point is poison,
+    do not retry.
+
+    They were collapsed by `return 0 if clean else 3`, so on 2026-08-13 an
+    unreachable guest agent exited 3 while the printed verdict said UNATTESTED.
+    Two contradictory statements in one output block, and at 2am you believe the
+    loud one. Pure and separate so it can be tested without an Azure tenant.
+    """
+    if not healthy:
+        return 2
+    if clean is None:
+        return 1
+    return 0 if clean else 3
+
+
 def write_attestation(vm_name: str, clean: bool | None, detail: str, job_id: str) -> Path:
     """Persist the attestation where the read lane can find it.
 
@@ -246,9 +273,8 @@ def main(argv: list[str] | None = None) -> int:
         teardown_vm(t["resource_group"], t["new_vm"])
 
     # A restore that came back compromised is a failed drill, not a passed one.
-    if not healthy:
-        return 2
-    return 0 if clean else 3
+    # The whole decision lives in verdict_code() so it can be tested with no tenant.
+    return verdict_code(healthy, clean)
 
 
 if __name__ == "__main__":

@@ -356,6 +356,19 @@ def classify(reads: Reads) -> Ladder:
                "detail": attestation.get("detail", ""),
                "attested_at": attested_at,
                "newest_recovery_point": newest_point}
+    # THREE outcomes, not two. `clean` is True / False / None, and None means the
+    # attester ran but never reached a verdict (a guest agent that did not answer,
+    # a script that died before printing). That is a DIFFERENT fact from "it looked
+    # and found the copy dirty", and it needs a different fix: re-run the drill,
+    # rather than go hunting a compromise that was never detected. Both still HOLD
+    # — this rung fails closed either way — but a stage that names the wrong fix is
+    # the defect `7eea421` set out to remove. Observed live 2026-08-13.
+    if attestation.get("clean") is None:
+        return stop(State.RECOVERABLE, "Scan",
+                    f"recovery point is UNATTESTED — {attestation.get('source')} "
+                    f"reached no verdict: {attestation.get('detail', 'no detail')}. "
+                    f"Fix: re-run the restore drill",
+                    scan_ev, error=False)
     if not attestation.get("clean"):
         return stop(State.RECOVERABLE, "Scan",
                     f"recovery point failed {attestation.get('source')} — "

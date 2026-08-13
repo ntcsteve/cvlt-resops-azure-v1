@@ -13,7 +13,7 @@ import requests
 from ...client import USER_AGENT, Client, load_credentials
 # The az + vCPU helpers live in one place (resops/_azure.py) shared with preflight.
 # Re-exported here as the drill lane's facade; `az` is the printing side-effect form.
-from .._azure import az_json, regional_cores_free, vm_size_cores
+from .._azure import az_json, az_json_checked, regional_cores_free, vm_size_cores
 from .._azure import az_ok as az  # noqa: F401  (drill calls `az(...)` for side effects)
 
 

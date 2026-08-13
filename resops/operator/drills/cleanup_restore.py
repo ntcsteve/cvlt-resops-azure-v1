@@ -13,12 +13,17 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from ._drill import az, az_json, load_restore_payload, restore_target
+from ._drill import az, az_json, az_json_checked, load_restore_payload, restore_target
 
 
 def teardown_vm(resource_group: str, vm_name: str) -> bool:
     """Delete a VM and the dedicated disk/NIC/public-IP it owns. Idempotent."""
-    vm = az_json("vm", "show", "-g", resource_group, "-n", vm_name)
+    # az_json_checked, NOT az_json: the plain one returns None both when the VM is
+    # absent and when the `az` call failed, and this branch turns None into "nothing
+    # to do" plus a success return. On 2026-08-13 that announced a clean teardown
+    # over a VM, NIC and disk that were all still running and billing. A lookup we
+    # could not make is not an absence, so it raises instead.
+    vm = az_json_checked("vm", "show", "-g", resource_group, "-n", vm_name)
     if not vm:
         print(f"VM {vm_name} not found in {resource_group} — nothing to tear down.")
         return True
