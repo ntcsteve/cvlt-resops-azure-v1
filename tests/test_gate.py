@@ -134,3 +134,54 @@ def test_stale_attestation_reported_alongside_other_blocks():
              proof_age_days=1, attestation_age_days=400, rpo_hours=99)
     assert v.decision == "HOLD"
     assert len(v.reasons) == 2
+
+
+# --------------------------------------------------------------------------- #
+# Recency, after the Recover rung stopped blocking on an unevaluated vendor SLA.
+#
+# The ladder used to refuse to reach VALIDATED until Commvault's periodic SLA job
+# had classified the workload — which cost ~30 minutes on every new one and was
+# unreliable in both directions (three DELETED VMs still read "Protected"). That
+# check is gone, so the numeric bar is now the ONLY recency control. These tests
+# pin the consequence: when neither control exists, the gate must refuse.
+# --------------------------------------------------------------------------- #
+def test_a_fresh_point_promotes_even_though_the_vendor_has_not_evaluated_sla():
+    """The whole point of the change. A workload backed up minutes ago, well
+    inside its tier's bar, must ship — not wait half an hour for a batch job."""
+    v = gate(VALIDATED, {"rpo_target_hours": 8}, proof_age_days=1,
+             rpo_hours=0.1, sla_evaluated=False)
+    assert v.decision == "PROMOTE"
+    assert v.exit_code == 0
+
+
+def test_an_old_point_still_holds_on_the_numeric_bar():
+    """The compensating control. Recency is enforced here now, from our own
+    reads, instead of by a cached vendor verdict in the ladder."""
+    v = gate(VALIDATED, {"rpo_target_hours": 8}, proof_age_days=1,
+             rpo_hours=9600.0, sla_evaluated=False)
+    assert v.decision == "HOLD"
+    assert "rpo 9600.0h > target 8h" in v.reasons
+
+
+def test_NOTHING_CAN_JUDGE_RECENCY_SO_THE_GATE_REFUSES():
+    """No tier bar and no vendor verdict means nobody has checked how old this
+    point is. Promoting would be the absence-of-evidence pass this whole repo
+    exists to refuse. The message must name the fix."""
+    v = gate(VALIDATED, {}, proof_age_days=1, rpo_hours=0.1, sla_evaluated=False)
+    assert v.decision == "HOLD"
+    assert any("recency cannot be judged" in r for r in v.reasons)
+    assert any("declare a tier" in r for r in v.reasons)
+
+
+def test_an_evaluated_sla_is_enough_on_its_own():
+    """Backwards compatible: a workload with no declared bar but a real vendor
+    verdict behind it still promotes, exactly as before the change."""
+    v = gate(VALIDATED, {}, proof_age_days=1, sla_evaluated=True)
+    assert v.decision == "PROMOTE"
+
+
+def test_an_unsupplied_fact_is_not_a_false_one():
+    """`None` means the caller did not pass it — not that SLA was unevaluated.
+    Every existing caller and test omits it, and none of them may start HOLDing."""
+    v = gate(VALIDATED, {}, proof_age_days=1)
+    assert v.decision == "PROMOTE"

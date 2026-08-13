@@ -56,7 +56,7 @@ from .render import (
     DIM, GREEN, RED, YELLOW, color, ladder_to_results, render_detail, render_headline,
     render_vmgroups,
 )
-from .state import Reads, classify, gather, trend
+from .state import Reads, classify, gather, sla_evaluated, trend
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = ROOT / "config" / "workshop.yaml"
@@ -411,7 +411,9 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
                        proof_age_days=metrics["proof_age_days"],
                        attestation_age_days=metrics["attestation_age_days"],
                        rpo_hours=metrics["rpo_hours"],
-                       rto_minutes=metrics["rto_minutes"], regressed=tr.regressed)
+                       rto_minutes=metrics["rto_minutes"],
+                       sla_evaluated=sla_evaluated(reads.vm),
+                       regressed=tr.regressed)
 
     # A declared tolerance rides along in the evidence, never in the verdict.
     # An auditor must be able to see both what the gate decided and what the

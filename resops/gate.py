@@ -58,6 +58,7 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
          attestation_age_days: float | None = None,
          rpo_hours: float | None = None,
          rto_minutes: float | None = None,
+         sla_evaluated: bool | None = None,
          regressed: bool = False) -> GateVerdict:
     """Judge a workload's ladder for promotion. Pure.
 
@@ -88,6 +89,17 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
                     f"— nothing has verified this recovery point recently")
     if rpo_target is not None and rpo_hours is not None and rpo_hours > rpo_target:
         hard.append(f"rpo {rpo_hours}h > target {rpo_target}h")
+    # NOTHING CAN JUDGE RECENCY HERE, so refuse rather than promote an age nobody
+    # checked. The Recover rung used to block on an unevaluated vendor SLA; it no
+    # longer does, because that verdict is a cached batch result — absent for ~30
+    # minutes on every new workload, and stale-"Protected" on VMs deleted from
+    # Azure. With it gone, the numeric bar is the only recency control left, and a
+    # workload that declares no tier has neither. Say so, and name the fix.
+    # `None` means the caller did not supply the fact, which is not the same as
+    # False, so it does not block.
+    if rpo_target is None and sla_evaluated is False:
+        hard.append("recency cannot be judged — no rpo_target_hours declared and the "
+                    "vendor has not evaluated SLA. Fix: declare a tier in config/tiers.yaml")
     if rto_target is not None and rto_minutes is not None and rto_minutes > rto_target:
         hard.append(f"rto {rto_minutes}m > target {rto_target}m")
     if regressed:

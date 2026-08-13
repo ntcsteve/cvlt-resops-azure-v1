@@ -146,17 +146,51 @@ def test_sla_not_met_stays_monitored():
     assert "SLA not met" in ladder.reason
 
 
-def test_sla_not_yet_evaluated_blocks_but_does_not_claim_a_miss():
-    """"N/A" (slaStatus 3) means Commvault has not evaluated SLA yet. It must still
-    BLOCK — an unevaluated SLA is not a met one — but it must not be reported as a
-    missed SLA, because the two have different fixes and "SLA not met" sends the
-    reader hunting a backup failure that does not exist. Live on 2026-08-12."""
+def test_SLA_NOT_YET_EVALUATED_DOES_NOT_BLOCK():
+    """"N/A" (slaStatus 3) means Commvault's periodic SLA job has not classified
+    this workload YET. It used to block, and that was wrong twice over.
+
+    Wrong on the facts: the field is a CACHED BATCH VERDICT, not a live one. It
+    read "N/A" for 29 minutes on a workload we had just backed up, restored and
+    verified clean, while three VMs DELETED from Azure still read "Protected" in
+    the same tenant. Unreliable in both directions.
+
+    Wrong on the layering: this rung asks a CAPABILITY question — is there a
+    restorable point — and lastSuccessfulBackupTime plus isRestoreActivityEnabled
+    answer it. RECENCY is policy, it needs a clock, and classify() has none by
+    design. The gate owns it, and M5.4's A-400-days-ago already proves the split:
+    it reaches VALIDATED at RPO 9600h and the GATE stops it.
+
+    Cost of the old behaviour: every new workload dead for half an hour, looking
+    exactly like a broken checkout. On workshop day, the whole room at once.
+    """
     for sla in ("N/A", ""):
         ladder = classify(_full_reads(vm=_vm(sla=sla)))
-        assert ladder.state is State.MONITORED
-        assert ladder.blocked_stage == "Recover"
-        assert "not evaluated" in ladder.reason
-        assert "SLA not met" not in ladder.reason
+        assert ladder.state is State.VALIDATED
+        assert "not evaluated" in ladder.reason or ladder.blocked_stage is None
+
+
+def test_an_sla_verdict_that_was_made_and_says_missed_still_blocks():
+    """Absence attests nothing. A verdict that EXISTS and says "not met" is real
+    information, and it still blocks — exactly as the Scan rung treats a recorded
+    anomaly versus a missing one."""
+    ladder = classify(_full_reads(vm=_vm(sla="Missed SLA")))
+    assert ladder.state is State.MONITORED
+    assert ladder.blocked_stage == "Recover"
+    assert "SLA not met" in ladder.reason
+
+
+def test_the_recover_rung_records_whether_the_vendor_had_evaluated():
+    """"We did not know" must be visible in the evidence, not silent. The gate
+    reads this to decide whether anything can judge recency at all."""
+    from resops.state import sla_evaluated
+
+    assert sla_evaluated({"slaCategoryDescription": "Protected"}) is True
+    assert sla_evaluated({"slaCategoryDescription": "Missed SLA"}) is True
+    assert sla_evaluated({"slaCategoryDescription": "N/A"}) is False
+    assert sla_evaluated({"slaCategoryDescription": ""}) is False
+    assert sla_evaluated({}) is False
+    assert sla_evaluated(None) is False
 
 
 def test_restore_disabled_stays_monitored():

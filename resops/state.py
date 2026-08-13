@@ -299,9 +299,11 @@ def classify(reads: Reads) -> Ladder:
         return stop(State.MONITORED, "Recover",
                     f"{vm_name} not found among protected VMs", {"vm_name": vm_name}, error=False)
     sla = vm.get("slaCategoryDescription", "")
+    evaluated = sla_evaluated(vm)
     restore_enabled = vm.get("isRestoreActivityEnabled", False)
     last_success = vm.get("lastSuccessfulBackupTime", 0)
-    recover_ev = {"sla_status": sla, "restore_enabled": restore_enabled,
+    recover_ev = {"sla_status": sla, "sla_evaluated": evaluated,
+                  "restore_enabled": restore_enabled,
                   "last_successful_backup_time": last_success, "vm_guid": vm.get("strGUID")}
     if not last_success:
         return stop(State.MONITORED, "Recover",
@@ -310,23 +312,31 @@ def classify(reads: Reads) -> Ladder:
     if not restore_enabled:
         return stop(State.MONITORED, "Recover",
                     "restore activity is disabled for this VM", recover_ev, error=False)
-    # "N/A" (slaStatus 3) means Commvault has NOT EVALUATED SLA for this VM yet.
-    # That is a different fact from "SLA missed", and it needs a different fix, so
-    # it gets its own message. A freshly protected workload sits here until the
-    # periodic SLA calculation runs — proven live 2026-08-12: aug12-narwhal was
-    # N/A with a successful backup 12 minutes old, while three DELETED VMs in the
-    # same tenant still read "Protected".
-    # It still BLOCKS. An unevaluated SLA is not a met one, and inventing a pass
-    # here is the exact failure this ladder exists to refuse.
-    if sla in ("", "N/A"):
-        return stop(State.MONITORED, "Recover",
-                    "SLA not evaluated yet (N/A) — Commvault has not run its periodic "
-                    "SLA calculation for this workload; this is not a missed SLA",
-                    recover_ev, error=False)
-    if sla != "Protected":
+    # AN UNEVALUATED SLA NO LONGER BLOCKS. This rung asks a CAPABILITY question —
+    # is there a restorable point — and the two facts above answer it. Recency is
+    # POLICY and belongs to the gate, which owns the clock and the tier's bar.
+    # The offline demo already says so: M5.4's A-400-days-ago reaches VALIDATED at
+    # RPO 9600h and is stopped by the gate, not here.
+    #
+    # We leaned on `slaCategoryDescription` because classify() is clock-free and it
+    # was a ready-made recency verdict. It was the wrong one, in both directions:
+    # it read "N/A" for 29 minutes on a workload we had just restored and verified,
+    # and it still reads "Protected" for three VMs deleted from Azure. Blocking on
+    # its ABSENCE stopped every new workload dead for half an hour and presented as
+    # a broken checkout — on workshop day that is the whole room at once.
+    #
+    # A verdict that HAS been made and says "not met" is still real information, so
+    # it still blocks. Absence attests nothing, exactly as the Scan rung treats a
+    # missing anomaly record. See sla_evaluated() and gate()'s recency guard, which
+    # HOLDs when neither an RPO target nor an SLA verdict exists to judge with.
+    if evaluated and sla != "Protected":
         return stop(State.MONITORED, "Recover",
                     f"SLA not met — {sla}", recover_ev, error=False)
-    cleared("Recover", "recoverable — SLA Protected", recover_ev)
+    cleared("Recover",
+            "recoverable — SLA Protected" if evaluated else
+            "recoverable — a successful backup exists (vendor SLA not evaluated yet; "
+            "recency is enforced by the gate)",
+            recover_ev)
 
     # ── Scan ── has ANYONE attested the point we'd restore from? ──────────────
     # An unattested recovery point is not a clean one. This rung used to clear on
@@ -422,6 +432,28 @@ def classify(reads: Reads) -> Ladder:
     cleared("Validate", f"recovery proven — job {job_id}", validate_ev)
 
     return Ladder(State.VALIDATED, None, f"recovery proven — job {job_id}", False, rungs)
+
+
+def sla_evaluated(vm: dict | None) -> bool:
+    """Has Commvault's periodic SLA job classified this workload YET?
+
+    `slaCategoryDescription` is not a live fact. It is a cached verdict from a
+    batch job on the CommServ, and it has THREE states, not two:
+
+        "Protected"       evaluated, and met
+        anything else     evaluated, and not met
+        "" or "N/A"       NOT EVALUATED YET   <- this one
+
+    Measured twice: a brand-new workload sits at "N/A" for 29 to 40 minutes after
+    its first backup, whatever the backup did. And the value persists once set, so
+    three VMs DELETED from Azure still read "Protected" in this tenant. It is
+    unreliable in both directions, which is why the ladder no longer blocks on its
+    absence and the gate falls back to a numeric RPO bar instead.
+
+    Pure and named once so classify() and the gate cannot drift apart on what
+    "not evaluated" means.
+    """
+    return (vm or {}).get("slaCategoryDescription", "") not in ("", "N/A")
 
 
 def _state_after(stage: str) -> State:
