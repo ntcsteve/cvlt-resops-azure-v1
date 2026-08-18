@@ -98,7 +98,33 @@ write_files:
       [ "$locked" -eq 0 ] || fail "$locked encrypted (.locked) files present"
       [ ! -f "$DATA/README_RECOVER.txt" ] || fail "ransom note present"
 
-      echo "OK: code intact, baseline present, $rows customer records, no encryption markers"
+      # 5. can this recovery point ACCEPT and RETURN data, or only hold it?
+      # Checks 1-4 all ask "is the right data here?". None of them asks "does the
+      # store still WORK?" — and a read-only mount, a full disk or a half-restored
+      # filesystem passes every check above, then fails a real service on its very
+      # first write. So: write a record, read it back, compare it, remove it. A
+      # synthetic transaction, executed INSIDE the recovery point.
+      #
+      # THIS DOES NOT PROVE THE APPLICATION WORKS. It proves the datastore accepts
+      # a write and returns the same bytes. Claiming more would make this script
+      # the thing it exists to catch.
+      probe="$DATA/.verify-probe.$$"
+      token="resops-probe-$$"
+      # Braces, not `echo ... 2>/dev/null`: the redirect itself is what fails on a
+      # read-only store, and the shell reports THAT on its own stderr before echo
+      # ever runs. Redirecting echo's stderr does not suppress it. parse_verdict
+      # ignores non-verdict lines so it would still work, but a raw
+      # "Permission denied" printed above the FAIL: line is precisely the noise
+      # this script exists not to produce.
+      { echo "$token" > "$probe"; } 2>/dev/null \
+        || fail "data store not writable — the recovery point cannot accept a transaction"
+      readback=$(cat "$probe" 2>/dev/null) \
+        || { rm -f "$probe"; fail "data store not readable — wrote a record, could not read it back"; }
+      rm -f "$probe"
+      [ "$readback" = "$token" ] \
+        || fail "write/read mismatch in the data store — it returned different bytes"
+
+      echo "OK: code intact, baseline present, $rows customer records, no encryption markers, write/read verified"
       exit 0
 
   - path: /etc/systemd/system/resops-demo.service

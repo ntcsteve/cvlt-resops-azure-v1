@@ -521,7 +521,7 @@ grep -A 40 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
    ran, inside a machine nobody could log into.
 ```
 
-Thirty lines. Four checks. Full contract in [VERIFY.md](VERIFY.md).
+Twenty-five lines. Five checks. Full contract in [VERIFY.md](VERIFY.md).
 
 ## 4.2 · Write a check for YOUR shape · 45 min · WORKSHEET 4
 
@@ -673,7 +673,7 @@ op gate    infra/workloads
    backup Completed. restore Completed. VM healthy. Every vendor
    signal GREEN. The recovery point was still poison.
 
-   Caught by thirty lines of shell anyone here can read.
+   Caught by twenty-five lines of shell anyone here can read.
 ```
 
 ## 5.4 · Four recovery points · 25 min · WORKSHEET 5

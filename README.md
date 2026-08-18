@@ -291,7 +291,7 @@ op gate      infra/workloads   # HOLD · exit 1
  HOLD  exit 1
 ```
 
-Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - thirty lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers. The one line it prints - `OK:` or `FAIL:` - is the attestation. The contract is in [VERIFY.md](VERIFY.md): it's the one file you have to write yourself, and the one nobody can write for you.
+Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - twenty-five lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers, and a write that comes back as the same bytes. The one line it prints - `OK:` or `FAIL:` - is the attestation. The contract is in [VERIFY.md](VERIFY.md): it's the one file you have to write yourself, and the one nobody can write for you.
 
 ### Why a script and not a backup-product scan
 

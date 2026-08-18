@@ -48,7 +48,7 @@ exit 0
 
 ## The worked example (VM, in this repo)
 
-From `infra/modules/azure-vm/cloud-init.yaml`. Four checks, four different questions:
+From `infra/modules/azure-vm/cloud-init.yaml`. Five checks, five different questions. The first four ask *is the right data here?*. The fifth asks *does the store still work?*, which none of the others can answer.
 
 ```bash
 # 1. the code came back
@@ -69,8 +69,32 @@ locked=$(find "$DATA" -name '*.locked' | wc -l)
 [ "$locked" -eq 0 ] || fail "$locked encrypted (.locked) files present"
 [ ! -f "$DATA/README_RECOVER.txt" ] || fail "ransom note present"
 
-echo "OK: code intact, baseline present, $rows customer records, no encryption markers"
+# 5. can it ACCEPT and RETURN data, or only hold it? A synthetic transaction.
+probe="$DATA/.verify-probe.$$"; token="resops-probe-$$"
+{ echo "$token" > "$probe"; } 2>/dev/null \
+  || fail "data store not writable — the recovery point cannot accept a transaction"
+readback=$(cat "$probe" 2>/dev/null) \
+  || { rm -f "$probe"; fail "data store not readable — wrote a record, could not read it back"; }
+rm -f "$probe"
+[ "$readback" = "$token" ] || fail "write/read mismatch in the data store"
+
+echo "OK: code intact, baseline present, $rows customer records, no encryption markers, write/read verified"
 ```
+
+**Why check 5 exists, and what it deliberately does NOT claim.** A read-only mount,
+a full disk or a half-restored filesystem passes checks 1 to 4 and then fails a real
+service on its very first write. Checks 1 to 4 read; check 5 writes, reads back,
+compares and cleans up.
+
+It proves the datastore accepts a write and returns the same bytes. **It does not
+prove the application works.** Saying otherwise would make this script the exact
+thing it exists to catch, which is a check claiming more than it examined.
+
+Note the braces on the write. `echo ... 2>/dev/null` does not suppress the failure,
+because the *redirect* is what fails on a read-only store and the shell reports that
+itself, before `echo` runs. The drill's parser skips non-verdict lines so it would
+still work, but a raw `Permission denied` above your `FAIL:` line is noise in the one
+output a human reads at 2am.
 
 ## What makes a check worth writing
 
@@ -81,6 +105,7 @@ echo "OK: code intact, baseline present, $rows customer records, no encryption m
  a known-good marker is present          the timestamp looks recent
  schema / header is what you expect      the service starts
  no encryption or ransom markers         the process is running
+ a write comes back as the same bytes    the mount point exists
 ```
 
 The weak column is what a backup product can already tell you. Everything in the good column requires opening the data, which is exactly why the check has to live with the workload and not with the platform.

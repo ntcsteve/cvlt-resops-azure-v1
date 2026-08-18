@@ -87,7 +87,7 @@ Two cheap proxies were tried. One is noise. The other works, and is still not en
 
 **There is no way to know a backup is good without opening it and looking.** The vendor's scan does open it, and looks for what *it* recognises. Only your own check knows whether *your* service still works. That is why you want both, and why almost nobody has either.
 
-So the attester is [`verify.sh`](VERIFY.md): the restore drill opens the recovery point in isolation and runs the workload's *own* check inside the restored copy. The one line it prints, `OK:` or `FAIL:`, is the attestation. Thirty lines of shell anyone in the room can read.
+So the attester is [`verify.sh`](VERIFY.md): the restore drill opens the recovery point in isolation and runs the workload's *own* check inside the restored copy. The one line it prints, `OK:` or `FAIL:`, is the attestation. Twenty-five lines of shell anyone in the room can read.
 
 And an attestation has a shelf life. "Verified once, a year ago" is not verified, so freshness is policy (`config/tiers.yaml`, `attestation_max_age_days`) and a stale attestation is a hard HOLD with no override.
 
