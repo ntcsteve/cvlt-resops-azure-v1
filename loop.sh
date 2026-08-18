@@ -60,12 +60,22 @@
 #
 # WHAT TO EXPECT, measured across the two passes actually run on 2026-08-12:
 #
-#   backup           1.3 to 2.3 min over 6 jobs, at 20s poll granularity so these
-#                    are upper bounds. An earlier 9-job sample the same day gave
-#                    "0.8 min median / 1.4 max" and FIVE OF SIX tonight exceeded
-#                    that stated maximum, so plan for ~1.5 min and do not be
-#                    surprised by 2.5. Still nothing like the 5-27 min folklore,
-#                    which came from a single media agent failover.
+#   backup           88 to 149 seconds wall clock over the 6 runs in these two
+#                    passes. On the tenant side, 17 completed parent jobs measured
+#                    77-134s with a median of 91s, plus one 27-minute media agent
+#                    failover. PLAN FOR 2 MINUTES.
+#
+#                    WHY TWO EARLIER FIGURES WERE WRONG, and it is the same cause
+#                    both times. A VSA backup produces TWO jobs, both reading as
+#                    "Backup": the PARENT (VM Admin Job(Backup)), whose id
+#                    POST v4/vmgroup/{id}/backup returns and which poll_job
+#                    therefore polls, and a faster CHILD whose id is what the
+#                    Azure GXMD snapshot NAME embeds. Sampling snapshot names
+#                    measures the child and understates the wait by ~30s a job.
+#                    That produced "0.8 min median / 1.4 max", which FIVE OF SIX
+#                    real backups then exceeded, and "under 90s in 16 of 16",
+#                    which only 8 of 17 parent jobs actually satisfy. Neither
+#                    figure was invented; both were measured on the wrong job.
 #   threat analysis  3.0 min typical, one 5.7 min outlier in 4
 #   restore job      1.4-1.6 min in 5 of 6, ONE at 3.5, from the jobs' own
 #                    start/end times. Plus VM boot + verify + teardown around it,
@@ -77,7 +87,9 @@
 #
 # THE TWO RISKS, both vendor-side:
 #
-#   media agent queue   ~1 job in 13 today. poll_job says "typically 5-15 min"
+#   media agent queue   ~1 job in 13 today. poll_job prints the measured range on
+#                       its first Waiting tick (do not re-quote it here; it has
+#                       been corrected twice and every copy went stale with it),
 #                       and every timeout now allows 900s, so it should be a wait
 #                       and not a failure. If a step still times out, RE-RUN THAT
 #                       STEP ALONE. Do not restart the pass. It is a queue, not a

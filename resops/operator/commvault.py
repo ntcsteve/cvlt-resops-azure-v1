@@ -30,16 +30,35 @@ def poll_job(client, job_id, timeout: int = 600, every: int = 20) -> str:
         reason = f"  ↳ {pending}" if pending and status == "Waiting" else ""
         print(f"  [{waited:4}s] {status} {summary.get('percentComplete')}%{reason}", flush=True)
         if status == "Waiting" and first_wait:
-            # THE ORIGIN OF A NUMBER NOBODY MEASURED. This said "typically 5-15
-            # min", and loop.sh, FACILITATOR.md and WORKSHOP.md all quoted it, so
-            # correcting the copies without correcting this would simply reseed
-            # them. Measured on this tenant across 16 real jobs: the longest wait
-            # was 80 SECONDS. The long tail is real but rare — one media agent
-            # failover once took 27 minutes — so both numbers are stated. A
-            # replacement figure that only says "fast" is the same error pointing
-            # the other way.
-            print("         (waiting for a media agent slot — measured here: under 90s in "
-                  "16 of 16 jobs, but a media agent failover once took 27 min. Do not kill it.)",
+            # THE ORIGIN OF A NUMBER NOBODY MEASURED, twice over. This first said
+            # "typically 5-15 min" (invented), then "under 90s in 16 of 16 jobs"
+            # (measured, but on the wrong jobs). loop.sh, FACILITATOR.md and
+            # WORKSHOP.md all quote whatever this says, so a wrong figure here
+            # reseeds every copy.
+            #
+            # WHY THE SECOND ATTEMPT WAS WRONG, and it is the eleventh instance of
+            # this repo's one recurring bug. A VSA backup produces TWO jobs:
+            #
+            #   VM Admin Job(Backup)   the PARENT. This is the id
+            #                          POST v4/vmgroup/{id}/backup returns, so it
+            #                          is the one this function polls and the one
+            #                          a participant waits for.
+            #   Backup                 the CHILD. Faster, and its id is what the
+            #                          Azure GXMD snapshot NAME embeds.
+            #
+            # Both read as "Backup". Sampling the snapshot names therefore measures
+            # the child and understates the wait by roughly 30 seconds a job. That
+            # is where "0.8 min median" came from, and why the next session found
+            # five of six real backups exceeding a stated maximum.
+            #
+            # RE-MEASURED 2026-08-18 on the PARENT jobs this function actually
+            # polls: 17 completed, 77s to 134s, median 91s, plus one 27-minute
+            # media agent failover. Only 8 of 17 were under 90 seconds. Wall clock
+            # for `op backup` end to end, from loop.sh's own step stamps: 88s to
+            # 149s across 6 runs.
+            print("         (waiting for a media agent slot — measured here: about 2 min, "
+                  "77-149s across 23 runs, and one media agent failover took 27 min. "
+                  "Do not kill it.)",
                   flush=True)
             first_wait = False
         if any(t in status for t in TERMINAL):

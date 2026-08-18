@@ -408,7 +408,7 @@ Everything above works offline against committed fixtures. The moment you point 
 ```
  backup job sitting on "Waiting" is NORMAL     it is queueing for a media
                                                agent. do not kill it. measured
-                                               here: under 90s in 16 of 16
+                                               here: about 2 min, 77-149s
                                                jobs, but one failover took
                                                27 min. both numbers are true.
  tokens die on a hard wall                     renewal fails with HTTP 500

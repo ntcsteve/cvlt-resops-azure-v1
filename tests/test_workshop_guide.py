@@ -310,3 +310,41 @@ def test_both_guides_agree_on_the_verify_script_line_count():
         text = g.read_text()
         assert "hirty lines" not in text and "orty lines" not in text, (
             f"{g.name} quotes a stale line count for verify.sh")
+
+
+def test_no_doc_claims_a_backup_timing_that_was_measured_on_the_wrong_job():
+    """A VSA backup produces TWO jobs and both read as "Backup":
+
+        VM Admin Job(Backup)   the PARENT. What POST .../backup returns, so what
+                               poll_job polls and what a participant waits for.
+        Backup                 the CHILD. Faster, and its id is what the Azure
+                               GXMD snapshot NAME embeds.
+
+    Sampling the snapshot names measures the child and understates the wait by
+    about 30 seconds. That produced "0.8 min median", then "under 90s in 16 of
+    16 jobs", and the next session found five of six real backups exceeding the
+    stated maximum.
+
+    Re-measured 2026-08-18 on the parent jobs: 77-134s, median 91s, only 8 of 17
+    under 90 seconds. Wall clock for `op backup` end to end: 88-149s over 6 runs.
+
+    This pins the retracted claims out of every doc AND out of the poller, which
+    is where they kept getting reseeded from."""
+    targets = [ROOT / d for d in ("README.md", "RESOPS.md", "WORKSHOP.md",
+                                  "WORKSHOP-2H.md", "VERIFY.md")]
+    targets.append(ROOT / "resops/operator/commvault.py")
+    targets.append(ROOT / "loop.sh")
+    for f in targets:
+        if not f.exists():
+            continue
+        text = f.read_text()
+        for retracted in ("under 90s in 16 of 16", "0.8 min median", "typically 5-15 min"):
+            if retracted not in text:
+                continue
+            # A retracted figure may be QUOTED anywhere, as the record of what was
+            # wrong — that history is worth keeping. What must never happen is it
+            # standing alone as if it were current. So the rule is not "never
+            # mention it", it is "never mention it without the correction".
+            assert "CHILD" in text or "child job" in text, (
+                f"{f.name} quotes {retracted!r} with no correction beside it. It "
+                f"was measured on the CHILD job, not the parent poll_job polls.")
