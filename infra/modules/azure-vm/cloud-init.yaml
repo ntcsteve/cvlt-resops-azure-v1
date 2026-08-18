@@ -72,7 +72,7 @@ write_files:
       # two. Neither is sufficient alone, which is the argument for both.
       # Dedupe ratio was tried and killed: 40+ points of variance on an idle VM.
       #
-      # Every team writes their own. Ours checks four things.
+      # Every team writes their own. Ours checks five things.
       set -uo pipefail
       DATA=/var/lib/app/data
       fail() { echo "FAIL: $*"; exit 1; }
