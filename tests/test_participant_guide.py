@@ -157,6 +157,21 @@ def test_solo_mode_carries_the_full_climb(page):
     assert "op restore infra/workloads" in page
 
 
+def test_committed_previews_are_fresh(tmp_path):
+    """dist/preview*.html are CHECKED IN so the team can open the product
+    without building it. A committed page that drifts behind the markdown
+    is the two-sources-of-truth bug in its worst form, so staleness is a
+    red suite, not a surprise."""
+    for name, mode in (("preview.html", "solo"), ("preview-room.html",
+                                                  "room")):
+        committed = REPO / "dist" / name
+        assert committed.is_file(), f"dist/{name} is missing; rebuild it"
+        fresh = build(MD, tmp_path / name, None, mode=mode)
+        assert fresh == committed.read_text(encoding="utf-8"), (
+            f"dist/{name} is stale. Rebuild: python3 tools/guide/build.py "
+            f"--out dist/{name} --mode {mode}")
+
+
 def test_parse_errors_carry_line_numbers():
     md = "# T\n\ntext\n\n```python\nx = 1\n```\n"
     with pytest.raises(SystemExit, match="line 5: unknown fence language"):

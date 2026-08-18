@@ -45,7 +45,9 @@ LOG.md
 # python packaging build artifacts
 *.egg-info/
 build/
-dist/
+dist/*
+!dist/preview.html
+!dist/preview-room.html
 
 # observability stack state (cattle — deploy before a workshop, destroy after)
 infra/observability/.terraform/

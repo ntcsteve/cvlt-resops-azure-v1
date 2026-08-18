@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps Meets ResOps</title>
+<style>
+/* Design tokens. The only file where a color, font, or scale is defined.
+   Light mode only, committed: the page paints its own white everywhere.
+   Values follow the Tailwind system (4px spacing grid, slate ramp biased
+   blue to match Commvault's neutrals, one radius scale, shadow-sm only),
+   written as plain hex so any locked-down browser renders identically.
+
+   The color budget, enforced here and nowhere else:
+     crocus  -> kicker, active nav, step circles, links, Next, progress
+     green   -> the ✓ callout and PROMOTE/VALIDATED words, nothing else
+     red     -> the ✗ callout and HOLD/THREATS words, nothing else
+     everything else is ink on white with hairlines. */
+:root {
+  --bg:          #ffffff;
+  --ink:         #1b1f3b;   /* slate-900, blue-biased */
+  --muted:       #5a5f73;   /* slate-500, blue-biased */
+  --line:        #e5e7f0;   /* slate-200, blue-biased */
+
+  --accent:      #844896;   /* Commvault crocus */
+  --accent-dark: #6d3a7c;   /* hover */
+  --accent-soft: #f5eef8;   /* active nav tint, selection */
+
+  --yes:         #266c1c;
+  --yes-tint:    #f2f9ef;
+  --no:          #b11240;
+  --no-tint:     #fdf2f5;
+  --clock:       #5a5f73;
+  --clock-tint:  #f6f7fa;
+
+  --code-bg:     #f8f8fb;
+  --code-head:   #f1f2f7;
+  --code-border: #e5e7f0;
+  --prompt:      #844896;
+
+  --topbar-bg:   #00053b;   /* Commvault midnight */
+  --topbar-fg:   #e2e3f1;
+  --topbar-dim:  #8b90b3;
+  --topbar-name: #c397d8;   /* crocus-400 on midnight */
+
+  --f-sans: -apple-system, 'Segoe UI', system-ui, Roboto, sans-serif;
+  --f-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --shadow-sm: 0 1px 2px rgba(27, 31, 59, 0.06);
+
+  --topbar-h: 44px;
+  --sidebar-w: 280px;
+}
+
+/* Reset and typography. The scale is Workshop Studio's: 14px body,
+   30/22/16 headings, 13px code. Spacing everywhere is the 4px grid. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-sans);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
+h1 { font-size: 30px; font-weight: 700; }
+h2 { font-size: 22px; font-weight: 700; margin: 28px 0 12px; }
+h3 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; }
+
+p { margin: 12px 0; }
+strong { font-weight: 600; }
+
+code, pre, kbd { font-family: var(--f-mono); font-size: 13px; }
+p code, li code {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  font-size: 12.5px;
+}
+
+blockquote {
+  border-left: 3px solid var(--line);
+  padding: 2px 0 2px 16px;
+  margin: 12px 0;
+  color: var(--muted);
+}
+
+.doclink { color: var(--accent); text-decoration: underline;
+  text-underline-offset: 2px; }
+a { color: var(--accent); }
+
+::selection { background: var(--accent-soft); }
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* One block per component, in reading order. Quiet by default: the step
+   rail, the ✓/✗ pair, and the codename are the only elements allowed to
+   ask for attention. */
+
+/* ---- landing header ---- */
+.standfirst { color: var(--muted); font-size: 15px; margin-top: 12px; }
+.mast-meta { color: var(--muted); font-family: var(--f-mono);
+  font-size: 12px; }
+.mast-meta strong { color: var(--ink); font-family: var(--f-mono); }
+.codename {
+  display: inline-block; margin: 12px 0 4px; font-family: var(--f-mono);
+  font-size: 13px; padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.codename span { font-size: 11px; letter-spacing: 0.08em;
+  color: var(--muted); margin-right: 8px; }
+.codename.unset { color: var(--muted); font-style: italic; }
+
+/* ---- breadcrumb, kicker, page header ---- */
+.crumb {
+  font-size: 12px; color: var(--muted); margin: 0 0 20px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.crumb a { color: var(--accent); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+.crumb-sep { margin: 0 6px; color: var(--line); }
+.crumb b { color: var(--ink); font-weight: 600; }
+
+.kicker {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--accent); margin: 0 0 4px;
+}
+.page-head {
+  display: flex; align-items: baseline; gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px; margin-bottom: 16px;
+}
+.page-meta {
+  margin-left: auto; font-family: var(--f-mono); font-size: 12px;
+  color: var(--muted); white-space: nowrap;
+}
+
+/* ---- the step rail: a command opens a step, its checks hang off it.
+       Structure derived from authored order, never invented content. ---- */
+.steps { margin: 16px 0; }
+.step {
+  display: grid; grid-template-columns: 28px 1fr; gap: 0 16px;
+  position: relative; padding-bottom: 12px;
+}
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #ffffff;
+  font-size: 13px; font-weight: 600; line-height: 28px;
+  text-align: center; margin-top: 4px;
+}
+.step::before {
+  content: ""; position: absolute; left: 13.5px; top: 36px; bottom: -8px;
+  width: 1px; background: var(--line);
+}
+.step:last-child { padding-bottom: 0; }
+.step:last-child::before { display: none; }
+.step-body { min-width: 0; }
+.step-body > :first-child { margin-top: 4px; }
+
+/* ---- command block: light, with a labeled header row. The $ prompt is
+       a pseudo-element, so manual select-copy can never capture it.
+       The whole block is a copy target (app.js). ---- */
+.cmd {
+  border: 1px solid var(--code-border); border-radius: var(--radius-md);
+  overflow: hidden; margin: 12px 0; cursor: copy; background: var(--code-bg);
+}
+.cmd-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 8px 4px 12px; background: var(--code-head);
+  border-bottom: 1px solid var(--code-border);
+}
+.cmd-head span {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.copy {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 2px 10px; cursor: pointer;
+}
+.copy:hover { color: var(--ink); border-color: var(--muted); }
+.cmd pre {
+  padding: 12px 14px; overflow-x: auto; line-height: 1.6;
+  color: var(--ink);
+}
+.cmd code::before { content: "$ "; color: var(--prompt); font-weight: 600; }
+.cmd.copied { animation: copied-pulse 0.35s ease-out; }
+@keyframes copied-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(132, 72, 150, 0.45); }
+  100% { box-shadow: 0 0 0 8px rgba(132, 72, 150, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cmd.copied { animation: none; }
+}
+
+/* ---- diagnostic pair: quiet callouts, adjacent, unmistakable ---- */
+.diag { margin: 12px 0; display: flex; flex-direction: column; gap: 4px; }
+.diag-row {
+  border-left: 3px solid; border-radius: 0 var(--radius-sm)
+  var(--radius-sm) 0; padding: 8px 12px;
+}
+.diag-yes { border-color: var(--yes); background: var(--yes-tint); }
+.diag-no { border-color: var(--no); background: var(--no-tint); }
+.diag-clock { border-color: var(--line); background: var(--clock-tint); }
+.diag-label { margin: 0; font-size: 12px; font-weight: 700; }
+.diag-yes .diag-label { color: var(--yes); }
+.diag-no .diag-label { color: var(--no); }
+.diag-clock .diag-label { color: var(--clock); }
+.diag-mark { margin-right: 6px; }
+.diag-row pre { margin-top: 4px; overflow-x: auto; line-height: 1.55;
+  color: var(--ink); }
+.diag-text { margin: 4px 0 0; font-size: 14px; color: var(--ink); }
+.v-yes { color: var(--yes); font-weight: 700; }
+.v-no { color: var(--no); font-weight: 700; }
+
+/* ---- aside: the quietest block on the page ---- */
+.aside { border-left: 2px solid var(--line); padding: 2px 0 2px 14px;
+  margin: 16px 0; color: var(--muted); }
+.aside-title { font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted); margin: 0; }
+.aside p { margin: 8px 0; font-size: 13px; line-height: 20px; }
+.aside pre { background: var(--code-bg); border: 1px solid
+  var(--code-border); border-radius: var(--radius-sm);
+  padding: 8px 12px; overflow-x: auto; margin: 8px 0; }
+
+/* ---- ASCII panel: scrolls in its own container, never wraps ---- */
+.panel {
+  background: var(--code-bg); border: 1px solid var(--code-border);
+  border-radius: var(--radius-md); padding: 12px 14px;
+  overflow-x: auto; margin: 12px 0; line-height: 1.6;
+}
+
+/* ---- figure: build-time inlined image ---- */
+figure { margin: 16px 0; }
+figure img {
+  max-width: 100%; display: block;
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+}
+figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* ---- do/learn strip: the chapter's orientation, first thing on the page.
+       Two labelled rows, hairline box, no tint: informative, not loud. ---- */
+.dolearn {
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 10px 14px; margin: 16px 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.dolearn-row { display: grid; grid-template-columns: 52px 1fr; gap: 12px;
+  align-items: baseline; }
+.dolearn-row span { font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; color: var(--accent); }
+.dolearn-row p { margin: 0; font-size: 14px; }
+
+/* ---- checkpoint card: quiet consolidation at a chapter's end ---- */
+.mark {
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: 12px 16px; margin: 24px 0 12px; background: var(--code-bg);
+}
+.mark-title { margin: 0 0 4px; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); }
+.mark p { margin: 4px 0; font-size: 14px; }
+.mark pre { overflow-x: auto; margin: 8px 0; }
+
+/* ---- reveal: collapsed answers; a details block styled like an aside ---- */
+.reveal { border-left: 2px solid var(--line); padding: 2px 0 2px 14px;
+  margin: 8px 0 16px; color: var(--muted); }
+.reveal summary { cursor: pointer; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.reveal summary:hover { color: var(--ink); }
+.reveal div { margin-top: 6px; }
+.reveal p { margin: 6px 0; font-size: 13px; line-height: 20px; }
+.reveal pre { background: var(--code-bg); border: 1px solid
+  var(--code-border); border-radius: var(--radius-sm);
+  padding: 8px 12px; overflow-x: auto; margin: 8px 0; }
+
+/* ---- pager: both right, ghost prev, solid next with title + time ---- */
+.pager {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+}
+.pager a {
+  font-size: 14px; text-decoration: none;
+  border-radius: var(--radius-md); padding: 8px 16px;
+}
+.pager-prev { color: var(--muted); border: 1px solid var(--line); }
+.pager-prev:hover { color: var(--ink); border-color: var(--muted); }
+.pager-next {
+  background: var(--accent); color: #ffffff; font-weight: 600;
+  border: 1px solid var(--accent);
+}
+.pager-next:hover { background: var(--accent-dark);
+  border-color: var(--accent-dark); }
+.pager-next span { font-weight: 400; font-family: var(--f-mono);
+  font-size: 11px; opacity: 0.85; margin-left: 4px; }
+
+/* The shell: topbar over everything, sidebar left, full-width content.
+   Narrow (half-screen beside a terminal) collapses the sidebar and the
+   topbar carries position + codename instead. Light mode only.
+   Without JS every page renders stacked in order: the router only hides. */
+
+/* ---- topbar: identity left, codename right, progress as its bottom
+       edge. 10 hairline segments fill as pages are visited: the only
+       progress signal at half-screen, subliminal at full width. ---- */
+#topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 16px;
+  height: var(--topbar-h); padding: 0 16px;
+  background: var(--topbar-bg); color: var(--topbar-fg);
+  box-shadow: var(--shadow-sm);
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: #ffffff;
+  text-decoration: none; white-space: nowrap;
+}
+.brand-logo { display: block; width: 18px; height: 18px; }
+#topbar-here {
+  font-size: 13px; color: var(--topbar-fg); display: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar-wordmark { display: block; height: 12px; width: auto;
+  margin-left: auto; }
+
+/* ---- sidebar ---- */
+#sidebar {
+  position: fixed; top: var(--topbar-h); bottom: 0; left: 0;
+  width: var(--sidebar-w); overflow-y: auto;
+  background: var(--bg); border-right: 1px solid var(--line);
+  padding: 12px 0 24px;
+}
+.nav-act {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 16px 16px 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.nav-act-name { flex: 1; }
+.nav-row {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: 2px 8px; padding: 8px 8px; min-height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--ink); text-decoration: none; font-size: 14px;
+}
+.nav-row:hover { background: var(--code-bg); }
+.nav-row.active {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+}
+.nav-num { font-family: var(--f-mono); font-size: 12px;
+  color: var(--muted); min-width: 16px; }
+.nav-row.active .nav-num { color: var(--accent); }
+.nav-name { flex: 1; }
+
+/* ---- content: full width, like Workshop Studio ---- */
+main { padding: 20px 40px 64px; }
+
+/* ---- routing: JS adds .routed to <html>. Without it, all pages render
+       stacked in document order and the guide degrades to a scroll. ---- */
+.routed main > .page { display: none; }
+.routed main > .page.active { display: block; }
+.page { padding: 4px 0 24px; }
+
+@media (min-width: 881px) {
+  main { margin-left: var(--sidebar-w); }
+}
+
+@media (max-width: 880px) {
+  #sidebar { display: none; }
+  #topbar-here { display: block; }
+  .brand-name, .topbar-wordmark { display: none; }
+  /* position replaces identity when space is scarce; the mark stays,
+     and stays a tap target back to the contents page */
+  main { padding: 16px 16px 48px; }
+  h1 { font-size: 24px; }
+}
+
+/* ---- print: the guide doubles as the handout. Chrome off, everything
+       expanded, callouts keep their rules. ---- */
+@media print {
+  #topbar, #sidebar, .pager, .copy { display: none !important; }
+  .routed main > .page { display: block !important; }
+  body { background: #ffffff; }
+  main { margin: 0; padding: 0; }
+  .page { break-after: page; }
+  .cmd { border: 1px solid #999999; }
+}
+
+</style>
+</head>
+<body>
+<header id="topbar"><a class="brand" href="#/overview"><img class="brand-logo" src="data:image/png;base64,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" alt=""><span class="brand-name">DevOps Meets ResOps</span></a><span id="topbar-here"></span><img class="topbar-wordmark" src="data:image/png;base64,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" alt="Commvault"></header>
+<div class="shell">
+<aside id="sidebar"><nav aria-label="Workshop contents"><a class="nav-row" href="#/overview" data-route="#/overview"><span class="nav-name">Overview</span></a><a class="nav-row" href="#/setup" data-route="#/setup"><span class="nav-name">Setup</span></a><a class="nav-row" href="#/1" data-route="#/1"><span class="nav-num">1.</span><span class="nav-name">Build</span></a><a class="nav-row" href="#/2" data-route="#/2"><span class="nav-num">2.</span><span class="nav-name">Prove</span></a><a class="nav-row" href="#/3" data-route="#/3"><span class="nav-num">3.</span><span class="nav-name">Break</span></a><a class="nav-row" href="#/4" data-route="#/4"><span class="nav-num">4.</span><span class="nav-name">Choose</span></a><a class="nav-row" href="#/5" data-route="#/5"><span class="nav-num">5.</span><span class="nav-name">Re-prove</span></a><a class="nav-row" href="#/6" data-route="#/6"><span class="nav-num">6.</span><span class="nav-name">Gate it</span></a><a class="nav-row" href="#/7" data-route="#/7"><span class="nav-num">7.</span><span class="nav-name">Own it</span></a><a class="nav-row" href="#/close" data-route="#/close"><span class="nav-name">Wrap-up</span></a></nav></aside>
+<main>
+<section class="page" id="page-overview" data-route="#/overview" data-title="Overview"><header class="page-head"><h1>DevOps Meets ResOps</h1></header><p class="standfirst"><strong>A hands-on workshop in Resilience Operations: running recovery the way you already run delivery.</strong> Every command is copy-paste, every step shows the expected result, and every concept is proven on a live workload as you go.</p><p class="mast-meta"><strong>Level</strong> 300-400 · <strong>Duration</strong> 2h facilitated, about 3h self-paced · <strong>Audience</strong> platform engineers, SREs, cloud architects, and the people who fund them</p><p class="codename unset"><span>CODENAME</span>‹your-codename›</p><h2>What is ResOps?</h2>
+<p>Resilience Operations is the operational discipline that unites security, infrastructure, and operations teams around critical services, resilient system design, and continuous validation, so an organization can withstand disruption, recover within defined impact tolerances, and prove it with evidence.</p>
+<p>It is an operating model, not a product.</p>
+<pre class="panel">Backup asks    do we have copies?
+DR asks        can we recover if the datacenter is down?
+ResOps asks    can we PROVE critical services recover, clean,
+               within tolerance, on demand?</pre>
+<p>Each era bolted its answer onto the last: backup, then disaster recovery, then cyber resilience, each arriving as a separate tool and a separate team. ResOps replaces the bolted-on stack with one discipline, run the way you already run delivery. This workshop is that discipline, in your hands, in one afternoon.</p>
+<h2>The one idea</h2>
+<pre class="panel">You gate on tests.
+You gate on security scans.
+You do not gate on recoverability.</pre>
+<p>You have taken a whole class of failure and moved it from <em>we find out in production</em> to <em>we find out at the pull request</em>. Three times.</p>
+<pre class="panel">SHIFTED LEFT ALREADY              STILL ON THE RIGHT
+tests       -&gt; CI gate            recoverability -&gt; a ticket,
+security    -&gt; scanner gate                        after an outage
+infra       -&gt; plan gate
+lint        -&gt; merge blocker</pre>
+<p>Each time it was the same fight. Each time nobody argued after the first year. This workshop is about the fourth one.</p>
+<h2>The lab you are standing in</h2>
+<pre class="panel">PRODUCTION PLANE          RECOVERY PLANE            ISOLATED PLANE
+┌───────────────┐         ┌────────────────────┐    ┌───────────────┐
+│ your VM       │ agent   │ AIR-GAP POOL       │    │ restored copy │
+│ no public IP  │──────▸  │ immutable copies   │──▸ │ verified from │
+│ no open ports │ snapshot│ service-held keys  │    │ the inside,   │
+└───────────────┘         └────────────────────┘    │ then deleted  │
+       ▲                            ▲               └───────────────┘
+  attacker ──✗── no path from the VM to the copies, ever</pre>
+<p>The production plane is an Azure VM running a live service, locked down the way production should be: no public IP, no inbound rules, no interactive access. All operations flow through managed control planes, the Azure guest agent and the Commvault API, which is exactly how the workshop's commands, and a real incident response, reach it.</p>
+<p>Commvault protects that service into an air-gapped, immutable storage pool: the recovery plane. Nothing running on the VM can reach that pool, including anything an attacker plants there. Restore drills rebuild a copy of the service in isolation, verify it from the inside, and remove it.</p>
+<p>Three planes. Trust flows one way, and every verdict in this workshop comes from the plane that cannot be lied to.</p>
+<p>When a concept deserves the fuller story, look for the UNDER THE HOOD notes as you go.</p>
+<h2>What you will walk</h2>
+<pre class="panel">1  BUILD      stand up the service, protect it, climb the ladder
+2  PROVE      read the proof: the ladder, the gate, the contract
+3  BREAK      compromise it, and watch two controls catch it
+4  CHOOSE     pick a recovery point under pressure
+5  RE-PROVE   repair, then earn the green verdict back
+6  GATE IT    make recoverability a merge blocker
+7  OWN IT     write the argument you will actually use</pre>
+<pre class="panel">OFFLINE   no cloud, no token, instant, cannot fail
+LIVE      a real Azure VM and a real backup platform</pre>
+<p>In a facilitated session, chapters 1 and 5 are done for you before you arrive and your workload is already at <code>VALIDATED</code>.</p><nav class="pager" aria-label="Pages"><a class="pager-next" href="#/setup">Setup →</a></nav></section>
+<section class="page" id="page-setup" data-route="#/setup" data-title="Setup"><header class="page-head"><h1>Setup</h1></header><p>Ten minutes of readiness, so the rest of the workshop is all signal. In a facilitated session most of this is done for you.</p>
+<h3>Prerequisites (self-paced)</h3>
+<pre class="panel">an Azure subscription      1 free vCPU in your region. The lab is one
+                           small VM plus a short-lived restore copy.
+a Commvault tenant         API endpoint + access token, an Azure
+                           hypervisor connection, a protection plan
+                           backed by air-gapped immutable storage
+this repository            with config/workshop.yaml filled in: your
+                           codename, subscription and plan ids
+terraform · python 3.11+   and the az CLI, logged in</pre>
+<h3>Before you start</h3>
+<div class="steps">
+<div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>cd ~/resops-cvlt-azure
+source .venv/bin/activate</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>the prompt change to (.venv)</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">fix the venv before anything else; nothing below works without it. In a room: ask.</p></div>
+</div>
+<p><strong>WORKSHEET 1. Write it down now and set it aside.</strong> You come back to it at the end, and the distance between your two answers is the only measurement this workshop makes.</p>
+<pre class="panel">1. What % of your production estate could you PROVE is recoverable?
+2. How would you prove it, to someone who did not believe you?
+3. How long would producing that proof take?</pre></div></div>
+</div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/overview">← Overview</a><a class="pager-next" href="#/1">1. Build <span>done in prep</span> →</a></nav></section>
+<section class="page" id="page-1" data-route="#/1" data-title="1. Build"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>1. Build</b></nav><p class="kicker">CHAPTER 1</p><header class="page-head"><h1>1. Build</h1><span class="page-meta">done in prep</span></header><p>This chapter was completed for you before the session. Your workload arrives with its result already in place:</p>
+<div class="mark"><p class="mark-title">✦ What you just built</p><p>A sealed production service, a recovery point in a vault the service itself cannot touch, and a drill that proved the point restores clean. You did in twenty minutes what most estates have never done once: recovery, demonstrated.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/setup">← Setup</a><a class="pager-next" href="#/2">2. Prove <span>~10 min · LIVE</span> →</a></nav></section>
+<section class="page" id="page-2" data-route="#/2" data-title="2. Prove"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>2. Prove</b></nav><p class="kicker">CHAPTER 2</p><header class="page-head"><h1>2. Prove</h1><span class="page-meta">~10 min · LIVE</span></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>read the ladder, the gate, and the contract that earned them</p></div><div class="dolearn-row"><span>LEARN</span><p>what a Service Resilience Indicator is, and what an attestation actually claims</p></div></div>
+<p>Your workload stands at the top of its ladder. Before anything gets broken, see what good looks like and where each claim comes from. This part is deliberately calm: if yes is not boring, no will mean nothing.</p>
+<h3>Read the ladder</h3>
+<div class="steps">
+<div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op status infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>●●●●●●  <span class="v-yes">VALIDATED</span>
+six dots filled, and a reason beside every line
+discover names your group: 'resops-&lt;your-codename&gt;-vg'</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">re-run the climb from chapter 1. In a room: tell the facilitator your codename: &lt;your-codename&gt;. Do not debug it.</p></div>
+</div>
+<p>Every line of that output pairs a recovery fact with a DevOps practice you already run: discovery like service discovery, protection like GitOps drift, detection like health checks, recovery like rollback readiness, verification like scanning an artifact before deploy.</p></div></div>
+</div>
+<h3>The bar it passed</h3>
+<div class="steps">
+<div class="step"><span class="step-num">2</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op gate infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre><span class="v-yes">PROMOTE</span>  recoverability proven · exit 0</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">if it says <span class="v-no">HOLD</span> and names coverage, a backup ran after your last drill. Run the drill again and re-gate, or keep reading. You will meet that exact behaviour, on purpose, in the next chapter.</p></div>
+</div>
+<p>Now look at the bar it passed. It is not one threshold, it is a per-tier one:</p></div></div>
+<div class="step"><span class="step-num">3</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>cat config/tiers.yaml</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>tier1 and tier2, each declaring rpo_hours,
+rto_minutes and attestation_max_age_days</pre></div>
+</div>
+<div class="aside"><p class="aside-title">? Why this matters</p><p>A measurable, testable target per critical service is a Service Resilience Indicator. Read the NOTE at the bottom of that file: nobody restore-verifies everything every day, so the policy is not "everything is verified", it is "for THIS tier, something must have opened a recovery point and read it within N days".</p>
+<p>A tier that declares no freshness value is never checked for it. That is a legitimate choice, made explicitly, and still recorded.</p></div></div></div>
+</div>
+<h3>The contract that earned it</h3>
+<p>Then read what actually produced the verdict:</p>
+<div class="steps">
+<div class="step"><span class="step-num">4</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>about seventy lines of shell. Five checks.
+the last one WRITES a record and reads it back, and
+the script ends at  exit 0  (the start of the next
+file in the listing may show below it)</pre></div>
+</div>
+<div class="aside"><p class="aside-title">? Why you read it here and not over ssh</p><p>That VM has no public IP, no inbound rule, no open ports. You cannot reach it and neither can anything else. The only way in is the guest agent, which is exactly how the drill runs this script INSIDE the restored copy.</p>
+<p>The workload being unreachable is the point. The attester still ran.</p></div>
+<p>Four of the five checks ask <em>is the right data here?</em>. The fifth asks <em>does the store still work?</em>, which none of the others can answer. A read-only mount passes the first four and fails a real service on its first write.</p>
+<div class="aside"><p class="aside-title">? Under the hood: what the drill writes</p><p>When a restore drill runs that script inside a restored copy, the verdict line gets captured into an attestation file: which recovery point, what was checked, what it said, when. The gate reads that file. It is evidence, not a flag somebody set, and its history is hash-chained so a rewritten past shows as a broken chain. You will watch this file lose its power in about ten minutes.</p></div></div></div>
+</div>
+<div class="mark"><p class="mark-title">✦ What you just read</p><p>A proven ladder, a per-tier bar, and a twenty-line contract owned by the people who know what "good" means for this service. Every claim traced to something you could open and read.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/1">← 1. Build</a><a class="pager-next" href="#/3">3. Break <span>~15 min · LIVE</span> →</a></nav></section>
+<section class="page" id="page-3" data-route="#/3" data-title="3. Break"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>3. Break</b></nav><p class="kicker">CHAPTER 3</p><header class="page-head"><h1>3. Break</h1><span class="page-meta">~15 min · LIVE</span></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>compromise the workload you built, then watch two controls catch it two different ways</p></div><div class="dolearn-row"><span>LEARN</span><p>why proof does not accumulate, and where a verdict can honestly come from</p></div></div>
+<p>You have a proven workload and a gate that says yes. Now break it. On purpose, with something harmless and detectable.</p>
+<p>But first, sit with this question, because the whole chapter turns on it:</p>
+<pre class="panel">Recoverable to WHAT?</pre>
+<p>You proved this workload is recoverable. Which recovery point is that claim about? Hold your answer. The tools are about to give you theirs.</p>
+<h3>Plant the compromise</h3>
+<div class="steps">
+<div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op incident infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>incident: planting a detectable compromise in
+&lt;your-codename&gt; (resops-&lt;your-codename&gt;-rg)
+planted: 2 EICAR files, 14 .locked files, 1 note
+BASELINE marker still present: yes</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">check the VM is running: the guest agent needs about 2 minutes after boot. Retry once, then stop.</p></div>
+</div>
+<p>EICAR is a 68-character test string the antivirus industry standardized in the 1990s: every scanner on earth agrees to detect it as if it were malware, precisely so people can test detection without handling anything dangerous. The <code>.locked</code> files are high-entropy junk wearing ransomware's naming pattern. Nothing here is armed; everything here is detectable. That is the point: we need the alarms to be real, not the fire.</p></div></div>
+</div>
+<h3>Commit it into a recovery point</h3>
+<div class="steps">
+<div class="step"><span class="step-num">2</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op backup infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>a backup job, then  backup Completed</pre></div>
+<div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">about 2 minutes</p></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">if it sits on "Waiting", that is the media agent queue, not a failure. DO NOT KILL IT.</p></div>
+</div>
+<div class="aside"><p class="aside-title">? What you are watching</p><p>Your own planted compromise being committed into a recovery point. The job says Completed. It is green. It is correct. Nothing is broken, which is exactly what makes it dangerous.</p>
+<p>The recovery point lands in air-gapped, immutable storage; nothing on the VM, including your compromise, can reach it.</p></div>
+<div class="aside"><p class="aside-title">? Under the hood: what a recovery point is</p><p>One frozen moment of the disk, copied out whole. It does not accumulate, it does not update, and it does not know what happened after it. Keep that in mind for the next command.</p></div></div></div>
+</div>
+<h3>The gate answers twice</h3>
+<div class="steps">
+<div class="step"><span class="step-num">3</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op gate infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre><span class="v-no">HOLD</span> · exit 1
+↳ attestation does not cover the newest recovery point</pre></div>
+</div>
+<div class="aside"><p class="aside-title">? Why this matters, and nobody predicts this one</p><p>You did not change the verdict. You took a BACKUP.</p>
+<p>An attestation is a claim about ONE recovery point, not a property of the workload. There is now a newer point and nothing has opened it, so the proof you had ten minutes ago vouches for nothing. Most people expect proof to accumulate. It does not.</p>
+<p>The distance between what you think you can recover and what you can prove is your RESILIENCE GAP. You just measured yours, in one line.</p></div>
+<p>Now ask the threat lane what it thinks:</p></div></div>
+<div class="step"><span class="step-num">4</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op threatscan infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre><span class="v-no">THREATS DETECTED</span> · exit 1
+the scan ran, and this recovery point is NOT safe</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">if it stops asking for scan_plan_id, set it in config/workshop.yaml and re-run. The first lesson above already landed either way.</p></div>
+</div>
+<div class="aside"><p class="aside-title">? Where the scan ran</p><p>Not on the VM. ThreatScan opened the backup copy in the recovery plane and read it there; production was never touched. A verdict about a recovery point can only honestly come from the copy itself, and the copy lives where nothing from the VM can reach it.</p></div>
+<div class="aside"><p class="aside-title">? Why this matters</p><p>Two HOLDs, two different reasons. The first said "nothing has looked at this point". The second said "something looked, and found malware". Those are opposite situations and they must never read the same. A check that examined nothing must never report a pass.</p></div>
+<p><strong>Where you are now.</strong> Your backup job said Completed. The restore said Completed. The VM is healthy. Every signal the backup platform gave you was green, and the recovery point you would have restored from is poison.</p></div></div>
+</div>
+<div class="mark"><p class="mark-title">✦ What you just proved</p><p>A green pipeline committed a compromise into an immutable vault, and the gate caught it twice: once because proof went stale, once because something looked inside. Green is a job status, not a verdict about your data.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/2">← 2. Prove</a><a class="pager-next" href="#/4">4. Choose <span>~15 min · OFFLINE</span> →</a></nav></section>
+<section class="page" id="page-4" data-route="#/4" data-title="4. Choose"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>4. Choose</b></nav><p class="kicker">CHAPTER 4</p><header class="page-head"><h1>4. Choose</h1><span class="page-meta">~15 min · OFFLINE</span></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>put your workload back, then pick a recovery point under the conditions that actually matter</p></div><div class="dolearn-row"><span>LEARN</span><p>why outage policy answers the wrong question under compromise, and the number that measures the right one</p></div></div>
+<h3>Put it back</h3>
+<p>First, put your own workload back. This runs while you do the exercise.</p>
+<div class="steps">
+<div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op remediate infra/workloads</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>it removes exactly what the incident planted,
+restores exactly what it took, then re-runs
+verify.sh — the last line starts  OK:</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">it raises rather than reporting success. Read what it raised before touching anything; do not run it twice blindly.</p></div>
+</div>
+<div class="aside"><p class="aside-title">? What remediate actually does</p><p>It removes exactly what the incident planted, restores the two files it stashed, and re-runs the attester. Surgical, because our incident recorded what it changed. The discipline for incidents that keep no manifest is exactly what comes next: choosing recovery points on evidence.</p></div></div></div>
+</div>
+<h3>Four recovery points, one decision</h3>
+<p>Now the exercise. Four recovery points, no cloud, no token:</p>
+<div class="steps">
+<div class="step"><span class="step-num">2</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops gate config/incident.yaml</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>▸ D-7-hours-ago      ●●●●●●  <span class="v-yes">VALIDATED</span>   RPO 7.0h      <span class="v-yes">PROMOTE</span>
+▸ C-32-hours-ago     ●●●●✗·  blocked at Scan           <span class="v-no">HOLD</span>
+  ↳ recovery point is UNATTESTED
+▸ B-6-days-ago       ●●●●●●  <span class="v-yes">VALIDATED</span>   RPO 144.0h    <span class="v-no">HOLD</span>
+  ↳ rpo 144.0h &gt; target 8h
+▸ A-400-days-ago     ●●●●●●  <span class="v-yes">VALIDATED</span>   RPO 9600.0h   <span class="v-no">HOLD</span>
+  ↳ attestation stale (400.0d &gt; 30d)
+
+AGGREGATE  <span class="v-no">HOLD</span> — C-32-hours-ago, B-6-days-ago, A-400-days-ago · exit 1</pre></div>
+</div>
+<p><strong>The fact you do not have:</strong> the first anomalous log entry is <em>"sometime last week"</em>. Retention is seven days and the earliest surviving entry is already abnormal. It may have started three days ago. Or nine.</p>
+<p><strong>Choose one. Justify it in a sentence, naming what you give up.</strong></p>
+<div class="aside"><p class="aside-title">? Why this matters</p><p>The gate promotes exactly one point, and it is the one squarely inside the incident window. That is not a bug. It is a policy written for OUTAGES answering a question about COMPROMISE.</p>
+<p>An RPO target assumes the only cost of an older point is LOST DATA. Under compromise, the freshest point is the most DANGEROUS one.</p>
+<p>And look at A. The only point anyone can be certain about costs 400 days of orders, and it is only certain because NOTHING WAS VERIFIED between it and last week. That gap is not bad luck. It is the drill nobody scheduled.</p></div>
+<div class="aside"><p class="aside-title">? The number this produces</p><p>The clock starts when a human authorises a clean recovery and stops when a human signs the service back off. Everything between is automatable and measurable.</p>
+<p>That is Mean Time to Clean Recovery. Not time to recovery. Time to CLEAN recovery. The word "clean" is the entire argument.</p></div></div></div>
+</div>
+<div class="mark"><p class="mark-title">✦ What you just decided</p><p>Recovery under compromise is a decision, made by a human, on evidence, against a clock. The tools narrow the choice; they do not make it. MTCR measures how fast your organisation can make it well.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/3">← 3. Break</a><a class="pager-next" href="#/5">5. Re-prove <span>done in prep</span> →</a></nav></section>
+<section class="page" id="page-5" data-route="#/5" data-title="5. Re-prove"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>5. Re-prove</b></nav><p class="kicker">CHAPTER 5</p><header class="page-head"><h1>5. Re-prove</h1><span class="page-meta">done in prep</span></header><p>This chapter was completed for you before the session. Your workload arrives with its result already in place:</p>
+<div class="mark"><p class="mark-title">✦ What you just closed</p><p>Incident to trusted recovery, end to end: repair, clean point, scan, drill, gate. The verdict came back green because you re-proved it, not because time passed or a dashboard said so.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/4">← 4. Choose</a><a class="pager-next" href="#/6">6. Gate it <span>~12 min · OFFLINE</span> →</a></nav></section>
+<section class="page" id="page-6" data-route="#/6" data-title="6. Gate it"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>6. Gate it</b></nav><p class="kicker">CHAPTER 6</p><header class="page-head"><h1>6. Gate it</h1><span class="page-meta">~12 min · OFFLINE</span></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>run the gate across an estate, publish its numbers, and read the CI file that makes it a merge blocker</p></div><div class="dolearn-row"><span>LEARN</span><p>how a check survives contact with a real estate: the ratchet, and who owns what</p></div></div>
+<p>One workload proving itself is a demo. The discipline starts when the same gate runs across everything, on every pull request, publishing numbers somebody has to look at.</p>
+<h3>The estate</h3>
+<div class="steps">
+<div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops gate config/estate.yaml</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>six workloads, five of them <span class="v-no">HOLD</span>, and a final line
+AGGREGATE  <span class="v-no">HOLD</span> — checkout-api, identity-svc,
+                  reporting-db, edge-cache, legacy-batch
+exit 1</pre></div>
+</div>
+<p><strong>Stop on <code>checkout-api</code> and <code>identity-svc</code>.</strong> Same rung. Opposite reasons. One was tested and is contaminated; one was never tested at all. The rung hides that. The blocked stage names it.</p></div></div>
+</div>
+<h3>Publish the numbers</h3>
+<div class="steps">
+<div class="step"><span class="step-num">2</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops metrics config/estate.yaml</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>Prometheus text: resops_rung, resops_promotable,
+resops_tolerated</pre></div>
+<div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">"no run to publish" means you skipped the gate command above. Run it first; metrics publishes the LAST run.</p></div>
+</div></div></div>
+</div>
+<h3>The merge blocker</h3>
+<div class="steps">
+<div class="step"><span class="step-num">3</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>cat .github/workflows/resops-gate.yml</code></pre></div>
+<div class="diag">
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><pre>about sixty lines. on pull_request, and daily.</pre></div>
+</div>
+<div class="aside"><p class="aside-title">? Under the hood: why ci can trust this</p><p>The gate is a pure function: read the facts, apply the tier's policy from tiers.yaml, exit 0 or 1. No clock games, no retries, no state of its own. That is the entire integration surface, and it is why the workflow file you just read is short: CI already speaks exit codes fluently.</p></div>
+<div class="aside"><p class="aside-title">? The objection this answers</p><p>Point this at a real estate and almost everything HOLDs on day one. Correctly. But then nobody can ship, so the check gets deleted by Friday.</p>
+<p>So a workload can declare a DATED tolerance:</p>
+<pre>enforce_from: 2027-01-01
+tolerance_reason: "backup policy rebuild in flight"</pre>
+<p>It still HOLDs, on screen and in the report. Only the aggregate stops counting it, and only until that date. A DATE, not a flag; a flag is permanent the moment somebody forgets it. And resops_tolerated publishes how many you have, so it is a number that has to go down.</p></div>
+<pre class="panel">WHO OWNS WHAT, the argument you will have when you get back
+
+  verify.sh    the app team      only they know what "good" means
+  the drill    platform          it is infrastructure
+  the gate     CI                it is a required check
+  tiers.yaml   platform + risk   it is policy</pre>
+<div class="aside"><p class="aside-title">? Does this page me at 3am?</p><p>No. Recoverability drift is not an incident. It fails a pull request and waits for office hours.</p></div></div></div>
+</div>
+<div class="mark"><p class="mark-title">✦ What you just wired</p><p>The fourth gate, shaped exactly like the other three: a required check, an honest number, and a ratchet that lets an estate adopt it without stopping the ships.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/5">← 5. Re-prove</a><a class="pager-next" href="#/7">7. Own it <span>~30 min</span> →</a></nav></section>
+<section class="page" id="page-7" data-route="#/7" data-title="7. Own it"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>7. Own it</b></nav><p class="kicker">CHAPTER 7</p><header class="page-head"><h1>7. Own it</h1><span class="page-meta">~30 min</span></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>write the argument you will actually face, and your answer to it</p></div><div class="dolearn-row"><span>LEARN</span><p>nothing new. This is where you find out what stuck.</p></div></div>
+<h3>Write the argument</h3>
+<p>You will have this argument within a month, in a design review or a budget meeting. Have it now, on paper, while the evidence is still under your fingers.</p>
+<pre class="panel">05 min   Write the three objections your staff engineer will raise.
+         No answers yet. Just collect them, honestly.
+
+15 min   Answer each one in writing. Then read the ammunition below
+         and steal anything better than what you wrote.
+
+05 min   Keep the ONE objection you will actually face, and your
+         answer. That page is what you take home.</pre>
+<p><strong>Your ammunition. Pick three.</strong></p>
+<pre class="panel">1  We gate on tests. We gate on scans. We do not gate on recoverability.
+
+2  A green backup dashboard is a build artefact, not a run signal. It
+   proves the job ran, not that the data is recoverable.
+
+3  Available is not trusted. The distance between them is our
+   resilience gap.
+
+4  A check that examined nothing must never report a pass.
+
+5  The number is time to CLEAN recovery. Not time to recovery.
+
+6  This is not a page at 3am. It is a merge blocker.</pre>
+<div class="aside"><p class="aside-title">? Why this and not a summary</p><p>An argument you have never made does not survive a design review. Writing it down, against real objections, is the difference between having attended a workshop and owning one.</p></div>
+<h3>Your number, revisited</h3>
+<p>Now go back to your worksheet from the start. Read your three answers as if a colleague wrote them.</p>
+<pre class="panel">L1  SEE       resops gate, read-only, your own number       day 1
+L2  DECLARE   verify.sh for ONE tier-1 workload             week 1
+L3  PROVE     one scheduled drill, one attestation          week 2
+L4  GATE      one required check, with the ratchet          month 1
+L5  PUBLISH   % provably recoverable, on a wall             quarter 1</pre>
+<p><strong>What L1 actually needs, so nobody is surprised on Monday:</strong></p>
+<pre class="panel">1  an access token from Command Center (avatar -&gt; Access Tokens)
+2  your tenant's API endpoint
+3  two ids from a console URL: the hypervisor, and the protection plan
+4  the workload's group. `resops list` finds it by name</pre>
+<p>L1 is read-only and <strong>physically cannot mutate your environment.</strong> The engine makes no create, update or delete calls of any kind, and a test in the suite fails if anyone adds one. That is the point of starting there: it costs an afternoon and risks nothing.</p>
+<p><strong>One next action. Named workload. Dated. Owner.</strong> Not three.</p>
+<pre class="panel">In seven days there is one question: did you run it against anything real?</pre>
+<div class="mark"><p class="mark-title">✦ What you own now</p><p>A number you measured, an argument you wrote, and a first step that costs an afternoon and risks nothing.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/6">← 6. Gate it</a><a class="pager-next" href="#/close">Wrap-up →</a></nav></section>
+<section class="page" id="page-close" data-route="#/close" data-title="Wrap-up"><header class="page-head"><h1>Wrap-up</h1></header><h3>The model you just walked</h3>
+<pre class="panel">01 RESILIENCE GOVERNANCE          the tier bar you read in tiers.yaml:
+                                  a Service Resilience Indicator,
+                                  declared and testable
+02 RECOVERY PLANNING              choosing recovery points on
+                                  evidence, not hope
+03 RECOVERY ARCHITECTURE          the three planes: air gap,
+                                  immutability, isolated drills
+04 RESILIENCE THROUGH REPETITION  the drill, on a schedule; chapter
+                                  5's whole argument
+05 MEASURING RESILIENCE           MTCR and the resilience gap, on a
+                                  wall somebody has to look at</pre>
+<p>Capability answers "could we?". Outcomes answer "did we, and can we prove it?". ResOps measures outcomes.</p>
+<h3>The four terms you earned</h3>
+<pre class="panel">ResOps           recovery run as an operating discipline, the way you
+                 already run delivery
+SRI              a measurable, testable resilience bar, per tier
+resilience gap   the distance between what you think you can recover
+                 and what you can prove
+MTCR             mean time to CLEAN recovery. The word clean is the
+                 entire argument.</pre>
+<h3>Your first step</h3>
+<p>L1 costs one afternoon and touches nothing. Run <code>resops gate</code> against one workload you own, this week, and read your real number. Heroism cannot scale; a discipline can, and it starts with one honest measurement. In seven days there is one question: did you run it against anything real?</p><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/7">← 7. Own it</a></nav></section>
+</main>
+</div>
+<script>
+/* Router, copy, progress. Vanilla JS, no dependencies. Everything
+   degrades: no JS = a scrollable document, no localStorage = no resume
+   ticks, no clipboard API = execCommand fallback. */
+(function () {
+  'use strict';
+
+  /* ---- storage, tolerant of file:// profiles that forbid it ---- */
+  var KEY = 'resops-guide';
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function save(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { /* private mode: resume off, everything else works */ }
+  }
+
+  /* ---- router ---- */
+  var pages = Array.prototype.slice.call(
+    document.querySelectorAll('main > .page'));
+  var routes = pages.map(function (p) { return p.dataset.route; });
+  var navRows = Array.prototype.slice.call(
+    document.querySelectorAll('.nav-row'));
+  var here = document.getElementById('topbar-here');
+  var brandName = document.querySelector('.brand-name').textContent;
+
+  document.documentElement.classList.add('routed');
+
+  function currentIndex() {
+    return routes.indexOf(location.hash);
+  }
+
+  function show(index) {
+    pages.forEach(function (p, k) {
+      p.classList.toggle('active', k === index);
+    });
+    var page = pages[index];
+    navRows.forEach(function (r) {
+      var active = r.dataset.route === page.dataset.route;
+      r.classList.toggle('active', active);
+      if (active) { r.setAttribute('aria-current', 'page'); }
+      else { r.removeAttribute('aria-current'); }
+    });
+    here.textContent = page.dataset.title;
+    document.title = page.dataset.title + ' · ' + brandName;
+    var state = load();
+    state.last = page.dataset.route;   // resume-on-reopen, nothing more
+    save(state);
+    window.scrollTo(0, 0);
+  }
+
+  function route() {
+    var i = currentIndex();
+    if (i === -1) {
+      /* no or unknown hash: resume where they were, else start */
+      var last = load().last;
+      var k = routes.indexOf(last);
+      location.replace(routes[k === -1 ? 0 : k]);
+      return;
+    }
+    show(i);
+  }
+
+  window.addEventListener('hashchange', route);
+  route();
+
+  /* ---- keyboard: mirrors the pager ---- */
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) { return; }
+    var i = currentIndex();
+    if (i === -1) { return; }
+    if (e.key === 'ArrowRight' && i < routes.length - 1) {
+      location.hash = routes[i + 1];
+    } else if (e.key === 'ArrowLeft' && i > 0) {
+      location.hash = routes[i - 1];
+    }
+  });
+
+  /* ---- copy: the whole command block is the target; the button is the
+     affordance, the button text and a border pulse are the feedback. A
+     manual text selection never triggers it. ---- */
+  function copyText(text, block, button) {
+    function done() {
+      button.textContent = 'copied';
+      block.classList.remove('copied');
+      void block.offsetWidth;  /* restart the pulse animation */
+      block.classList.add('copied');
+      setTimeout(function () { button.textContent = 'copy'; }, 1200);
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) { /* quiet */ }
+      document.body.removeChild(ta);
+      done();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll('[data-copy]'))
+    .forEach(function (block) {
+      var button = block.querySelector('.copy');
+      var code = block.querySelector('code');
+      block.addEventListener('click', function (e) {
+        var selection = window.getSelection();
+        if (selection && selection.toString().length > 0 &&
+            e.target !== button) { return; }
+        copyText(code.innerText, block, button);
+      });
+    });
+})();
+
+</script>
+</body>
+</html>
