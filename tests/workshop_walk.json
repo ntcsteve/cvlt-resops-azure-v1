@@ -11,7 +11,7 @@
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
   "walked_at": "2026-08-18",
-  "walked_commit": "cb5739a",
+  "walked_commit": "ebace7d",
   "verified": {
     "M4.1  op gate -> \u25cf\u25cf\u25cf\u25cf\u25cf\u25cf VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
@@ -107,6 +107,17 @@
     "M5.3  FAIL: 14 encrypted (.locked) files present": "UNAFFECTED, and structurally so. The new probe is check 5; the .locked test is check 4 and `fail()` exits immediately. On a dirty workload check 4 always fires first, so the quoted line is unchanged and unreachable-past.",
     "M1.1 and M5.4 offline boxes": "verify.sh does not run offline. Those boxes are fixtures, and test_workshop_guide.py pins them independently.",
     "the guard fired on a docs-only-looking commit": "worth noting: 7e0714f reads as a documentation change in the diff stat (README, RESOPS, VERIFY, WORKSHOP) plus one yaml. The yaml is the live surface. This is exactly the case a human skim would wave through."
+  },
+  "reviewed_not_re_walked_at_ebace7d": {
+    "_why": [
+      "ebace7d changed ONE WORD of a comment inside verify.sh in cloud-init.yaml",
+      "('checks four things' -> 'five things'), stale since 7e0714f added the",
+      "fifth check. cloud-init is the live surface so the guard fired, fifth",
+      "time, right all five. Azure empty, so REVIEWED:"
+    ],
+    "the diff is comment-only": "git show ebace7d: one line, inside a # comment. No executable line of verify.sh changed, so no output any box quotes can change.",
+    "no box quotes the comment": "grep for 'checks four'/'checks five'/'four things' across WORKSHOP.md, WORKSHOP-2H.md, FACILITATOR.md, VERIFY.md: no box quotes it. The only related claims are WORKSHOP-2H beat 2 ('Five checks', which this comment now AGREES with) and its prose 'Four of the five checks ask is the right data here', which was already five-aware.",
+    "why the word was wrong": "participants now read the full script via the corrected grep -A 80 (the old -A 40 truncated past the fifth check), so the stale 'four' would have been read aloud in the room."
   },
   "reviewed_not_re_walked_at_cb5739a": {
     "_why": [
