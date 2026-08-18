@@ -1,4 +1,4 @@
-# Resilience, Shifted Left
+# DevOps Meets ResOps
 
 > **Participant guide, two hours.** Every command is copy-paste. You should never
 > type a path from memory. The facilitator floats.
@@ -6,9 +6,11 @@
 **Level** 300-400 · **Duration** 2h · **Audience** platform engineers, SREs, cloud
 architects, and the people who fund them
 
-There is a longer form of this day: [WORKSHOP.md](WORKSHOP.md) is 6h35m and it
-teaches you to **write** an attester. This one is two hours and it teaches you to
-**win the argument**. They are not two versions of the same thing.
+This page is self-contained and works with no network.
+
+There is a longer form of this day that teaches you to **write** an attester.
+This one is two hours and it teaches you to **win the argument**. They are not
+two versions of the same thing.
 
 ---
 
@@ -106,7 +108,9 @@ python3 -m resops.operator.op status infra/workloads
 ```
  ✓ YOU SHOULD SEE   ●●●●●●  VALIDATED
                     six stages cleared, and a reason beside each one
- ✗ IF NOT           tell the facilitator your codename. do not debug it.
+                    discover names your group: 'resops-<your-codename>-vg'
+ ✗ IF NOT           tell the facilitator your codename: <your-codename>.
+                    do not debug it.
 ```
 
 ```bash
@@ -117,7 +121,7 @@ python3 -m resops.operator.op gate infra/workloads
  ✓ YOU SHOULD SEE   PROMOTE  recoverability proven · exit 0
  ✗ IF NOT           if it says HOLD and names COVERAGE, a scheduled backup
                     ran overnight. That is not your fault and it is not a
-                    bug — ask, and keep reading. You will meet that exact
+                    bug. Ask, and keep reading. You will meet that exact
                     behaviour again in twenty minutes.
 ```
 
@@ -147,12 +151,14 @@ cat config/tiers.yaml
 Then read what actually produced the verdict:
 
 ```bash
-grep -A 40 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
+grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   twenty-five lines of shell. Five checks.
-                    the last one WRITES a record and reads it back.
+ ✓ YOU SHOULD SEE   about seventy lines of shell. Five checks.
+                    the last one WRITES a record and reads it back, and
+                    the script ends at  exit 0  (the start of the next
+                    file in the listing may show below it)
 ```
 
 ```
@@ -200,7 +206,9 @@ python3 -m resops.operator.op incident infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   planted: 2 EICAR files, 14 .locked files, 1 note
+ ✓ YOU SHOULD SEE   incident: planting a detectable compromise in
+                    <your-codename> (resops-<your-codename>-rg)
+                    planted: 2 EICAR files, 14 .locked files, 1 note
                     BASELINE marker still present: yes
  ✗ IF NOT           if it cannot reach the VM, ask. Nothing after this works.
 ```
@@ -226,6 +234,9 @@ python3 -m resops.operator.op backup infra/workloads
    Your own planted compromise being committed into a recovery point.
    The job says Completed. It is green. It is correct. Nothing is broken,
    which is exactly what makes it dangerous.
+
+   The recovery point lands in air-gapped, immutable storage; nothing on
+   the VM, including your compromise, can reach it.
 ```
 
 ```bash
@@ -238,7 +249,7 @@ python3 -m resops.operator.op gate infra/workloads
 ```
 
 ```
- ? WHY THIS MATTERS — and nobody predicts this one
+ ? WHY THIS MATTERS, and nobody predicts this one
 
    You did not change the verdict. You took a BACKUP.
 
@@ -314,6 +325,8 @@ python3 -m resops gate config/incident.yaml
      ↳ rpo 144.0h > target 8h
    ▸ A-400-days-ago     ●●●●●●  VALIDATED   RPO 9600.0h   HOLD
      ↳ attestation stale (400.0d > 30d)
+
+   AGGREGATE  HOLD — C-32-hours-ago, B-6-days-ago, A-400-days-ago · exit 1
 ```
 
 **The fact you do not have:** the first anomalous log entry is *"sometime last
@@ -333,7 +346,7 @@ abnormal. It may have started three days ago. Or nine.
    Under compromise, the freshest point is the most DANGEROUS one.
 
    And look at A. The only point anyone can be certain about costs 400
-   days of orders — and it is only certain because NOTHING WAS VERIFIED
+   days of orders, and it is only certain because NOTHING WAS VERIFIED
    between it and last week. That gap is not bad luck. It is the drill
    nobody scheduled.
 ```
@@ -370,7 +383,7 @@ python3 -m resops metrics config/estate.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   Prometheus text — resops_rung, resops_promotable,
+ ✓ YOU SHOULD SEE   Prometheus text: resops_rung, resops_promotable,
                     resops_tolerated
  ✗ IF NOT           "no run to publish" means you skipped the gate command
                     above. Run it first; metrics publishes the LAST run.
@@ -381,7 +394,7 @@ cat .github/workflows/resops-gate.yml
 ```
 
 ```
- ✓ YOU SHOULD SEE   about twenty lines. on pull_request, and daily.
+ ✓ YOU SHOULD SEE   about sixty lines. on pull_request, and daily.
 ```
 
 ```
@@ -395,13 +408,13 @@ cat .github/workflows/resops-gate.yml
        tolerance_reason: "backup policy rebuild in flight"
 
    It still HOLDs, on screen and in the report. Only the aggregate stops
-   counting it, and only until that date. A DATE, not a flag — a flag is
+   counting it, and only until that date. A DATE, not a flag. A flag is
    permanent the moment somebody forgets it. And resops_tolerated
    publishes how many you have, so it is a number that has to go down.
 ```
 
 ```
- WHO OWNS WHAT — the argument you will have when you get back
+ WHO OWNS WHAT, the argument you will have when you get back
 
    verify.sh    the app team      only they know what "good" means
    the drill    platform          it is infrastructure
@@ -478,7 +491,7 @@ Unseal worksheet 1. Write today's number beside it.
  1  an access token from Command Center (avatar -> Access Tokens)
  2  your tenant's API endpoint
  3  two ids from a console URL: the hypervisor, and the protection plan
- 4  the workload's group — `resops list` finds it by name
+ 4  the workload's group. `resops list` finds it by name
 ```
 
 L1 is read-only and **physically cannot mutate your environment.** The engine
@@ -509,9 +522,3 @@ afternoon and risks nothing.
 ```
 
 Both of the first two are real gaps, and both are ours.
-
-## Further reading
-
-[RESOPS.md](RESOPS.md) the idea · [VERIFY.md](VERIFY.md) the attester contract ·
-[README.md](README.md) running the toolkit yourself ·
-[WORKSHOP.md](WORKSHOP.md) the 6h35m form, which teaches you to write one
