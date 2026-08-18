@@ -25,12 +25,6 @@
 }
 .topbar-wordmark { display: block; height: 12px; width: auto;
   margin-left: auto; }
-#progress {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-  display: flex; gap: 1px;
-}
-#progress span { flex: 1; background: rgba(255, 255, 255, 0.14); }
-#progress span.done { background: var(--topbar-name); }
 
 /* ---- sidebar ---- */
 #sidebar {
@@ -60,8 +54,6 @@
   color: var(--muted); min-width: 16px; }
 .nav-row.active .nav-num { color: var(--accent); }
 .nav-name { flex: 1; }
-.tick { color: var(--yes); font-size: 11px; visibility: hidden; }
-.nav-row.visited .tick { visibility: visible; }
 
 /* ---- content: full width, like Workshop Studio ---- */
 main { padding: 20px 40px 64px; }

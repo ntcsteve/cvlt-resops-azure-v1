@@ -1,32 +1,36 @@
 """WORKSHOP-2H.md dialect -> typed IR.
 
-WORKSHOP-2H.md is the ONLY place content is authored. This parser accepts
-exactly the constructs below and raises SystemExit on anything else: a loose
-document is a bug in the markdown, never a reason to hand-edit HTML.
+The markdown is the ONLY place content is authored. This parser accepts
+exactly the constructs below and raises SystemExit with a line number on
+anything else: a loose document is a bug in the markdown, never a reason
+to hand-edit HTML.
 
 The dialect:
   # TITLE                       first h1 = workshop title
-  # ACT N · NAME                act header, then a **time · mode** line
-  ## Beat N · Name · Nm · MODE  beat header (time and mode optional)
-  ## / ### other headings       plain sections (setup before act I, close after)
+  ## Chapter N · Name · ~Nm · MODE · SOLO
+                                one page per chapter; time, mode
+                                (LIVE/OFFLINE) and the SOLO audience tag
+                                are optional. SOLO chapters render as
+                                inherited stubs in a room-mode build.
+  ## / ### other headings       start-page sections before chapter 1,
+                                closing-page sections after the last
   > quote                       blockquote
   ---                           separator (ignored)
-  ![caption](images/x.png)      figure, inlined as a data URI at build time
+  ![caption](images/x.png)      figure, inlined as a data URI at build
   ```bash fences                participant commands
-  ``` fences starting ✓/✗/⏱     diagnostic rows (expected / if-not / timing)
-  ``` fences starting ?         quiet aside
+  ``` starting ✓/✗/⏱            diagnostic rows (expected / if-not / timing)
+  ``` starting DO               the DO/LEARN orientation strip
+  ``` starting ?!               a collapsed reveal (answers), title first
+  ``` starting ?                a quiet aside, title first
+  ``` starting ✦                a checkpoint card, title first
   ``` other fences              preformatted ASCII panel
   prose paragraphs              inline **bold**, *italic*, `code`, [links](x)
 
-IR shape (plain dicts and tuples, no classes to maintain):
+IR shape (plain dicts, no classes to maintain):
   workshop = {
-    "title": str,
-    "standfirst": str,        # the intro blockquote, rendered in the masthead
-    "meta": str,              # the **Level** ... line, rendered in the masthead
-    "setup": [node, ...],     # start-page body after masthead extraction
-    "acts":  [{"num", "name", "meta", "beats": [
-                 {"num", "name", "time", "mode", "body": [node, ...]}],
-               "intro": [node, ...]}],
+    "title": str, "standfirst": str, "meta": str,
+    "setup": [node, ...],
+    "chapters": [{"num", "name", "time", "mode", "solo", "body": [...]}],
     "close": [node, ...],
   }
 """
@@ -34,6 +38,8 @@ IR shape (plain dicts and tuples, no classes to maintain):
 import re
 
 GLYPHS = "✓✗⏱"
+GLYPH_LOOKALIKES = "✅❎❌✔✖☑⏰⏲"
+DIAG_WORDS = re.compile(r"^(YOU SHOULD SEE|IF NOT|HOW LONG)\b")
 
 
 def parse(text):
@@ -87,28 +93,23 @@ def parse(text):
             i += 1
             continue
 
-        m = re.match(r"^# ACT ([IV]+) · (.+)$", stripped)
-        if m:
-            flush()
-            nodes.append(("act", m.group(1), m.group(2).strip()))
-            i += 1
-            continue
-
         m = re.match(r"^# (.+)$", stripped)
-        if m:
+        if m and not stripped.startswith("## "):
             flush()
             nodes.append(("title", m.group(1).strip()))
             i += 1
             continue
 
-        m = re.match(r"^## Beat (\d) · (.+)$", stripped)
+        m = re.match(r"^## Chapter (\d+) · (.+)$", stripped)
         if m:
             flush()
             parts = [p.strip() for p in m.group(2).split("·")]
             name = parts[0]
-            time = next((p for p in parts[1:] if re.match(r"^\d+ ?min$", p)), "")
+            time = next((p for p in parts[1:]
+                         if re.match(r"^~?\d+ ?min$", p)), "")
             mode = next((p for p in parts[1:] if p in ("OFFLINE", "LIVE")), "")
-            nodes.append(("beat", int(m.group(1)), name, time, mode))
+            solo = any(p == "SOLO" for p in parts[1:])
+            nodes.append(("chapter", int(m.group(1)), name, time, mode, solo))
             i += 1
             continue
 
@@ -131,10 +132,6 @@ def parse(text):
     return nodes
 
 
-GLYPH_LOOKALIKES = "✅❎❌✔✖☑⏰⏲"
-DIAG_WORDS = re.compile(r"^(YOU SHOULD SEE|IF NOT|HOW LONG)\b")
-
-
 def classify_fence(lang, body, fence_line):
     if lang == "bash":
         return ("cmd", "\n".join(body).strip())
@@ -145,8 +142,14 @@ def classify_fence(lang, body, fence_line):
     first = next((l.strip() for l in body if l.strip()), "")
     if first and first[0] in GLYPHS:
         return ("diag", diag_rows(body, fence_line + 1))
+    if first.startswith("?!"):
+        return labelled(body, "reveal", 2)
     if first.startswith("?"):
-        return aside(body)
+        return labelled(body, "aside", 1)
+    if first.startswith("✦"):
+        return labelled(body, "mark", 1)
+    if re.match(r"^DO\s{2,}", first):
+        return ("dolearn", strip_rows(body, fence_line + 1))
     check_not_a_mistyped_diag(body, fence_line + 1)
     return ("panel", dedent(body))
 
@@ -197,20 +200,39 @@ def diag_rows(body, body_start):
     return rows
 
 
-def aside(body):
-    """A '?' fence: title line, then prose paragraphs and indented pre chunks."""
+def strip_rows(body, body_start):
+    """The DO/LEARN strip: UPPERCASE label, two+ spaces, text;
+    continuation lines join the row above."""
+    rows = []
+    for idx, line in enumerate(body):
+        s = line.strip()
+        m = re.match(r"^([A-Z]+)\s{2,}(.*)$", s) if s else None
+        if m:
+            rows.append({"label": m.group(1), "text": m.group(2).strip()})
+        elif rows and s:
+            rows[-1]["text"] += " " + s
+        elif s:
+            raise SystemExit(
+                f"line {body_start + idx}: strip row {s!r} has no "
+                "UPPERCASE label")
+    return rows
+
+
+def labelled(body, kind, marker_len):
+    """A titled fence (? aside, ?! reveal, ✦ mark): title on the first
+    line after the marker, then prose paragraphs and indented pre chunks."""
     first = next(l for l in body if l.strip())
-    title = first.strip()[1:].strip()
+    title = first.strip()[marker_len:].strip()
     rest = body[body.index(first) + 1:]
     rest = dedent(rest).split("\n") if any(l.strip() for l in rest) else []
-    chunks, current, kind = [], [], None
+    chunks, current, current_kind = [], [], None
     for line in rest + [""]:
         this = None if line.strip() == "" else (
             "pre" if line.startswith("   ") else "prose")
-        if this != kind and current:
-            chunks.append((kind, current))
+        if this != current_kind and current:
+            chunks.append((current_kind, current))
             current = []
-        kind = this
+        current_kind = this
         if this:
             current.append(line)
     parts = []
@@ -219,7 +241,7 @@ def aside(body):
             parts.append(("prose", " ".join(l.strip() for l in block)))
         else:
             parts.append(("pre", dedent(block)))
-    return ("aside", title, parts)
+    return (kind, title, parts)
 
 
 def dedent(block):
@@ -236,59 +258,60 @@ def dedent(block):
 
 
 def group(nodes):
-    """Flat nodes -> the workshop IR described in the module docstring."""
+    """Flat nodes -> the workshop IR described in the module docstring.
+
+    Pages: front matter before chapter 1 becomes the Overview page, split
+    into Overview + Setup at a `## Setup` heading if one exists. A bare
+    `## ` heading after the chapters starts the closing page (its first
+    h2 is that page's title). Inside chapters, sections use `### ` only;
+    a stray `## ` there would silently start the closing page, so a
+    chapter appearing after closing content is a hard error."""
     title = ""
-    setup, acts, close = [], [], []
-    beat = None
-    act = None
-    seen_act = False
+    front, chapters, close = [], [], []
+    chapter = None
+    seen_chapter = False
 
     for node in nodes:
         kind = node[0]
         if kind == "title":
             title = node[1]
             continue
-        if kind == "act":
-            act = {"num": node[1], "name": node[2], "meta": "",
-                   "beats": [], "intro": []}
-            acts.append(act)
-            beat = None
-            seen_act = True
+        if kind == "chapter":
+            if close:
+                raise SystemExit(
+                    "'## Chapter' found after closing-page content began. "
+                    "A bare '## ' heading inside a chapter starts the "
+                    "closing page; use '### ' for sections inside chapters")
+            chapter = {"num": node[1], "name": node[2], "time": node[3],
+                       "mode": node[4], "solo": node[5], "body": []}
+            chapters.append(chapter)
+            seen_chapter = True
             continue
-        if kind == "beat":
-            beat = {"num": node[1], "name": node[2], "time": node[3],
-                    "mode": node[4], "body": []}
-            act["beats"].append(beat)
-            continue
-        if seen_act and kind == "h2":
-            beat = None
-            act = None
+        if seen_chapter and kind == "h2":
+            chapter = None
             close.append(node)
             continue
-        if act is not None and not act["meta"] and kind == "p" \
-                and beat is None and re.match(r"^\*\*[^*]+\*\*$", node[1]):
-            act["meta"] = node[1].strip("*")
-            continue
-        if beat is not None:
-            beat["body"].append(node)
-        elif act is not None:
-            act["intro"].append(node)
-        elif seen_act:
+        if chapter is not None:
+            chapter["body"].append(node)
+        elif seen_chapter:
             close.append(node)
         else:
-            setup.append(node)
+            front.append(node)
 
-    standfirst, meta, setup = _split_masthead(setup)
+    standfirst, meta, front = _split_masthead(front)
+    overview, setup = front, []
+    for k, node in enumerate(front):
+        if node[0] == "h2" and node[1] == "Setup":
+            overview, setup = front[:k], front[k + 1:]
+            break
     return {"title": title, "standfirst": standfirst, "meta": meta,
-            "setup": setup, "acts": acts, "close": close}
+            "overview": overview, "setup": setup,
+            "chapters": chapters, "close": close}
 
 
 def _split_masthead(setup):
-    """Pull the intro blockquote and the **Level** line into the masthead.
-
-    Presentation only: both stay authored in WORKSHOP-2H.md; they are simply
-    rendered as the landing header instead of as body copy.
-    """
+    """Pull the intro blockquote and the **Level** line into the landing
+    header. Presentation only: both stay authored in the markdown."""
     standfirst, meta = "", ""
     rest = []
     for node in setup:
@@ -303,21 +326,15 @@ def _split_masthead(setup):
 
 def check(workshop):
     """Structural invariants. Shape is content, so the check validates
-    internal consistency, never a fixed count: beats numbered 1..N in
-    order across the acts, at least one act, no empty act. A workshop's
-    specific shape is pinned where pins belong: in its own tests."""
+    internal consistency, never a fixed count: chapters numbered 1..N in
+    order. A workshop's specific shape is pinned in its own tests."""
     if not workshop["title"]:
         raise SystemExit("no # TITLE found: fix the markdown")
-    if not workshop["acts"]:
-        raise SystemExit("no # ACT headers found: fix the markdown")
-    expected = 1
-    for act in workshop["acts"]:
-        if not act["beats"]:
-            raise SystemExit(f"ACT {act['num']} has no beats: fix the markdown")
-        for beat in act["beats"]:
-            if beat["num"] != expected:
-                raise SystemExit(
-                    f"beat numbering breaks at '{beat['name']}': found "
-                    f"Beat {beat['num']}, expected Beat {expected}. "
-                    "Beats run 1..N in order: fix the markdown")
-            expected += 1
+    if not workshop["chapters"]:
+        raise SystemExit("no '## Chapter N ·' headings found: fix the markdown")
+    for expected, chapter in enumerate(workshop["chapters"], 1):
+        if chapter["num"] != expected:
+            raise SystemExit(
+                f"chapter numbering breaks at '{chapter['name']}': found "
+                f"Chapter {chapter['num']}, expected Chapter {expected}. "
+                "Chapters run 1..N in order: fix the markdown")

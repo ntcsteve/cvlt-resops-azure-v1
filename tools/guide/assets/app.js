@@ -21,8 +21,6 @@
   var routes = pages.map(function (p) { return p.dataset.route; });
   var navRows = Array.prototype.slice.call(
     document.querySelectorAll('.nav-row'));
-  var segments = Array.prototype.slice.call(
-    document.querySelectorAll('#progress span'));
   var here = document.getElementById('topbar-here');
   var brandName = document.querySelector('.brand-name').textContent;
 
@@ -30,15 +28,6 @@
 
   function currentIndex() {
     return routes.indexOf(location.hash);
-  }
-
-  function markVisited(visited) {
-    navRows.forEach(function (r) {
-      r.classList.toggle('visited', visited.indexOf(r.dataset.route) !== -1);
-    });
-    segments.forEach(function (s) {
-      s.classList.toggle('done', visited.indexOf(s.dataset.route) !== -1);
-    });
   }
 
   function show(index) {
@@ -55,13 +44,8 @@
     here.textContent = page.dataset.title;
     document.title = page.dataset.title + ' · ' + brandName;
     var state = load();
-    state.visited = state.visited || [];
-    if (state.visited.indexOf(page.dataset.route) === -1) {
-      state.visited.push(page.dataset.route);
-    }
-    state.last = page.dataset.route;
+    state.last = page.dataset.route;   // resume-on-reopen, nothing more
     save(state);
-    markVisited(state.visited);
     window.scrollTo(0, 0);
   }
 

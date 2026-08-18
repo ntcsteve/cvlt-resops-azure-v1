@@ -41,10 +41,11 @@ def commands_in(page_html):
     return re.findall(r"<pre><code>(.*?)</code></pre>", page_html, re.S)
 
 
-def test_structure_four_acts_eight_beats():
+def test_structure_seven_chapters_two_solo():
     workshop = parser.group(parser.parse(MD.read_text(encoding="utf-8")))
     parser.check(workshop)
-    assert [len(a["beats"]) for a in workshop["acts"]] == [1, 3, 2, 2]
+    assert [c["num"] for c in workshop["chapters"]] == [1, 2, 3, 4, 5, 6, 7]
+    assert [c["num"] for c in workshop["chapters"] if c["solo"]] == [1, 5]
 
 
 def test_every_command_lands_byte_identical(page):
@@ -81,8 +82,28 @@ def test_offline_no_external_references(page):
 def test_ten_pages_in_order(page):
     routes = re.findall(r'data-route="(#/[a-z0-9]+)"', page)
     unique = list(dict.fromkeys(routes))
-    assert unique == ["#/start", "#/1", "#/2", "#/3", "#/4", "#/5",
-                      "#/6", "#/7", "#/8", "#/close"]
+    assert unique == ["#/overview", "#/setup", "#/1", "#/2", "#/3", "#/4",
+                      "#/5", "#/6", "#/7", "#/close"]
+
+
+def test_sections_and_page_split(page):
+    # the front matter splits into Overview and Setup at '## Setup'
+    assert 'data-title="Overview"' in page
+    assert 'data-title="Setup"' in page
+    assert "What is ResOps?" in page
+    # ### sections structure the chapters
+    for section in ("Provision the service", "The first recovery point",
+                    "The gate answers twice", "Your number, revisited"):
+        assert f"<h3>{section}</h3>" in page
+    # the closing page takes its title from its first h2
+    assert 'data-title="Wrap-up"' in page
+
+
+def test_stray_h2_inside_a_chapter_is_a_loud_error():
+    md = ("# T\n\n## Chapter 1 · A · ~5 min\n\ntext\n\n## Oops\n\nmore\n\n"
+          "## Chapter 2 · B · ~5 min\n\ntext\n")
+    with pytest.raises(SystemExit, match="use '### ' for sections"):
+        parser.group(parser.parse(md))
 
 
 def test_no_facilitator_content(page):
@@ -104,9 +125,7 @@ def test_every_command_sits_in_exactly_one_step(page):
     assert n_steps == n_cmds, "step rail out of sync with command blocks"
 
 
-def test_progress_segments_and_landmarks(page):
-    strip = re.search(r'<div id="progress"[^>]*>(.*?)</div>', page).group(1)
-    assert strip.count("<span") == 10   # start + 8 beats + close
+def test_landmarks_present(page):
     assert 'aria-label="Workshop contents"' in page
     assert 'aria-label="Breadcrumb"' in page
 
@@ -116,6 +135,26 @@ def test_missing_image_is_a_hard_error(tmp_path):
     nodes = parser.parse("![cap](images/nope.png)\n")
     with pytest.raises(SystemExit, match="image not found"):
         inline_images(nodes, tmp_path)
+
+
+@pytest.fixture(scope="module")
+def room_page(tmp_path_factory):
+    out = tmp_path_factory.mktemp("guide") / "guide-room.html"
+    return build(MD, out, CODENAME, mode="room")
+
+
+def test_room_mode_stubs_the_solo_chapters(room_page):
+    assert "completed for you before the session" in room_page
+    assert "terraform -chdir" not in room_page   # the command, not the word
+    assert "op restore" not in room_page
+    routes = list(dict.fromkeys(
+        re.findall(r'data-route="(#/[a-z0-9]+)"', room_page)))
+    assert len(routes) == 10, "numbering stays stable across modes"
+
+
+def test_solo_mode_carries_the_full_climb(page):
+    assert "terraform -chdir=infra/workloads apply" in page
+    assert "op restore infra/workloads" in page
 
 
 def test_parse_errors_carry_line_numbers():
@@ -144,7 +183,7 @@ def test_sentence_case_label_is_a_loud_error_with_the_rule():
 
 def test_command_without_expected_output_fails_the_build():
     from guide.build import check_expected_output
-    md = ("# T\n\n# ACT I · A\n\n**1 minutes**\n\n## Beat 1 · B\n\n"
+    md = ("# T\n\n## Chapter 1 · B · ~5 min\n\n"
           "```bash\necho hello\n```\n\nprose but no expected output.\n")
     workshop = parser.group(parser.parse(md))
     with pytest.raises(SystemExit, match="expected-output"):

@@ -80,10 +80,10 @@ def check_expected_output(workshop):
         if pending is not None:
             fail(pending, where)
 
-    scan(workshop["setup"], "Start page")
-    for act in workshop["acts"]:
-        for beat in act["beats"]:
-            scan(beat["body"], f"beat {beat['num']} ({beat['name']})")
+    scan(workshop["overview"], "Overview page")
+    scan(workshop["setup"], "Setup page")
+    for ch in workshop["chapters"]:
+        scan(ch["body"], f"chapter {ch['num']} ({ch['name']})")
     scan(workshop["close"], "close page")
 
 
@@ -103,7 +103,7 @@ def check_codename(page, codename):
                 "identical for every participant")
 
 
-def build(md_path, out_path, codename=None):
+def build(md_path, out_path, codename=None, mode="solo"):
     text = Path(md_path).read_text(encoding="utf-8")
     if codename:
         text = text.replace("<your-codename>", codename)
@@ -123,7 +123,8 @@ def build(md_path, out_path, codename=None):
         for name in ("mark", "wordmark")
     }
 
-    page = render.render_document(workshop, codename, css, js, images, brand)
+    page = render.render_document(workshop, codename, css, js, images, brand,
+                                  mode)
     check_offline(page)
     if codename:
         check_codename(page, codename)
@@ -139,10 +140,13 @@ def main():
     ap.add_argument("--md", default=str(REPO / "WORKSHOP-2H.md"))
     ap.add_argument("--out", required=True)
     ap.add_argument("--codename", default=None,
-                    help="participant codename; appears in the topbar chip "
+                    help="participant codename; appears in the landing chip "
                          "and expected-output boxes, never in a command")
+    ap.add_argument("--mode", default="solo", choices=("solo", "room"),
+                    help="solo renders every chapter; room renders "
+                         "SOLO-tagged chapters as inherited stubs")
     args = ap.parse_args()
-    page = build(args.md, args.out, args.codename)
+    page = build(args.md, args.out, args.codename, args.mode)
     n = page.count('<section class="page"')
     print(f"wrote {args.out} ({len(page) // 1024}KB, {n} pages, "
           f"codename={args.codename or 'placeholder'})")

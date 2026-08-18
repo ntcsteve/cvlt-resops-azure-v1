@@ -22,13 +22,34 @@ python3 tools/guide/build.py --md THE-WORKSHOP.md \
                                  everywhere: topbar, tab, breadcrumb
 intro prose, blockquote,         the blockquote and the **Level** line
 **Level** ... line               render as the landing header
-## other headings                landing-page sections ("Start here")
-# ACT N · NAME                   act header, N in Roman numerals
-**time · mode**                  the line after each act header
-## Beat N · Name · Nm · MODE     one page per beat. time and mode
-                                 (LIVE / OFFLINE) optional
-## headings after the last act   the closing page
+## other headings                Overview-page sections; a heading of
+                                 exactly `## Setup` splits the front
+                                 matter into the Overview and Setup pages
+## Chapter N · Name · ~Nm · MODE · SOLO
+                                 one page per chapter. time, mode
+                                 (LIVE / OFFLINE) and SOLO optional
+### Section name                 sections INSIDE a chapter: they break
+                                 the step rail and structure the page.
+                                 A bare `## ` inside a chapter is a
+                                 BUILD ERROR (it would start the
+                                 closing page); sections are ### only
+## first heading after the       the closing page; that first h2 is the
+   last chapter                  page's title and sidebar name
 ```
+
+Every chapter follows one fixed order: DO/LEARN strip, lead prose,
+### sections carrying the steps and asides, ✦ checkpoint, pager.
+Predictability is the reader's second facilitator. In diagnostic
+rows, ✓ quotes output (rendered preformatted, line breaks kept);
+✗ and ⏱ are guidance (rendered as flowing prose).
+
+## 1b. Two builds from one file
+
+A chapter tagged `SOLO` is for the self-paced reader (they provision, they
+drill). `--mode solo` (default) renders everything; `--mode room` renders
+SOLO chapters as inherited stubs: one sentence plus the chapter's ✦
+checkpoint as the summary of what participants arrive with. Numbering is
+stable across modes. One markdown, zero drift between the two products.
 
 The parser rejects anything outside this dialect with the reason and the
 place. A page that is awkward to express is a dialect gap: extend the
@@ -46,8 +67,15 @@ parser, never hand-edit the HTML.
                    more spaces, continuation lines are indented under
                    the text. Getting any of this wrong is a build error
                    with the line number, never a silently wrong page
-``` starting ?     a quiet aside (why this matters). title on the first
-                   line, prose and indented pre-chunks after
+``` starting ?     a quiet aside (why this matters, UNDER THE HOOD).
+                   title on the first line, prose and indented
+                   pre-chunks after
+``` starting ?!    a collapsed reveal (answers to CHECK YOURSELF
+                   questions): closed by default, same body rules
+``` starting ✦     a checkpoint card (WHAT YOU JUST …): the chapter's
+                   consolidation, and its stub summary in room mode
+``` starting DO    the DO/LEARN strip: UPPERCASE label, two+ spaces,
+                   text. Opens every chapter
 ``` anything else  a preformatted ASCII panel, shown verbatim
 ![caption](path)   a figure. inlined into the file at build time
 > quote            a blockquote

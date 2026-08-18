@@ -263,28 +263,46 @@ def test_the_two_hour_guide_exists_and_says_it_is_two_hours():
     assert "LIVE" in text, "live commands appear; the LIVE marker must too"
 
 
-def test_the_two_hour_guide_runs_op_restore_NOWHERE():
+def _room_build():
+    """The ROOM rendering of the guide. Since the 2026-08 restructure the
+    markdown carries the SOLO chapters too (Build, Re-prove, where a lone
+    reader runs the drill themselves); the room doctrine below applies to
+    what a ROOM participant is actually handed, which is this build."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    from guide.build import build
+    import tempfile, pathlib
+    out = pathlib.Path(tempfile.mkdtemp()) / "room.html"
+    return build(GUIDE_2H, out, "test-vm", mode="room")
+
+
+def test_the_room_build_runs_op_restore_NOWHERE():
     """THE LOAD-BEARING ONE.
 
     `op restore` builds a real Azure VM, needs vCPU quota and waits on a media
     agent slot. It is the most fragile command in the toolkit, and roughly a
-    third of the two-hour budget. It runs in PREP and once on the facilitator's
-    projector, never on twenty laptops.
+    third of the two-hour budget. In a ROOM it runs in PREP and once on the
+    facilitator's projector, never on twenty laptops. The SOLO build carries
+    it on purpose: one reader, one tenant, their own clock.
 
-    If someone adds it back to close a perceived gap, the day loses its slack and
-    fails at minute 25 for a reason nobody planned for."""
-    assert "op restore" not in GUIDE_2H.read_text(), (
-        "op restore is in the two-hour guide. It belongs in prep. See "
+    If someone untags the Build or Re-prove chapters to close a perceived
+    gap, the room loses its slack and fails at minute 25 for a reason nobody
+    planned for."""
+    assert "op restore" not in _room_build(), (
+        "op restore is in the ROOM build. It belongs in prep. See "
         "FACILITATOR.md's two-hour section for why.")
 
 
-def test_the_two_hour_guide_uses_only_the_six_agreed_live_commands():
+def test_the_room_build_uses_only_the_six_agreed_live_commands():
     """Scope creep in a two-hour session shows up as extra live commands, each
-    with its own queue and its own failure mode."""
-    text = GUIDE_2H.read_text()
-    found = {c for c in re.findall(r"python3 -m resops\.operator\.op \S+ \S+", text)}
-    unexpected = found - set(TWO_HOUR_LIVE_COMMANDS)
-    assert not unexpected, f"unplanned live commands in the two-hour guide: {unexpected}"
+    with its own queue and its own failure mode. Guarded on the ROOM build:
+    the SOLO chapters legitimately add preflight/protect/restore for the
+    lone reader who provisions their own lab."""
+    found = set(re.findall(
+        r"python3 -m resops\.operator\.op ([a-z]+) infra/workloads",
+        _room_build()))
+    agreed = {c.split()[3] for c in TWO_HOUR_LIVE_COMMANDS}
+    unexpected = found - agreed
+    assert not unexpected, f"unplanned live commands in the room build: {unexpected}"
 
 
 def test_the_two_hour_guide_runs_the_estate_gate_BEFORE_metrics():
