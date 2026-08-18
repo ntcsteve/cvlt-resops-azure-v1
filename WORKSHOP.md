@@ -413,8 +413,22 @@ Then open the recovery point yourself and find the field nobody reads —
 Compare it against a point that *was* scanned:
 
 ```
- SCANNED       totalFiles 68398 · totalCleanFiles 68396 · maliciousFiles 2
- NEVER SCANNED the totalFiles key IS NOT THERE AT ALL
+ SCANNED        totalFiles 68398 · totalCleanFiles 68396 · maliciousFiles 2
+ NEVER SCANNED  threatStatsForRecovery = { "latestTAJobTime": 0 }
+                the object is THERE. the counts are not.
+```
+
+**`latestTAJobTime: 0` is the signal.** Not a missing object, not a zero count. A
+timestamp of zero, meaning no threat analysis has ever run against this point.
+Measured on our own workload: **19 recovery points, every one of them `0`.**
+
+```
+ ⚠ THE SCANNED EXAMPLE IS FROM A DIFFERENT VM GROUP.
+   Threat scan populates Client/Anomaly for our workload, and it works — it
+   found the 2 planted files. It has never populated threatStatsForRecovery
+   for us. So you can reproduce the LEFT column on your own workload, and
+   the right-hand counts only on the one group in this tenant that ever
+   received File Indexing jobs. Do not go looking for 68398 on your VM.
 ```
 
 ```
