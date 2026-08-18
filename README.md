@@ -40,14 +40,17 @@ Two different things live in this repo, and it's worth knowing which one you're 
    RESOPS.md        what is the idea, and why adopt it?
    VERIFY.md        how do I write the one file nobody can write for me?
 
- THE FACILITATED DAY — one room, 6.5 hours, five modules
-   WORKSHOP.md      the participant guide                 M1-M5
-   WORKSHEETS.md    six printable sheets
+ THE FACILITATED DAY — one room, two lengths, same commands
+   WORKSHOP.md      6h35m · five modules · you WRITE an attester
+   WORKSHOP-2H.md   2h    · eight beats · you WIN THE ARGUMENT
+   WORKSHEETS.md    six printable sheets (the 2h form uses only sheet 1)
    (a facilitator runbook exists and is shared directly, not published —
     it carries delivery coaching and tenant-specific detail)
 ```
 
-**Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. **M1-M5 in [WORKSHOP.md](WORKSHOP.md)** are a facilitated day built on the same commands, with the setup done in advance so a room never touches terraform. They are not two versions of the same thing; pick the one that matches why you're here.
+**Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. The two guides are a facilitated day built on the same commands, with setup done in advance so a room never touches terraform.
+
+**The two lengths are not long and short versions of one thing.** They aim at different outcomes, so they are shaped differently. The 6h35m form spends 45 minutes having you write a verify script for your own workload shape, because capability is the goal. The 2h form cuts that and spends 20 minutes having you argue the case out loud against someone trying to break it, because conviction is the goal — and it moves the compromise to the first half hour rather than saving it for the end. Pick the outcome, not the duration.
 
 ## See it first - one command, no cloud, no token
 

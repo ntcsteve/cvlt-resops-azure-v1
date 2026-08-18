@@ -24,6 +24,13 @@ import sys
 from resops.__main__ import ROOT
 
 GUIDE = ROOT / "WORKSHOP.md"
+
+# The two-hour form. A SECOND guide is a SECOND drift surface, so it is bound by
+# the same tests rather than trusted. Its offline steps are a subset of the
+# six-hour day's, which is why OFFLINE_STEPS covers both: each command must appear
+# verbatim in at least one guide, and must still produce what that guide promises.
+GUIDE_2H = ROOT / "WORKSHOP-2H.md"
+GUIDES = (GUIDE, GUIDE_2H)
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 OFFLINE_STEPS = [
@@ -120,7 +127,7 @@ def test_every_metric_the_docs_name_actually_exists():
     _, output = _run("python3 -m resops metrics config/estate.yaml")
     real = {line.split("{")[0].split(" ")[0]
             for line in output.splitlines() if line.startswith("resops_")}
-    docs = ["README.md", "RESOPS.md", "WORKSHOP.md"]
+    docs = ["README.md", "RESOPS.md", "WORKSHOP.md", "WORKSHOP-2H.md"]
     docs += [d for d in PRIVATE_DOCS if (ROOT / d).exists()]
     for doc in docs:
         for named in set(re.findall(r"\bresops_[a-z_]+\b", (ROOT / doc).read_text())):
@@ -143,7 +150,8 @@ def test_the_published_guides_cross_reference_each_other():
 def test_the_published_guides_never_link_to_a_private_doc():
     """A markdown link to a gitignored file is a 404 for everyone who clones.
     The runbook is referred to in prose on purpose, never linked."""
-    for doc in ("README.md", "WORKSHOP.md", "WORKSHEETS.md", "RESOPS.md", "VERIFY.md"):
+    for doc in ("README.md", "WORKSHOP.md", "WORKSHOP-2H.md", "WORKSHEETS.md",
+                "RESOPS.md", "VERIFY.md"):
         text = (ROOT / doc).read_text()
         for private in PRIVATE_DOCS:
             assert f"]({private})" not in text, (
@@ -228,3 +236,77 @@ def test_the_two_recoverable_workloads_stop_for_DIFFERENT_reasons():
     code, output = _run("python3 -m resops gate config/estate.yaml")
     actual = _parse_ladder(output)
     assert actual["checkout-api"][1] != actual["identity-svc"][1]
+
+
+# --------------------------------------------------------------------------- #
+# WORKSHOP-2H.md — the two-hour form.
+#
+# A second guide is a second drift surface. These bind it to the same rules the
+# six-hour guide has had since the beginning, plus three that are specific to
+# compressing a day into two hours: the live commands must be the SHORT list, the
+# metrics command has an ordering dependency that will bite a fresh clone, and
+# the two forms must not silently disagree about what a command prints.
+# --------------------------------------------------------------------------- #
+TWO_HOUR_LIVE_COMMANDS = (
+    "python3 -m resops.operator.op status infra/workloads",
+    "python3 -m resops.operator.op gate infra/workloads",
+    "python3 -m resops.operator.op incident infra/workloads",
+    "python3 -m resops.operator.op backup infra/workloads",
+    "python3 -m resops.operator.op threatscan infra/workloads",
+    "python3 -m resops.operator.op remediate infra/workloads",
+)
+
+
+def test_the_two_hour_guide_exists_and_says_it_is_two_hours():
+    text = GUIDE_2H.read_text()
+    assert "**Duration** 2h" in text
+    assert "LIVE" in text, "live commands appear; the LIVE marker must too"
+
+
+def test_the_two_hour_guide_runs_op_restore_NOWHERE():
+    """THE LOAD-BEARING ONE.
+
+    `op restore` builds a real Azure VM, needs vCPU quota and waits on a media
+    agent slot. It is the most fragile command in the toolkit, and roughly a
+    third of the two-hour budget. It runs in PREP and once on the facilitator's
+    projector, never on twenty laptops.
+
+    If someone adds it back to close a perceived gap, the day loses its slack and
+    fails at minute 25 for a reason nobody planned for."""
+    assert "op restore" not in GUIDE_2H.read_text(), (
+        "op restore is in the two-hour guide. It belongs in prep. See "
+        "FACILITATOR.md's two-hour section for why.")
+
+
+def test_the_two_hour_guide_uses_only_the_six_agreed_live_commands():
+    """Scope creep in a two-hour session shows up as extra live commands, each
+    with its own queue and its own failure mode."""
+    text = GUIDE_2H.read_text()
+    found = {c for c in re.findall(r"python3 -m resops\.operator\.op \S+ \S+", text)}
+    unexpected = found - set(TWO_HOUR_LIVE_COMMANDS)
+    assert not unexpected, f"unplanned live commands in the two-hour guide: {unexpected}"
+
+
+def test_the_two_hour_guide_runs_the_estate_gate_BEFORE_metrics():
+    """`resops metrics` publishes the LAST run and exits 2 with
+    'no run to publish' if there isn't one. evidence/ is gitignored, so on a
+    fresh clone the metrics command produces nothing at all.
+
+    Verified by moving evidence/ aside: exit 2, not exit 0. A guide that shows
+    metrics without the gate first hands the room an error at beat 6."""
+    text = GUIDE_2H.read_text()
+    gate = text.index("python3 -m resops gate config/estate.yaml")
+    metrics = text.index("python3 -m resops metrics config/estate.yaml")
+    assert gate < metrics, (
+        "the two-hour guide shows `resops metrics` before `resops gate "
+        "config/estate.yaml`. metrics reads the last run; on a fresh clone "
+        "there is none and it exits 2.")
+
+
+def test_both_guides_agree_on_the_verify_script_line_count():
+    """Two guides describing the same twenty-five lines must not drift apart.
+    The number is checked against the real file by test_verify_contract.py."""
+    for g in GUIDES:
+        text = g.read_text()
+        assert "hirty lines" not in text and "orty lines" not in text, (
+            f"{g.name} quotes a stale line count for verify.sh")
