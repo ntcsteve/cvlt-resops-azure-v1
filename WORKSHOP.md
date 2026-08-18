@@ -507,7 +507,7 @@ op gate infra/workloads
 Now read what produced that verdict:
 
 ```bash
-grep -A 40 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
+grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
 ```
 
 ```
@@ -674,7 +674,7 @@ op gate    infra/workloads
    backup Completed. restore Completed. VM healthy. Every vendor
    signal GREEN. The recovery point was still poison.
 
-   Caught by twenty-five lines of shell anyone here can read.
+   Caught by seventy lines of shell anyone here can read.
 ```
 
 ## 5.4 · Four recovery points · 25 min · WORKSHEET 5
@@ -776,7 +776,7 @@ You have now walked all five steps. Write them down for something real.
 ```
  THE ADOPTION LADDER
  L1  SEE       resops gate, read-only. your real number.       day 1
- L2  DECLARE   verify.sh for ONE tier-1 workload. 20 lines.    week 1
+ L2  DECLARE   verify.sh for ONE tier-1 workload. 70 lines.    week 1
  L3  PROVE     one scheduled drill. one attestation.           week 2
  L4  GATE      required check on that ONE workload. ratchet.   month 1
  L5  PUBLISH   % provably recoverable, on a wall.              quarter 1

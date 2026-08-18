@@ -107,7 +107,7 @@ python3 -m resops.operator.op status infra/workloads
 
 ```
  ✓ YOU SHOULD SEE   ●●●●●●  VALIDATED
-                    six stages cleared, and a reason beside each one
+                    six dots filled, and a reason beside every line
                     discover names your group: 'resops-<your-codename>-vg'
  ✗ IF NOT           tell the facilitator your codename: <your-codename>.
                     do not debug it.
