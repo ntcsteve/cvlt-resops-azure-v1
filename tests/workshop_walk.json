@@ -10,18 +10,35 @@
     "TO UPDATE: walk the live boxes against a real run, then set walked_commit to",
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
-  "walked_at": "2026-08-13",
-  "walked_commit": "23cbc4f",
+  "walked_at": "2026-08-18",
+  "walked_commit": "7e0714f",
   "verified": {
-    "M4.1  op gate -> ●●●●●● VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
+    "M4.1  op gate -> \u25cf\u25cf\u25cf\u25cf\u25cf\u25cf VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
     "M5.2  op incident -> BASELINE marker still present: yes": "loop passes + live walk",
     "M5.3  op restore -> FAIL: 14 encrypted (.locked) files present": "live walk, job 8163492",
-    "M5.3  op gate -> ●●●●✗· RECOVERABLE blocked at Scan, HOLD exit 1": "live walk",
+    "M5.3  op gate -> \u25cf\u25cf\u25cf\u25cf\u2717\u00b7 RECOVERABLE blocked at Scan, HOLD exit 1": "live walk",
     "M5.3  the HOLD names restore-verify, NOT threatscan": "live walk. The loop cannot produce this: it inserts a threat scan, whose negative outranks the drill's verdict.",
     "close  op teardown -> destroy complete": "live, 2026-08-12. 17 GXMD snapshots swept, 11 terraform resources destroyed, NetworkWatcher removed, CV group DELETE returned 202 pending approval. Verified independently afterwards: 0 VMs, 0 resops RGs, 0 disks, 0 snapshots, 0 in terraform state."
   },
-  "not_verified": {},
+  "not_verified": {
+    "verify.sh check 5 has never run inside a real restored copy": [
+      "The write/read probe was tested only against a fake tree on the dev machine:",
+      "healthy -> OK, chmod 500 -> one clean FAIL line, no probe file left behind,",
+      "and both outputs parsed correctly by run_restore.parse_verdict.",
+      "",
+      "THE RISK IS A NEW FALSE FAILURE, not a false pass. If a restored disk mounts",
+      "read-only, or /var/lib/app/data comes back with different ownership inside the",
+      "restored copy, a drill that used to print OK: would now print",
+      "'FAIL: data store not writable' and the Scan rung would block a clean point.",
+      "",
+      "That would break M4.1's PROMOTE box, which is the first live box of the day.",
+      "",
+      "CONFIRM IT ON THE NEXT PRE-CLIMB. One clean drill printing an OK: line that",
+      "ends 'write/read verified' closes this. Do not provision a VM only for it,",
+      "and do not deliver the live half until it has been seen once."
+    ]
+  },
   "_all_live_boxes_walked": [
     "As of 2026-08-12 the ENTIRE live half of WORKSHOP.md has been walked.",
     "That had been deferred for seven sessions."
@@ -33,7 +50,7 @@
       "output was re-run live (job 8163659) and observed. These are the lines",
       "that were checked, not assumed:"
     ],
-    "POST /CreateTask renders legibly": "was }8163492\"809089,\"jobIds\":[0: { — the \\r sanitise works",
+    "POST /CreateTask renders legibly": "was }8163492\"809089,\"jobIds\":[0: { \u2014 the \\r sanitise works",
     "the teardown pause text, exactly as M5.3 quotes it": "including the no-public-IP explanation",
     "poll_job's media agent message carries both numbers": "typical and the 27-min tail",
     "the exit-0 path still completes and tears down": "job 8163659"
@@ -52,8 +69,8 @@
       "reasons. REVIEWED rather than re-walked, because Azure is empty and the",
       "affected output is fully reproducible offline. What was checked:"
     ],
-    "M5.4 quotes the Scan line": "WORKSHOP.md line ~651 shows '↳ recovery point is UNATTESTED' in ABBREVIATED form, and did so before this change too. The longer text is still a true prefix, so the box is not contradicted. Verified by running `resops gate config/incident.yaml` and comparing.",
-    "no other box quotes a changed line": "The Validate and Recover reasons appear nowhere in a '✓ YOU SHOULD SEE' box. The 'recovery point failed <source>' branch that M5.3 and M1 DO quote was not touched by 7eea421.",
+    "M5.4 quotes the Scan line": "WORKSHOP.md line ~651 shows '\u21b3 recovery point is UNATTESTED' in ABBREVIATED form, and did so before this change too. The longer text is still a true prefix, so the box is not contradicted. Verified by running `resops gate config/incident.yaml` and comparing.",
+    "no other box quotes a changed line": "The Validate and Recover reasons appear nowhere in a '\u2713 YOU SHOULD SEE' box. The 'recovery point failed <source>' branch that M5.3 and M1 DO quote was not touched by 7eea421.",
     "caught by the guard, not by review": "The first draft of the Scan fix ran past 150 chars and hurt M5.4's four-way comparison. That is why the fix is now an imperative. The guard is the only reason it was noticed."
   },
   "re_observed_at_23cbc4f": {
@@ -78,5 +95,17 @@
     "M5.3  op gate -> ****x. RECOVERABLE blocked at Scan, HOLD exit 1": "history.jsonl records RECOVERABLE for that run. dab5dd0 added a branch that fires ONLY when clean is None; this scenario is clean=False and takes the untouched 'recovery point failed <source>' branch. 23cbc4f can only make the ladder climb HIGHER, never lower, so a box asserting it REACHED Scan cannot be invalidated by it.",
     "M5.3  the HOLD names restore-verify, NOT threatscan": "No threat scan ran before that gate, so Client/Anomaly held no record and the drill's verdict was the only attester. Unchanged by either commit.",
     "gate.py's new recency guard cannot fire in the workshop": "It HOLDs only when there is no rpo_target_hours AND the vendor never evaluated SLA. Every workshop workload declares tier: tier1, which supplies the target."
+  },
+  "reviewed_not_re_walked_at_7e0714f": {
+    "_why": [
+      "7e0714f added a FIFTH check to verify.sh (a write/read probe inside the",
+      "restored copy) and changed the OK: line. cloud-init.yaml is on the LIVE",
+      "SURFACE so the guard fired, correctly. Azure is empty, so this was REVIEWED,",
+      "not re-walked. What was checked, box by box:"
+    ],
+    "no box quotes the OK: line": "grep of WORKSHOP.md for 'OK:' finds exactly one hit, line 540, which teaches the CONTRACT ('the verdict LINE is authoritative  OK: / FAIL:') and quotes no message text. The OK: string changed; nothing asserts it.",
+    "M5.3  FAIL: 14 encrypted (.locked) files present": "UNAFFECTED, and structurally so. The new probe is check 5; the .locked test is check 4 and `fail()` exits immediately. On a dirty workload check 4 always fires first, so the quoted line is unchanged and unreachable-past.",
+    "M1.1 and M5.4 offline boxes": "verify.sh does not run offline. Those boxes are fixtures, and test_workshop_guide.py pins them independently.",
+    "the guard fired on a docs-only-looking commit": "worth noting: 7e0714f reads as a documentation change in the diff stat (README, RESOPS, VERIFY, WORKSHOP) plus one yaml. The yaml is the live surface. This is exactly the case a human skim would wave through."
   }
 }
