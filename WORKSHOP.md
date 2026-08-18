@@ -601,8 +601,9 @@ op backup   infra/workloads
 
  ⏱ HOW LONG         op incident ~30s · op backup ~2 min
                     A backup CAN queue for a media agent slot. Measured
-                    here it never exceeded 90s, but a failover once took
-                    27 min. If it sits on "Waiting", that is the queue.
+                    here: 77-149s across 23 runs, and one media agent
+                    failover took 27 min. If it sits on "Waiting", that
+                    is the queue.
                     DO NOT KILL IT.
 
  ✗ IF NOT           `op: command not found` means you skipped

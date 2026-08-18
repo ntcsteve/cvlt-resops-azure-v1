@@ -11,7 +11,7 @@
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
   "walked_at": "2026-08-18",
-  "walked_commit": "7e0714f",
+  "walked_commit": "cb5739a",
   "verified": {
     "M4.1  op gate -> \u25cf\u25cf\u25cf\u25cf\u25cf\u25cf VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
@@ -107,5 +107,18 @@
     "M5.3  FAIL: 14 encrypted (.locked) files present": "UNAFFECTED, and structurally so. The new probe is check 5; the .locked test is check 4 and `fail()` exits immediately. On a dirty workload check 4 always fires first, so the quoted line is unchanged and unreachable-past.",
     "M1.1 and M5.4 offline boxes": "verify.sh does not run offline. Those boxes are fixtures, and test_workshop_guide.py pins them independently.",
     "the guard fired on a docs-only-looking commit": "worth noting: 7e0714f reads as a documentation change in the diff stat (README, RESOPS, VERIFY, WORKSHOP) plus one yaml. The yaml is the live surface. This is exactly the case a human skim would wave through."
+  },
+  "reviewed_not_re_walked_at_cb5739a": {
+    "_why": [
+      "cb5739a corrected poll_job's media-agent message. resops/operator is on the",
+      "LIVE SURFACE so the guard fired. FOURTH time it has fired, right all four.",
+      "Azure is empty, so REVIEWED. And the review found a real defect, which is the",
+      "point of the guard rather than a side effect of it:"
+    ],
+    "IT CAUGHT A DEFECT IN A GUIDE WRITTEN THE SAME DAY": "WORKSHOP-2H.md said 'a 5-15 minute queue is NORMAL'. That is the INVENTED figure poll_job had already been corrected away from twice. I wrote it from memory of an old message, hours after the repo had replaced it. Fixed to the measured 77-149s.",
+    "AND A SECOND ONE IN WORKSHOP.md": "M5.2's HOW LONG box said 'never exceeded 90s'. That is the CHILD-job measurement. Only 8 of 17 parent jobs are under 90s. Fixed.",
+    "my own new test did NOT catch either": "test_no_doc_claims_a_backup_timing... listed 'typically 5-15 min' but not 'a 5-15 minute queue', and not 'never exceeded 90s'. Widened to match the FIGURES rather than the phrasing. The walk guard found what the targeted test missed, which is the argument for keeping a broad trigger alongside narrow ones.",
+    "no other box quotes poll_job": "grep for 'Waiting', 'media agent' and 'queue' across both guides. M5.2's HOW LONG box and WORKSHOP-2H's beat 4 box are the only two, and both are now corrected. Neither quotes the message verbatim; both paraphrase the range, which is why they could drift without a string match noticing.",
+    "the timing numbers themselves": "re-measured from the tenant on this date, not carried over. 17 completed parent jobs 77-134s median 91s, one 27-min failover; op backup wall clock 88-149s over 6 runs from loop.sh's own step stamps."
   }
 }

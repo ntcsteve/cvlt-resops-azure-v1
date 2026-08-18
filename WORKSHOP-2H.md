@@ -215,8 +215,10 @@ python3 -m resops.operator.op backup infra/workloads
 
 ```
  ✓ YOU SHOULD SEE   a backup job, then  backup Completed
- ✗ IF NOT           a 5-15 minute queue is NORMAL on a first run. It is
-                    waiting for a media agent slot, not failing.
+ ⏱ HOW LONG         about 2 min. Measured here: 77-149s across 23 runs,
+                    and one media agent failover took 27 min.
+ ✗ IF NOT           if it sits on "Waiting", that is the media agent queue,
+                    not a failure. DO NOT KILL IT.
 ```
 
 ```

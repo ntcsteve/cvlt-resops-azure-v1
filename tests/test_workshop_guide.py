@@ -338,7 +338,12 @@ def test_no_doc_claims_a_backup_timing_that_was_measured_on_the_wrong_job():
         if not f.exists():
             continue
         text = f.read_text()
-        for retracted in ("under 90s in 16 of 16", "0.8 min median", "typically 5-15 min"):
+        # SPELLINGS MATTER. The first version of this test listed only
+        # "typically 5-15 min" and missed "a 5-15 minute queue is NORMAL" in a
+        # guide written the same day, four lines from a command. The walk guard
+        # caught that, not this test. So match the FIGURES, not the phrasing.
+        for retracted in ("under 90s in 16 of 16", "0.8 min median",
+                          "5-15 min", "5 to 15 min", "never exceeded 90s"):
             if retracted not in text:
                 continue
             # A retracted figure may be QUOTED anywhere, as the record of what was
