@@ -1,0 +1,165 @@
+/* One block per component, in reading order. Quiet by default: the step
+   rail, the ✓/✗ pair, and the codename are the only elements allowed to
+   ask for attention. */
+
+/* ---- landing header ---- */
+.standfirst { color: var(--muted); font-size: 15px; margin-top: 12px; }
+.mast-meta { color: var(--muted); font-family: var(--f-mono);
+  font-size: 12px; }
+.mast-meta strong { color: var(--ink); font-family: var(--f-mono); }
+.codename {
+  display: inline-block; margin: 12px 0 4px; font-family: var(--f-mono);
+  font-size: 13px; padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.codename span { font-size: 11px; letter-spacing: 0.08em;
+  color: var(--muted); margin-right: 8px; }
+.codename.unset { color: var(--muted); font-style: italic; }
+
+/* ---- breadcrumb, kicker, page header ---- */
+.crumb {
+  font-size: 12px; color: var(--muted); margin: 0 0 20px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.crumb a { color: var(--accent); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+.crumb-sep { margin: 0 6px; color: var(--line); }
+.crumb b { color: var(--ink); font-weight: 600; }
+
+.kicker {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--accent); margin: 0 0 4px;
+}
+.page-head {
+  display: flex; align-items: baseline; gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px; margin-bottom: 16px;
+}
+.page-meta {
+  margin-left: auto; font-family: var(--f-mono); font-size: 12px;
+  color: var(--muted); white-space: nowrap;
+}
+
+/* ---- the step rail: a command opens a step, its checks hang off it.
+       Structure derived from authored order, never invented content. ---- */
+.steps { margin: 16px 0; }
+.step {
+  display: grid; grid-template-columns: 28px 1fr; gap: 0 16px;
+  position: relative; padding-bottom: 12px;
+}
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #ffffff;
+  font-size: 13px; font-weight: 600; line-height: 28px;
+  text-align: center; margin-top: 4px;
+}
+.step::before {
+  content: ""; position: absolute; left: 13.5px; top: 36px; bottom: -8px;
+  width: 1px; background: var(--line);
+}
+.step:last-child { padding-bottom: 0; }
+.step:last-child::before { display: none; }
+.step-body { min-width: 0; }
+.step-body > :first-child { margin-top: 4px; }
+
+/* ---- command block: light, with a labeled header row. The $ prompt is
+       a pseudo-element, so manual select-copy can never capture it.
+       The whole block is a copy target (app.js). ---- */
+.cmd {
+  border: 1px solid var(--code-border); border-radius: var(--radius-md);
+  overflow: hidden; margin: 12px 0; cursor: copy; background: var(--code-bg);
+}
+.cmd-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 8px 4px 12px; background: var(--code-head);
+  border-bottom: 1px solid var(--code-border);
+}
+.cmd-head span {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.copy {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 2px 10px; cursor: pointer;
+}
+.copy:hover { color: var(--ink); border-color: var(--muted); }
+.cmd pre {
+  padding: 12px 14px; overflow-x: auto; line-height: 1.6;
+  color: var(--ink);
+}
+.cmd code::before { content: "$ "; color: var(--prompt); font-weight: 600; }
+.cmd.copied { animation: copied-pulse 0.35s ease-out; }
+@keyframes copied-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(132, 72, 150, 0.45); }
+  100% { box-shadow: 0 0 0 8px rgba(132, 72, 150, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cmd.copied { animation: none; }
+}
+
+/* ---- diagnostic pair: quiet callouts, adjacent, unmistakable ---- */
+.diag { margin: 12px 0; display: flex; flex-direction: column; gap: 4px; }
+.diag-row {
+  border-left: 3px solid; border-radius: 0 var(--radius-sm)
+  var(--radius-sm) 0; padding: 8px 12px;
+}
+.diag-yes { border-color: var(--yes); background: var(--yes-tint); }
+.diag-no { border-color: var(--no); background: var(--no-tint); }
+.diag-clock { border-color: var(--line); background: var(--clock-tint); }
+.diag-label { margin: 0; font-size: 12px; font-weight: 700; }
+.diag-yes .diag-label { color: var(--yes); }
+.diag-no .diag-label { color: var(--no); }
+.diag-clock .diag-label { color: var(--clock); }
+.diag-mark { margin-right: 6px; }
+.diag-row pre { margin-top: 4px; overflow-x: auto; line-height: 1.55;
+  color: var(--ink); }
+.v-yes { color: var(--yes); font-weight: 700; }
+.v-no { color: var(--no); font-weight: 700; }
+
+/* ---- aside: the quietest block on the page ---- */
+.aside { border-left: 2px solid var(--line); padding: 2px 0 2px 14px;
+  margin: 16px 0; color: var(--muted); }
+.aside-title { font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted); margin: 0; }
+.aside p { margin: 8px 0; font-size: 13px; line-height: 20px; }
+.aside pre { background: var(--code-bg); border: 1px solid
+  var(--code-border); border-radius: var(--radius-sm);
+  padding: 8px 12px; overflow-x: auto; margin: 8px 0; }
+
+/* ---- ASCII panel: scrolls in its own container, never wraps ---- */
+.panel {
+  background: var(--code-bg); border: 1px solid var(--code-border);
+  border-radius: var(--radius-md); padding: 12px 14px;
+  overflow-x: auto; margin: 12px 0; line-height: 1.6;
+}
+
+/* ---- figure: build-time inlined image ---- */
+figure { margin: 16px 0; }
+figure img {
+  max-width: 100%; display: block;
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+}
+figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* ---- pager: both right, ghost prev, solid next with title + time ---- */
+.pager {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+}
+.pager a {
+  font-size: 14px; text-decoration: none;
+  border-radius: var(--radius-md); padding: 8px 16px;
+}
+.pager-prev { color: var(--muted); border: 1px solid var(--line); }
+.pager-prev:hover { color: var(--ink); border-color: var(--muted); }
+.pager-next {
+  background: var(--accent); color: #ffffff; font-weight: 600;
+  border: 1px solid var(--accent);
+}
+.pager-next:hover { background: var(--accent-dark);
+  border-color: var(--accent-dark); }
+.pager-next span { font-weight: 400; font-family: var(--f-mono);
+  font-size: 11px; opacity: 0.85; margin-left: 4px; }

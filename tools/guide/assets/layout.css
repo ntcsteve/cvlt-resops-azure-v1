@@ -1,0 +1,98 @@
+/* The shell: topbar over everything, sidebar left, full-width content.
+   Narrow (half-screen beside a terminal) collapses the sidebar and the
+   topbar carries position + codename instead. Light mode only.
+   Without JS every page renders stacked in order: the router only hides. */
+
+/* ---- topbar: identity left, codename right, progress as its bottom
+       edge. 10 hairline segments fill as pages are visited: the only
+       progress signal at half-screen, subliminal at full width. ---- */
+#topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 16px;
+  height: var(--topbar-h); padding: 0 16px;
+  background: var(--topbar-bg); color: var(--topbar-fg);
+  box-shadow: var(--shadow-sm);
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: #ffffff;
+  text-decoration: none; white-space: nowrap;
+}
+.brand-logo { display: block; width: 18px; height: 18px; }
+#topbar-here {
+  font-size: 13px; color: var(--topbar-fg); display: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar-wordmark { display: block; height: 12px; width: auto;
+  margin-left: auto; }
+#progress {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  display: flex; gap: 1px;
+}
+#progress span { flex: 1; background: rgba(255, 255, 255, 0.14); }
+#progress span.done { background: var(--topbar-name); }
+
+/* ---- sidebar ---- */
+#sidebar {
+  position: fixed; top: var(--topbar-h); bottom: 0; left: 0;
+  width: var(--sidebar-w); overflow-y: auto;
+  background: var(--bg); border-right: 1px solid var(--line);
+  padding: 12px 0 24px;
+}
+.nav-act {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 16px 16px 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.nav-act-name { flex: 1; }
+.nav-row {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: 2px 8px; padding: 8px 8px; min-height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--ink); text-decoration: none; font-size: 14px;
+}
+.nav-row:hover { background: var(--code-bg); }
+.nav-row.active {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+}
+.nav-num { font-family: var(--f-mono); font-size: 12px;
+  color: var(--muted); min-width: 16px; }
+.nav-row.active .nav-num { color: var(--accent); }
+.nav-name { flex: 1; }
+.tick { color: var(--yes); font-size: 11px; visibility: hidden; }
+.nav-row.visited .tick { visibility: visible; }
+
+/* ---- content: full width, like Workshop Studio ---- */
+main { padding: 20px 40px 64px; }
+
+/* ---- routing: JS adds .routed to <html>. Without it, all pages render
+       stacked in document order and the guide degrades to a scroll. ---- */
+.routed main > .page { display: none; }
+.routed main > .page.active { display: block; }
+.page { padding: 4px 0 24px; }
+
+@media (min-width: 881px) {
+  main { margin-left: var(--sidebar-w); }
+}
+
+@media (max-width: 880px) {
+  #sidebar { display: none; }
+  #topbar-here { display: block; }
+  .brand-name, .topbar-wordmark { display: none; }
+  /* position replaces identity when space is scarce; the mark stays,
+     and stays a tap target back to the contents page */
+  main { padding: 16px 16px 48px; }
+  h1 { font-size: 24px; }
+}
+
+/* ---- print: the guide doubles as the handout. Chrome off, everything
+       expanded, callouts keep their rules. ---- */
+@media print {
+  #topbar, #sidebar, .pager, .copy { display: none !important; }
+  .routed main > .page { display: block !important; }
+  body { background: #ffffff; }
+  main { margin: 0; padding: 0; }
+  .page { break-after: page; }
+  .cmd { border: 1px solid #999999; }
+}
