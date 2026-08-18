@@ -21,7 +21,18 @@
     "M5.3  the HOLD names restore-verify, NOT threatscan": "live walk. The loop cannot produce this: it inserts a threat scan, whose negative outranks the drill's verdict.",
     "close  op teardown -> destroy complete": "live, 2026-08-12. 17 GXMD snapshots swept, 11 terraform resources destroyed, NetworkWatcher removed, CV group DELETE returned 202 pending approval. Verified independently afterwards: 0 VMs, 0 resops RGs, 0 disks, 0 snapshots, 0 in terraform state."
   },
-  "not_verified": {
+  "verified_2026_08_18_check5": {
+    "verify.sh check 5 SEEN inside a real restored copy": [
+      "2026-08-18, workload auth-api-03, restore job 8210418. verify.sh ran",
+      "inside auth-api-03-restore via the guest agent and printed 'OK: code",
+      "intact, baseline present, 3 customer records, no encryption markers,",
+      "write/read verified'. The exit condition below is met; the entry is",
+      "kept for the risk analysis it records. Re-drill after 05:03 on any",
+      "delivery day still applies (FACILITATOR.md)."
+    ]
+  },
+  "not_verified": {},
+  "not_verified_CLOSED_2026_08_18": {
     "verify.sh check 5 has never run inside a real restored copy": [
       "The write/read probe was tested only against a fake tree on the dev machine:",
       "healthy -> OK, chmod 500 -> one clean FAIL line, no probe file left behind,",
