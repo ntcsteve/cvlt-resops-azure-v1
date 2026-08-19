@@ -69,6 +69,11 @@ with your own hands, and you will have the output to show for it.
                   belongs in the same place as your other required checks.
 ```
 
+## Where these expected outputs come from
+
+```attestation
+```
+
 ## The one idea
 
 ```statement

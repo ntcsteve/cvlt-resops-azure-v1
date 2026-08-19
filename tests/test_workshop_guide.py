@@ -18,6 +18,7 @@ Only OFFLINE steps run here. Live steps need a tenant and are the facilitator's
 rehearsal, not CI's job. Every offline step in the guide belongs in this list.
 """
 import re
+import shlex
 import subprocess
 import sys
 
@@ -34,6 +35,60 @@ GUIDES = (GUIDE, GUIDE_2H)
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 OFFLINE_STEPS = [
+    # ---- ADDED 2026-08-20 ------------------------------------------------
+    # The guide's Overview now PRINTS a claim about where its expected outputs
+    # come from: "re-run by the suite that gates this build". Four of the 2h
+    # guide's seven offline commands were covered when that claim was drafted,
+    # so the other three plus the report were added rather than the claim
+    # softened. A stamp is only worth printing if the machinery behind it is
+    # complete; see render_attestation() in tools/guide/render.py.
+    #
+    # `cat` and `grep` steps are here for the same reason as the resops ones:
+    # the guide quotes what they print, so an edit to tiers.yaml or to the
+    # cloud-init verify.sh silently falsifies a box unless something re-reads
+    # it. That is exactly how the verify.sh length drifted across five docs.
+    {
+        "module": "2h ch2 – the policy file",
+        "command": "cat config/tiers.yaml",
+        "exit_code": 0,
+        "must_contain": [
+            "rpo_hours",
+            "rto_minutes",
+            "attestation_max_age_days",
+        ],
+    },
+    {
+        "module": "2h ch2 – read the verifier",
+        "command": ("grep -A 80 'path: /opt/app/verify.sh' "
+                    "infra/modules/azure-vm/cloud-init.yaml"),
+        "exit_code": 0,
+        # The box promises "about seventy lines carrying five checks", that the
+        # last one WRITES and reads back, and that the script ends at exit 0.
+        "must_contain": [
+            "write/read verified",
+            "exit 0",
+        ],
+    },
+    {
+        "module": "2h ch6 – the crosswalk",
+        "setup": "python3 -m resops gate config/estate.yaml",
+        "command": "cat evidence/estate/payments-api/report.md",
+        "exit_code": 0,
+        "must_contain": [
+            "CAP-RESTORE-TESTED",
+            "Indicative",
+            "not a compliance attestation",
+        ],
+    },
+    {
+        "module": "2h ch6 – the gate as CI",
+        "command": "cat .github/workflows/resops-gate.yml",
+        "exit_code": 0,
+        "must_contain": [
+            "pull_request:",
+            "schedule:",
+        ],
+    },
     {
         "module": "M1.1 – see the gap",
         "command": "python3 -m resops gate config/estate.yaml",
@@ -88,23 +143,36 @@ PRIVATE_DOCS = ("FACILITATOR.md",)
 
 
 def _run(command: str):
-    argv = command.replace("python3", sys.executable, 1).split()
+    # shlex, not .split(): a naive whitespace split shatters a quoted argument,
+    # so `grep -A 80 'path: /opt/app/verify.sh' file` became four broken words
+    # and grep exited 2. The command must be tokenized the way a shell does.
+    argv = shlex.split(command.replace("python3", sys.executable, 1))
     proc = subprocess.run(argv, cwd=str(ROOT), capture_output=True, text=True)
     return proc.returncode, ANSI.sub("", proc.stdout + proc.stderr)
 
 
 def test_every_offline_command_is_actually_in_the_guide():
-    """Catches the guide being edited away from what CI verifies."""
-    text = GUIDE.read_text()
+    """Catches the guide being edited away from what CI verifies.
+
+    Checks BOTH guides. The rule at the top of this file always said each
+    command must appear verbatim in at least one of them, but this test only
+    ever read WORKSHOP.md, so a command that lives solely in the 2h guide
+    could not be verified here at all. Found on 2026-08-20 when the four
+    remaining 2h offline commands were added."""
+    texts = [g.read_text() for g in GUIDES]
     for step in OFFLINE_STEPS:
-        assert step["command"] in text, (
-            f"{step['module']}: '{step['command']}' is verified here but no longer "
-            f"appears in WORKSHOP.md")
+        assert any(step["command"] in text for text in texts), (
+            f"{step['module']}: '{step['command']}' is verified here but no "
+            f"longer appears in WORKSHOP.md or WORKSHOP-2H.md")
 
 
 def test_every_offline_command_still_produces_what_the_guide_promises():
     """Catches the tool being changed away from what the guide shows a room."""
     for step in OFFLINE_STEPS:
+        # a step may need state a previous command produced; evidence/ is
+        # gitignored, so a fresh clone has no report to cat until the gate runs
+        if step.get("setup"):
+            _run(step["setup"])
         code, output = _run(step["command"])
         assert code == step["exit_code"], (
             f"{step['module']}: `{step['command']}` exited {code}, "

@@ -61,12 +61,37 @@
      to create a dynamic aura, symbolizing the abstract environment in which
      data lives." Sized to topbar + masthead so the two elements paint ONE
      continuous surface with no seam between them. */
-  --aura: radial-gradient(60% 120% at 82% 10%, rgba(234, 44, 104, 0.55) 0%,
+  /* BANDING. THIS GUIDE GETS PROJECTED. A two-stop gradient in 8-bit sRGB
+     bands visibly where it crosses hue, and a projector crushes the bottom
+     two stops of contrast, so the steps that are invisible on a laptop become
+     stripes on a wall in front of a room. Three fixes, all offline:
+
+       1. `in oklab` -- interpolate perceptually, so Midnight->Crocus->Rose
+          does not swing through a muddy middle and bunch its steps there.
+       2. more stops -- an extra stop in each ramp gives the renderer more
+          places to put a transition, which spreads the error.
+       3. NOISE -- 3% feTurbulence as a data URI, which dithers the boundary
+          below the eye's threshold. A data URI is not a request, so the
+          offline guard is untouched.
+
+     The noise layer sits FIRST so it lands on top of the color ramps. */
+  --aura-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  --aura: var(--aura-noise),
+          radial-gradient(60% 120% at 82% 10% in oklab,
+                                               rgba(234, 44, 104, 0.55) 0%,
+                                               rgba(234, 44, 104, 0.34) 26%,
+                                               rgba(234, 44, 104, 0.14) 45%,
                                                rgba(234, 44, 104, 0) 60%),
-          radial-gradient(55% 110% at 58% 32%, rgba(132, 72, 150, 0.65) 0%,
+          radial-gradient(55% 110% at 58% 32% in oklab,
+                                               rgba(132, 72, 150, 0.65) 0%,
+                                               rgba(132, 72, 150, 0.40) 28%,
+                                               rgba(132, 72, 150, 0.17) 47%,
                                                rgba(132, 72, 150, 0) 62%),
-          radial-gradient(90% 140% at 10% 0%,  rgba(0, 5, 59, 1) 0%,
+          radial-gradient(90% 140% at 10% 0% in oklab,
+                                               rgba(0, 5, 59, 1) 0%,
+                                               rgba(0, 5, 59, 0.96) 30%,
                                                rgba(0, 5, 59, 0.92) 55%,
+                                               rgba(0, 5, 59, 0.91) 78%,
                                                rgba(0, 5, 59, 0.9) 100%),
           linear-gradient(var(--ink), var(--ink));
   --aura-h: 384px;          /* topbar 44 + masthead 340 */

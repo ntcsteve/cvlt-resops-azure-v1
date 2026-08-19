@@ -7,6 +7,7 @@
    introduces, which is backwards: on an editorial page the standfirst is the
    second-loudest thing after the title. */
 .standfirst { color: var(--muted); font-size: 19px; line-height: 1.5;
+  letter-spacing: -0.005em;
   margin-top: 14px; max-width: 46rem; }
 .mast-meta { color: var(--muted); font-family: var(--f-mono);
   font-size: 12px; }
@@ -17,7 +18,7 @@
   border: 1px solid var(--line); border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
-.codename span { font-size: 11px; letter-spacing: 0.08em;
+.codename span { font-size: 11px; letter-spacing: 0.10em;
   color: var(--muted); margin-right: 8px; }
 .codename.unset { color: var(--muted); font-style: italic; }
 
@@ -35,7 +36,7 @@
    to the same system as the Overview's masthead without repeating its band. */
 .kicker {
   position: relative; padding-top: 18px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
   color: var(--accent); margin: 0 0 4px;
 }
 .kicker::before {
@@ -135,7 +136,7 @@
 .diag-no { border-left-color: var(--no); background: var(--no-tint); }
 .diag-clock { border-left-color: var(--line); background: var(--clock-tint); }
 .diag-label { margin: 0; font-size: 12px; font-weight: 700;
-  letter-spacing: 0.03em; }
+  letter-spacing: 0.08em; }
 .diag-yes .diag-label { color: var(--yes); }
 .diag-no .diag-label { color: var(--no); }
 .diag-clock .diag-label { color: var(--clock); }
@@ -149,7 +150,7 @@
 /* ---- aside: the quietest block on the page ---- */
 .aside { border-left: 2px solid var(--line); padding: 2px 0 2px 14px;
   margin: 16px 0; color: var(--muted); }
-.aside-title { font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+.aside-title { font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--muted); margin: 0; }
 .aside p { margin: 10px 0; font-size: 15px; line-height: 24px; }
 .aside pre { background: var(--code-bg); border: 1px solid
@@ -182,7 +183,7 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 .dolearn-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px;
   align-items: baseline; }
 .dolearn-row span { font-size: 11px; font-weight: 700;
-  letter-spacing: 0.06em; color: var(--accent); }
+  letter-spacing: 0.10em; color: var(--accent); }
 .dolearn-row p { margin: 0; }
 
 /* ---- checkpoint card: quiet consolidation at a chapter's end ---- */
@@ -197,7 +198,7 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
                                      var(--rose) 100%);
 }
 .mark-title { margin: 0 0 4px; font-size: 12px; font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); }
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
 .mark p { margin: 4px 0; font-size: 14px; }
 .mark pre { overflow-x: auto; margin: 8px 0; }
 
@@ -205,7 +206,7 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 .reveal { border-left: 2px solid var(--line); padding: 2px 0 2px 14px;
   margin: 8px 0 16px; color: var(--muted); }
 .reveal summary { cursor: pointer; font-size: 12px; font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .reveal summary:hover { color: var(--ink); }
 .reveal div { margin-top: 6px; }
 .reveal p { margin: 6px 0; font-size: 13px; line-height: 20px; }
@@ -239,7 +240,7 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
   padding: 10px 14px 2px; margin: 0 0 20px; background: var(--code-bg);
 }
 .inherited-title {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.10em;
   text-transform: uppercase; color: var(--muted); margin: 0 0 4px;
 }
 .inherited .mark { border: 0; background: none; padding: 0; margin: 4px 0; }
@@ -249,7 +250,7 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 .aside-fold { padding-left: 14px; }
 .aside-fold > summary {
   cursor: pointer; list-style: none;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--muted);
 }
 .aside-fold > summary::-webkit-details-marker { display: none; }
@@ -337,7 +338,7 @@ h2 + .statement, h3 + .statement { margin-top: 22px; }
 .statement p {
   max-width: var(--column); margin: 0 auto;
   font-size: 34px; line-height: 1.3; font-weight: 700;
-  letter-spacing: -0.02em; color: #ffffff; text-wrap: balance;
+  letter-spacing: -0.018em; color: #ffffff; text-wrap: balance;
 }
 /* rose at full strength is 4.15:1 on white and unusable there, but this is
    Midnight: the hero card's lighter rose is already the answer for text on
@@ -381,4 +382,21 @@ h2 + .statement, h3 + .statement { margin-top: 22px; }
 .deflist-card:hover { box-shadow: var(--shadow); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
+}
+
+/* ---- the attestation block: where the expected outputs came from --------
+   Deliberately NOT a card. It is a claim about the rest of the page, so it
+   reads as part of the page, in the same label-beside-prose shape the
+   orientation lists already use. The only emphasis it gets is the accent
+   label, because the content is the emphasis. ---- */
+.attest { margin: 6px 0 34px; display: flex; flex-direction: column; gap: 14px; }
+.attest-row { display: grid; grid-template-columns: 132px 1fr; gap: 18px;
+  align-items: baseline; }
+.attest-row span {
+  font-family: var(--f-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.10em; color: var(--accent); text-transform: uppercase;
+}
+.attest-row p { margin: 0; color: var(--muted); }
+@media (max-width: 620px) {
+  .attest-row { grid-template-columns: 1fr; gap: 4px; }
 }

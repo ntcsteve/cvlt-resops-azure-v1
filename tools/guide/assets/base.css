@@ -19,14 +19,31 @@ body {
    last two are the SAME level and deliberately look identical, because a
    page whose title came from a `## ` heading renders its sections as h2. */
 h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
+/* THE TRACKING LADDER. Arial is spaced for roughly 12px, so every size away
+   from that needs a correction: negative going up, positive going down. Ours
+   was half-built -- the two display sizes and the uppercase labels were
+   tracked, and 22/19/17 carried nothing, which is the middle of the scale
+   where most of the page lives. Untracked large Arial is one of the loudest
+   "this was not art directed" signals available.
+
+     44 h1          -0.022em
+     34 statement   -0.018em
+     22 h2          -0.011em
+     19 standfirst  -0.005em
+     17 h3           0          correct as set
+     16 body         0          correct as set
+     11-13 UC labels +0.08 to +0.10em
+*/
+
 /* ONE h1 for the whole app. The Overview used to override this to 72px, which
    needed 747px on one line and was given 488px by the masthead grid, so it
    wrapped -- and "DevOps Meets ResOps" is THREE words, so its only two-line
    breaks are 472/236 and 236/511. Neither is a rag you can set. Measured in
    the browser at 488px available: 48px needs 498 and overflows, 46px needs
    477, 44px needs 457. 44 is the largest with slack worth trusting. */
-h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.025em; }
-h2 { font-size: 22px; font-weight: 700; margin: 52px 0 14px; }
+h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.022em; }
+h2 { font-size: 22px; font-weight: 700; margin: 52px 0 14px;
+  letter-spacing: -0.011em; }
 h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
 /* SPACE REPLACES LINES. A topic transition used to be marked with a hairline.
    It is now marked with silence: 64px of it, which reads as a break at a

@@ -11,6 +11,7 @@ participant; the build refuses a codename that leaks into a command block.
 
 import argparse
 import base64
+import json
 import re
 import sys
 from pathlib import Path
@@ -114,6 +115,49 @@ def check_expected_output(workshop):
     scan(workshop["close"], "close page")
 
 
+def attestation_facts(md_text):
+    """Where the ```attestation block's numbers come from.
+
+    Read from the machinery that ENFORCES the claim, never from prose: the
+    offline step list that pytest re-runs, and the walk record that the walk
+    guard defends. A hand-written provenance line is the failure this whole
+    block exists to avoid.
+
+    DETERMINISM. dist/ is committed and byte-compared, so nothing here may
+    change without a source change. No elapsed-days count, no HEAD sha. The
+    walk record's own date and commit are stable until somebody walks again,
+    which is precisely the event that should move this text.
+    """
+    steps = REPO / "tests" / "test_workshop_guide.py"
+    covered = []
+    if steps.is_file():
+        src = steps.read_text(encoding="utf-8")
+        # "command": "..."  and the parenthesized multi-line form
+        for m in re.finditer(r'"command":\s*\(?\s*((?:"[^"]*"\s*)+)\)?', src):
+            covered.append("".join(re.findall(r'"([^"]*)"', m.group(1))))
+
+    cmds = [c.strip() for c in re.findall(r"```bash\n(.*?)\n```", md_text, re.S)]
+    verified = [c for c in cmds if c in covered]
+
+    # THREE buckets, not two. Subtracting verified from total would count the
+    # `cd`/`source .venv` block as needing an Azure subscription, which is the
+    # small kind of untruth this whole block exists to prevent.
+    LIVE = ("terraform ", "az ", "resops.operator.op ")
+    live = [c for c in cmds if c not in verified
+            and any(k in c for k in LIVE)]
+    local = [c for c in cmds if c not in verified and c not in live]
+
+    facts = {"total": len(cmds), "verified": len(verified),
+             "live": len(live), "local": len(local)}
+
+    record = REPO / "tests" / "workshop_walk.json"
+    if record.is_file():
+        rec = json.loads(record.read_text(encoding="utf-8"))
+        facts["walked_at"] = rec.get("walked_at")
+        facts["walked_commit"] = rec.get("walked_commit")
+    return facts
+
+
 def check_offline(page):
     """The whole point is a file that works with the network off."""
     external = re.findall(r'(?:src|href)="(https?://[^"]+)"', page)
@@ -155,7 +199,9 @@ def build(md_path, out_path, codename=None, mode="solo"):
     }
     brand["favicon"] = brand["mark"]      # the tab gets the hexagon too
 
-    page = render.render_document(workshop, css, js, images, brand, mode, icons)
+    attest = attestation_facts(text)
+    page = render.render_document(workshop, css, js, images, brand, mode,
+                                  icons, attest)
     check_offline(page)
     if codename:
         check_codename(page, codename)

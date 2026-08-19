@@ -165,11 +165,23 @@ def classify_fence(lang, body, fence_line):
         return ("statement", [l.strip() for l in body if l.strip()])
     if lang in ("list", "list card"):
         return ("deflist", list_rows(body, fence_line + 1), lang == "list card")
+    if lang == "attestation":
+        # The AUTHOR chooses where this goes; the BUILD decides what it says,
+        # from tests/workshop_walk.json and the offline step list. A body is
+        # refused outright, because a hand-written provenance claim is the
+        # exact failure this block exists to avoid -- Google Codelabs stamps
+        # "last updated 2026-03-20" on a page teaching Node 12.
+        if any(l.strip() for l in body):
+            raise SystemExit(
+                f"line {fence_line}: ```attestation takes NO body. What it "
+                "says is generated from the walk record; writing it by hand "
+                "is how a freshness stamp becomes a lie.")
+        return ("attestation",)
     if lang != "":
         raise SystemExit(
             f"line {fence_line}: unknown fence language {lang!r}; the "
             "dialect knows ```bash, ```list, ```list card, ```statement, "
-            "```hero and plain fences only")
+            "```hero, ```attestation and plain fences only")
     first = next((l.strip() for l in body if l.strip()), "")
     if first and first[0] in GLYPHS:
         return ("diag", diag_rows(body, fence_line + 1))
