@@ -479,7 +479,8 @@ SOURCE_SUFFIXES = (".md", ".py", ".css", ".yaml", ".yml", ".sh", ".tf",
                    ".json", ".html", ".example")
 
 BRITISH = (
-    (r"[a-z]+is(?:e|es|ed|ing|ation|ations)", "-ise/-isation -> -ize/-ization"),
+    (r"[a-z]+is(?:e|es|ed|ing|er|ers|able|ables|ability|ation|ations)",
+     "-ise/-isable/-isation -> -ize/-izable/-ization"),
     (r"[a-z]+our",                            "-our -> -or"),
     (r"[a-z]+(?:tre|bre)(?:s|d)?",            "-re -> -er"),
     (r"defence|licence|offence|pretence",     "-ence -> -ense"),
@@ -504,6 +505,9 @@ NOT_BRITISH = {
     "promise", "promised", "promises", "raise", "raised", "raises", "raising",
     "revise",
     "revised", "rise", "rises", "rising", "stepwise", "supervise", "surprise",
+    "advisable", "adviser", "advisers", "disable", "disabled", "disables",
+    "miser", "raiser", "raisers", "riser",
+    "risers", "wiser",
     "surprised", "surprises", "surprising", "wise",
     "are", "before", "core", "explore", "figure", "future", "genre", "here",
     "ignore", "more", "nature", "restore", "score", "store", "structure",

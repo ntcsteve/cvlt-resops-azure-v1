@@ -28,7 +28,7 @@ Four rules, and every one of them exists because breaking it produces a *silent*
 
 **3. Print the verdict last, then stop.** A script that prints `OK:` and then crashes attests clean. Prove everything first, announce at the end.
 
-**4. No verdict line means UNATTESTED, not clean.** If the script is missing, unreadable, or produces nothing recognisable, the drill records `clean: null` and the Scan rung **blocks**. That is deliberate. A check that ran nothing must never report a pass.
+**4. No verdict line means UNATTESTED, not clean.** If the script is missing, unreadable, or produces nothing recognizable, the drill records `clean: null` and the Scan rung **blocks**. That is deliberate. A check that ran nothing must never report a pass.
 
 ## The skeleton
 

@@ -80,7 +80,7 @@ def parse_verdict(stdout: str) -> tuple[bool | None, str]:
       • the FIRST matching line wins and parsing stops – so a verdict message
         wrapped over two lines is truncated mid-sentence into the attestation,
         the gate reason and the evidence bundle. It has happened once already.
-      • no recognisable line means UNATTESTED (None), never clean. A script that
+      • no recognizable line means UNATTESTED (None), never clean. A script that
         crashed before printing must not read as a pass.
       • the line is authoritative, not the exit code: a shell script has many ways
         to exit non-zero that say nothing about the data.
