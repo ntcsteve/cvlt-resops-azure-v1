@@ -11,7 +11,7 @@
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
   "walked_at": "2026-08-19",
-  "walked_commit": "6a5991f",
+  "walked_commit": "32b870b",
   "verified": {
     "M4.1  op gate -> ●●●●●● VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
@@ -164,5 +164,10 @@
     "the four words, and where they live": "run_restore.py:207 'SANITIZE BEFORE PRINTING' is a comment heading. metrics.py:59 'would be theater' is inside a docstring. op.py:374 'materialized view' is a comment. __main__.py:289 'str() normalizes both' is a docstring. None is reachable by print().",
     "the two words that WERE shipped are in the guide, not the engine": "'authorises' and 'practise' were in WORKSHOP-2H.md, which builds dist/preview*.html. That is the participant guide, not WORKSHOP.md's live half, and the previews were rebuilt and byte-compared by their own guard. No live box is involved.",
     "parser.py labelled -> labeled is the guide builder": "It renames a private helper in tools/guide/, which no WORKSHOP.md box quotes and which the byte-identical preview rebuild covers."
+  },
+  "reviewed_not_re_walked_at_32b870b": {
+    "_why": "32b870b widened the spelling guard's pattern past -ise and fixed the two -isable spellings that had been walking through it. One was in run_restore.py, so the guard fired. Comment-only, proved the same way as at 21f4a9d rather than by re-reading the line.",
+    "AST, not eyes": "run_restore.py parsed at HEAD~1 and HEAD: 154 non-docstring string constants, identical sets. The changed word sits in the comment block explaining why an unreadable verdict line must read UNATTESTED and not clean. Nothing can print it.",
+    "this guard now fires on almost every commit, and that is fine": "Eight firings, eight times right. It cannot pass inside the commit that trips it, because the record names the commit it vouches for. Treat a red walk immediately after a resops/ commit as the guard working, and answer it with a proof, never with a pointer bump."
   }
 }
