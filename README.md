@@ -41,8 +41,8 @@ Two different things live in this repo, and it's worth knowing which one you're 
    VERIFY.md        how do I write the one file nobody can write for me?
 
  THE FACILITATED DAY – one room, two lengths, same commands
-   WORKSHOP.md      6h35m · five modules · you WRITE an attester
-   WORKSHOP-2H.md   2h    · eight beats · you WIN THE ARGUMENT
+   WORKSHOP.md      6h35m · five modules   · you WRITE an attester
+   WORKSHOP-2H.md   2h    · seven chapters · you WIN THE ARGUMENT
    WORKSHEETS.md    six printable sheets (the 2h form uses only sheet 1)
    (a facilitator runbook exists and is shared directly, not published –
     it carries delivery coaching and tenant-specific detail)
