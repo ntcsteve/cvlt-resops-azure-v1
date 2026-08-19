@@ -116,7 +116,13 @@ body {
    last two are the SAME level and deliberately look identical, because a
    page whose title came from a `## ` heading renders its sections as h2. */
 h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
-h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.025em; }
+/* ONE h1 for the whole app. The Overview used to override this to 72px, which
+   needed 747px on one line and was given 488px by the masthead grid, so it
+   wrapped -- and "DevOps Meets ResOps" is THREE words, so its only two-line
+   breaks are 472/236 and 236/511. Neither is a rag you can set. Measured in
+   the browser at 488px available: 48px needs 498 and overflows, 46px needs
+   477, 44px needs 457. 44 is the largest with slack worth trusting. */
+h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.025em; }
 h2 { font-size: 22px; font-weight: 700; margin: 52px 0 14px; }
 h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
 /* SPACE REPLACES LINES. A topic transition used to be marked with a hairline.
@@ -726,22 +732,27 @@ main { padding: 0 40px 64px; }
 }
 #page-overview {
   padding-top: 0;          /* flush to the topbar: they are one surface */
-  min-height: calc(var(--aura-h) - var(--topbar-h));
 }
 /* ---- the masthead: title left, terminal transcript right. Dropbox's
        developer guides use exactly this shape, and Grammarly floats a code
        card in its hero. The right-hand 40% used to be empty. ---- */
+/* THE MASTHEAD OWNS THE AURA'S HEIGHT, not the page. This min-height used to
+   sit on #page-overview, which made the SECTION fill the aura while the
+   masthead inside it stayed short -- so the next heading flowed up into the
+   dark and rendered navy-on-navy. Put on .mast, it guarantees the masthead
+   reaches the bottom of the gradient, so body content always starts below it. */
 .mast {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
   gap: 40px; align-items: start; padding: 34px 0 40px;
+  min-height: calc(var(--aura-h) - var(--topbar-h));
+  box-sizing: border-box;
 }
 #page-overview .page-head { padding-top: 0; border-bottom: 0;
   margin-bottom: 12px; }
-/* COVER VOLUME. The Overview is the cover; a chapter is an interior opener.
-   Both were 40px, which is why the document read at one volume from the
-   first page to the last. */
-#page-overview .page-head h1 { color: #ffffff; font-size: 72px;
-  letter-spacing: -0.03em; line-height: 1.02; }
+/* The Overview title takes its SIZE from base.css like every other h1 and
+   overrides only what the dark masthead needs, which is the color. An
+   Overview-specific size is what put a 747px title into a 488px column. */
+#page-overview .page-head h1 { color: #ffffff; }
 #page-overview .standfirst { color: var(--topbar-fg); }
 #page-overview .standfirst strong { color: #ffffff; }
 #page-overview .mast-meta { color: var(--topbar-dim); }
@@ -769,9 +780,28 @@ main { padding: 0 40px 64px; }
 .hero-card .v-yes { color: #7fd48f; }
 .hero-card .v-no  { color: #ff8fae; }
 
-@media (max-width: 1100px) {
+/* THE MASTHEAD SPLITS ONLY WHEN BOTH HALVES CAN HAVE THEIR FULL MEASURE.
+   The split gives the title `column - 27rem card - 40px gap`. The column is
+   min(60rem, viewport - 380), so that left half is 488px only while the
+   column is at its full 60rem, which needs a viewport of 1340px or more.
+   Below that the left half shrinks fast -- 428px at 1280, 249px at 1120 --
+   while the 44px title still needs 461px, so it wrapped to two lines on a
+   1280x800 laptop and THREE at 1120. The old breakpoint was 1100px, which
+   left a 240px band of very common widths broken.
+
+   One column below 1340 gives the title min(60rem, viewport - 380), which is
+   932px at 1340 and 501px at 881: it fits with room the whole way down. */
+@media (max-width: 1340px) {
   .mast { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  #page-overview .page-head h1 { font-size: 44px; }
+  /* THE AURA HAS TO COVER THE MASTHEAD IT SITS BEHIND. Stacked, the masthead
+     is 471-557px tall depending on how the standfirst wraps, against a 384px
+     aura -- so the transcript card ran off the bottom of the gradient onto
+     white, and its fill is rgba(0,5,59,0.42), which over white is grey. It
+     looked like a rendering fault. Measured card bottoms: 499 at 1340, 556
+     at 900, 561 at 390. 600 clears all of them.
+     This was already wrong below 1100px before the breakpoint moved; the
+     breakpoint change only made it easy to see. */
+  :root { --aura-h: 600px; }
 }
 
 /* On paper there is no aura, so the masthead's white text needs ink. */

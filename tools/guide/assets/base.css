@@ -19,7 +19,13 @@ body {
    last two are the SAME level and deliberately look identical, because a
    page whose title came from a `## ` heading renders its sections as h2. */
 h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
-h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.025em; }
+/* ONE h1 for the whole app. The Overview used to override this to 72px, which
+   needed 747px on one line and was given 488px by the masthead grid, so it
+   wrapped -- and "DevOps Meets ResOps" is THREE words, so its only two-line
+   breaks are 472/236 and 236/511. Neither is a rag you can set. Measured in
+   the browser at 488px available: 48px needs 498 and overflows, 46px needs
+   477, 44px needs 457. 44 is the largest with slack worth trusting. */
+h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.025em; }
 h2 { font-size: 22px; font-weight: 700; margin: 52px 0 14px; }
 h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
 /* SPACE REPLACES LINES. A topic transition used to be marked with a hairline.

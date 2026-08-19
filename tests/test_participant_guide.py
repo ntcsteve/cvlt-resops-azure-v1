@@ -678,33 +678,73 @@ def test_a_chapter_closes_as_deliberately_as_it_opens(page):
     assert ".kicker::before" in page
 
 
-def test_the_document_has_more_than_one_volume(page):
-    """The scale ran 16px body to 40px title -- 2.5x -- and the Overview and a
-    chapter title were the SAME 40px, so the cover and the interior read at
-    one volume. Editorial references run 6-10x. This pins the range and, more
-    importantly, pins that the cover is louder than an opener.
+def test_one_h1_size_and_the_masthead_title_fits_on_one_line(page):
+    """The Overview title must not carry its own font-size.
 
-    It exists because the 72px edit silently did nothing the first time: the
-    replacement string had the wrong indent and no assert, and the narrow
-    rule landed while the wide one did not, leaving the title BIGGER on a
-    phone than on a laptop. A number nobody checks is a number that drifts."""
+    It did, at 72px, and the masthead grid gives the title 488px while 72px
+    needs 747px on one line. It wrapped, and "DevOps Meets ResOps" is THREE
+    words, so its only two-line breaks are 472/236 and 236/511 -- neither is a
+    rag anyone would set, and text-wrap:balance has nothing to choose between.
+
+    MEASURED IN CHROME at 1512px, 488px of column available:
+
+        48px -> 498px   overflows by 10
+        46px -> 477px   11px slack, 2%
+        44px -> 457px   31px slack, 7%     <- chosen
+
+    A unit test cannot measure shaped text, so it pins the three inputs that
+    measurement depended on. If any of them moves, redo the measurement rather
+    than adjusting the number here."""
     import re
+    # 1. exactly one h1 size, and the Overview overrides only its color
+    m = re.search(r"\nh1 \{ font-size: (\d+)px", page)
+    assert m, "the base h1 size is gone"
+    assert int(m.group(1)) <= 46, (
+        f"h1 is {m.group(1)}px; 48 overflows the masthead column by 10px")
+    assert "#page-overview .page-head h1 { color: #ffffff; }" in page, (
+        "the Overview title has its own rule again; if it carries a font-size, "
+        "the 488px column is what it has to fit")
+
+    # 2. the geometry the measurement assumed
+    assert "grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);" in page
+    assert "--column:      60rem;" in page or "--column: 60rem;" in page
+
+    # 3. the rest of the scale keeps its ordering
     def size(rx):
-        m = re.search(rx, page, re.S)
-        assert m, f"could not find {rx!r} -- the scale moved"
-        return int(m.group(1))
+        mm = re.search(rx, page, re.S)
+        assert mm, f"could not find {rx!r}"
+        return int(mm.group(1))
+    h1v   = int(m.group(1))
+    thesis = size(r"\.statement p \{[^}]*?font-size: (\d+)px")
+    h2v    = size(r"\nh2 \{ font-size: (\d+)px")
+    deck   = size(r"\.standfirst \{ color: var\(--muted\); font-size: (\d+)px")
+    assert h1v > thesis > h2v > deck > 16, "the scale lost its ordering"
 
-    cover   = size(r"#page-overview \.page-head h1 \{ color: #ffffff; font-size: (\d+)px")
-    narrow  = size(r"#page-overview \.page-head h1 \{ font-size: (\d+)px")
-    opener  = size(r"\nh1 \{ font-size: (\d+)px")
-    thesis  = size(r"\.statement p \{[^}]*?font-size: (\d+)px")
-    deck    = size(r"\.standfirst \{ color: var\(--muted\); font-size: (\d+)px")
-    body    = 16
 
-    assert cover > opener, "the cover and the interior are at one volume again"
-    assert narrow < cover, "the title is larger on a phone than on a laptop"
-    assert opener > thesis > deck > body, "the scale lost its ordering"
-    assert cover / body >= 4, f"scale range is only {cover / body:.1f}x"
+def test_the_masthead_owns_the_aura_height_not_the_page(page):
+    """The dark surface has to be exactly as tall as the masthead in front of
+    it, and the element that guarantees that must be the masthead.
+
+    When the min-height sat on #page-overview, the SECTION filled the aura
+    while the masthead inside it stayed short, so the next heading flowed up
+    into the dark and rendered navy on navy. Measured at 1280, 1100, 880 and
+    600 the first h2 sat 4 to 33px ABOVE the bottom of the gradient.
+
+    Verified in Chrome across 1600, 1512, 1341, 1340, 1280, 1200, 1100, 900,
+    881, 880, 768, 600, 430 and 390: a uniform 52px gap between the aura and
+    the first heading, the transcript card inside the gradient at every one,
+    the title on one line at every one, and no horizontal overflow."""
+    assert "min-height: calc(var(--aura-h) - var(--topbar-h));" in page
+    mast = page.index(".mast {")
+    assert "min-height: calc(var(--aura-h) - var(--topbar-h));" in page[mast:mast + 400], (
+        "the aura's min-height is not on .mast; if it moves back to the page, "
+        "body text renders on the dark band again")
+    assert "#page-overview {\n  padding-top: 0;" in page
+    ov = page.index("#page-overview {")
+    assert "min-height" not in page[ov:ov + 160], (
+        "#page-overview has a min-height again")
+    # the masthead splits only while the column is at full measure
+    assert "@media (max-width: 1340px) {" in page
 
 
 def test_sections_are_divided_by_space_not_by_a_rule(page):
