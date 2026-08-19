@@ -350,6 +350,11 @@ def build_pages(ws, images, mode, icons=None):
         pages.append({
             "route": f"#/{shown}", "pid": f"page-{shown}",
             "title": f"{shown}. {ch['name']}",
+            # The KICKER already says CHAPTER 3. Printing "3." again in a 48px
+            # h1 says it twice, which was invisible at 40px and is not now.
+            # `title` keeps the number because the browser tab, the sidebar
+            # and the breadcrumb all need it to sort and locate.
+            "heading": ch["name"],
             "crumb": f"Chapter {shown}",
             "kicker": f"CHAPTER {shown}", "icon": ch.get("icon"),
             "body": band + render_body(body_nodes, images, mode, icons),
@@ -418,7 +423,8 @@ def render_page_sections(ws, pages):
             kicker = (f'<p class="kicker">{esc(page["kicker"])}</p>'
                       if page["kicker"] else "")
             head = (f'{kicker}<header class="page-head">'
-                    f'<h1>{esc(page["title"])}</h1></header>')
+                    f'<h1>{esc(page.get("heading") or page["title"])}'
+                    f'</h1></header>')
         pager = render_pager(pages, k)
         out.append(
             f'<section class="page" id="{page["pid"]}" '

@@ -116,13 +116,17 @@ body {
    last two are the SAME level and deliberately look identical, because a
    page whose title came from a `## ` heading renders its sections as h2. */
 h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
-h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; }
+h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.025em; }
 h2 { font-size: 22px; font-weight: 700; margin: 52px 0 14px; }
 h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
-/* A hairline marks the topic transition, so a four-section chapter reads as
-   four sections rather than one long scroll. No container, one rule. */
-h2.section, .page > h3 { border-top: 1px solid var(--line); padding-top: 30px; }
-.dolearn + h2.section, .page-head + h2.section { border-top: 0; padding-top: 0; }
+/* SPACE REPLACES LINES. A topic transition used to be marked with a hairline.
+   It is now marked with silence: 64px of it, which reads as a break at a
+   glance and costs the page nothing. A rule that only separates is a rule
+   the eye has to filter out. The hairlines that SURVIVE are the ones that
+   carry meaning -- the aside's left rule, the verdict tint on a row, the
+   terminal's title bar. */
+h2.section, .page > h3 { margin-top: 64px; }
+.dolearn + h2.section, .page-head + h2.section { margin-top: 10px; }
 
 p { margin: 14px 0; text-wrap: pretty; }
 strong { font-weight: 600; }
@@ -186,7 +190,11 @@ main:focus-visible {
    ask for attention. */
 
 /* ---- landing header ---- */
-.standfirst { color: var(--muted); font-size: 15px; margin-top: 12px; }
+/* A deck, not a caption. This was 15px -- smaller than the 16px body it
+   introduces, which is backwards: on an editorial page the standfirst is the
+   second-loudest thing after the title. */
+.standfirst { color: var(--muted); font-size: 19px; line-height: 1.5;
+  margin-top: 14px; max-width: 46rem; }
 .mast-meta { color: var(--muted); font-family: var(--f-mono);
   font-size: 12px; }
 .mast-meta strong { color: var(--ink); font-family: var(--f-mono); }
@@ -225,8 +233,7 @@ main:focus-visible {
 }
 .page-head {
   display: flex; align-items: baseline; gap: 16px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 12px; margin-bottom: 16px;
+  margin-bottom: 30px;    /* space, not a rule -- see base.css */
 }
 /* ---- the step rail: a command opens a step, its checks hang off it.
        Structure derived from authored order, never invented content. ---- */
@@ -353,11 +360,11 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
 /* ---- do/learn strip: the chapter's orientation, first thing on the page.
        Two labeled rows, hairline box, no tint: informative, not loud. ---- */
+/* The strip is three labeled lines, not a card. The accent-colored labels
+   already say "this is the orientation"; a border around them said it twice. */
 .dolearn {
-  border: 1px solid var(--line); border-left: 3px solid var(--accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  padding: 10px 14px; margin: 16px 0;
-  display: flex; flex-direction: column; gap: 6px;
+  padding: 0; margin: 4px 0 30px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .dolearn-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px;
   align-items: baseline; }
@@ -488,13 +495,54 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
        the whole day and it was rendering as grey mono in a box identical to
        every other panel. The bolded line takes Rose, because it is the one
        that is not true yet. ---- */
-.statement { margin: 26px 0 30px; }
-.statement p {
-  margin: 0; font-size: 26px; line-height: 1.35; font-weight: 700;
-  letter-spacing: -0.015em; color: var(--ink); text-wrap: balance;
+/* ---- THE ONE FULL-BLEED MOMENT ----------------------------------------
+   There is exactly ONE ```statement in the guide and it carries the thesis,
+   so it gets the only break in the column: the masthead's own surface, used
+   a second time, on the page everyone lands on. A repeat is a system; a new
+   dark surface would be a stripe. If a third one ever appears, this rule is
+   wrong and the fence is being overused.
+
+   GEOMETRY, and why this is not the aura bug again. `main` starts at
+   --sidebar-w and pads 40px each side, and the page column is CENTERED
+   inside it (layout.css). So the column's center IS the content area's
+   center, and left:50% + translateX(-50%) lands exactly on it. The aura bug
+   was the opposite case: there I aligned to the VIEWPORT center while the
+   containing block sat 150px off it. Width is the content area with the
+   sidebar excluded; below 880px the sidebar is gone and it is the viewport.
+
+   The TEXT stays on the column grid while the BACKGROUND bleeds, so the
+   thesis still starts at the same left edge as every paragraph above it. ---- */
+/* A heading that introduces the band must stay attached to it; 52px of h2
+   margin plus the band's own top padding orphaned it on a field of white. */
+h2 + .statement, h3 + .statement { margin-top: 22px; }
+.statement {
+  position: relative; left: 50%; transform: translateX(-50%);
+  width: calc(100vw - var(--sidebar-w));
+  margin: 48px 0 44px; padding: 52px 40px;
+  background: var(--ink);
 }
-.statement p strong { font-weight: 700; color: var(--no); }
-@media (max-width: 620px) { .statement p { font-size: 21px; } }
+.statement p {
+  max-width: var(--column); margin: 0 auto;
+  font-size: 34px; line-height: 1.3; font-weight: 700;
+  letter-spacing: -0.02em; color: #ffffff; text-wrap: balance;
+}
+/* rose at full strength is 4.15:1 on white and unusable there, but this is
+   Midnight: the hero card's lighter rose is already the answer for text on
+   this exact surface, so it is reused rather than re-derived. */
+.statement p strong { font-weight: 700; color: #ff8fae; }
+
+@media (max-width: 880px) { .statement { width: 100vw; } }
+@media (max-width: 620px) {
+  .statement { padding: 36px 20px; margin: 36px 0 32px; }
+  .statement p { font-size: 26px; }
+}
+/* On paper there is no aura and no ink to spare. */
+@media print {
+  .statement { background: none; padding: 0; width: auto;
+    left: 0; transform: none; }
+  .statement p { color: var(--ink); }
+  .statement p strong { color: var(--ink); }
+}
 
 /* ---- a verdict row in a definition list takes the verdict's own color as a
        rule, so four opposite answers read as a shape and not as four
@@ -689,8 +737,11 @@ main { padding: 0 40px 64px; }
 }
 #page-overview .page-head { padding-top: 0; border-bottom: 0;
   margin-bottom: 12px; }
-#page-overview .page-head h1 { color: #ffffff; font-size: 40px;
-  letter-spacing: -0.02em; }
+/* COVER VOLUME. The Overview is the cover; a chapter is an interior opener.
+   Both were 40px, which is why the document read at one volume from the
+   first page to the last. */
+#page-overview .page-head h1 { color: #ffffff; font-size: 72px;
+  letter-spacing: -0.03em; line-height: 1.02; }
 #page-overview .standfirst { color: var(--topbar-fg); }
 #page-overview .standfirst strong { color: #ffffff; }
 #page-overview .mast-meta { color: var(--topbar-dim); }
@@ -720,7 +771,7 @@ main { padding: 0 40px 64px; }
 
 @media (max-width: 1100px) {
   .mast { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  #page-overview .page-head h1 { font-size: 32px; }
+  #page-overview .page-head h1 { font-size: 44px; }
 }
 
 /* On paper there is no aura, so the masthead's white text needs ink. */
@@ -805,7 +856,7 @@ source .venv/bin/activate</code></pre></div>
 <p>Write these down now and set them aside. You come back to them at the end, and the distance between your two sets of answers is the only measurement this workshop makes.</p>
 <p>Very few organizations can answer the first question with confidence. That is the industry's position today, not a judgement on any one team, and it is the reason this workshop exists. An honest low number is worth more here than a confident one.</p>
 <div class="deflist"><div class="dl-row"><span class="dl-key">1</span><div class="dl-val"><p>What percentage of your production estate could you PROVE is recoverable, right now?</p><p>Not "is backed up". Proved, by something that opened a copy and read what was inside it. A backup dashboard reports that a job ran. That is a different claim, and most estates have only that one.</p></div></div><div class="dl-row"><span class="dl-key">2</span><div class="dl-val"><p>Who would you have to convince, and what would they accept as proof?</p><p>Name a real person. An auditor accepts a document. A staff engineer accepts a command they can run themselves. Those are different artifacts, and most teams have only the first.</p></div></div><div class="dl-row"><span class="dl-key">3</span><div class="dl-val"><p>How long would producing that proof take, starting now?</p><p>Count the people who would have to be asked. Where that answer is measured in weeks, the constraint is usually organizational rather than technical.</p></div></div></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/overview">← Overview</a><a class="pager-next" href="#/1">1. Building the Workload →</a></nav></section>
-<section class="page" id="page-1" data-route="#/1" data-title="1. Building the Workload"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>1. Building the Workload</b></nav><p class="kicker">CHAPTER 1</p><header class="page-head"><h1>1. Building the Workload</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>stand up a production service, protect it, and climb it to a proven recovery</p></div><div class="dolearn-row"><span>LEARN</span><p>the three planes, the one door into a sealed VM, and what a drill actually opens</p></div><div class="dolearn-row"><span>CLAIM</span><p>most estates have never demonstrated recovery once. You will have, in twenty minutes.</p></div></div>
+<section class="page" id="page-1" data-route="#/1" data-title="1. Building the Workload"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>1. Building the Workload</b></nav><p class="kicker">CHAPTER 1</p><header class="page-head"><h1>Building the Workload</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>stand up a production service, protect it, and climb it to a proven recovery</p></div><div class="dolearn-row"><span>LEARN</span><p>the three planes, the one door into a sealed VM, and what a drill actually opens</p></div><div class="dolearn-row"><span>CLAIM</span><p>most estates have never demonstrated recovery once. You will have, in twenty minutes.</p></div></div>
 <p>One <code>terraform apply</code> gives you a real service: a VM with no public IP, no inbound rules, no way in. Everything you do to it from here travels through doors you are about to meet, and every step prints what it did so you can compare against the boxes below.</p>
 <h2 class="section">Provision the service</h2>
 <div class="steps">
@@ -861,7 +912,7 @@ vm_name        = "&lt;your-codename&gt;"</pre></div>
 <aside class="aside" role="note"><p class="aside-title">? Under the hood: what a drill restore is</p><p>An out-of-place restore builds a NEW VM from the recovery point's disk: fresh machine, fresh identity, no connection to production. The attester runs inside that copy, writes its verdict, and the copy is deleted. Production never stops, never rolls back, and never meets the restored machine. That is why drills are safe to run on any schedule: the blast radius is one disposable VM.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just built</p><p>A sealed production service, a recovery point in a vault the service itself cannot touch, and a drill that proved the point restores clean. You did in twenty minutes what most estates have never done once: recovery, demonstrated.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/setup">← Setup</a><a class="pager-next" href="#/2">2. Reading the Proof →</a></nav></section>
-<section class="page" id="page-2" data-route="#/2" data-title="2. Reading the Proof"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>2. Reading the Proof</b></nav><p class="kicker">CHAPTER 2</p><header class="page-head"><h1>2. Reading the Proof</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>read the ladder, the gate, and the contract that earned them</p></div><div class="dolearn-row"><span>LEARN</span><p>what a Service Resilience Indicator is, and what an attestation actually claims</p></div><div class="dolearn-row"><span>CLAIM</span><p>if yes is not boring, no will not mean anything.</p></div></div>
+<section class="page" id="page-2" data-route="#/2" data-title="2. Reading the Proof"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>2. Reading the Proof</b></nav><p class="kicker">CHAPTER 2</p><header class="page-head"><h1>Reading the Proof</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>read the ladder, the gate, and the contract that earned them</p></div><div class="dolearn-row"><span>LEARN</span><p>what a Service Resilience Indicator is, and what an attestation actually claims</p></div><div class="dolearn-row"><span>CLAIM</span><p>if yes is not boring, no will not mean anything.</p></div></div>
 <p>Your workload stands at the top of its ladder. Before anything gets broken, see what good looks like and where each claim comes from. This part is deliberately calm.</p>
 <h2 class="section">Read the ladder</h2>
 <div class="steps">
@@ -916,7 +967,7 @@ attestation_max_age_days</pre></div>
 <aside class="aside" role="note"><p class="aside-title">? Under the hood: what the drill writes</p><p>When a restore drill runs that script inside a restored copy, the verdict line gets captured into an attestation file: which recovery point, what was checked, what it said, when. The gate reads that file. It is evidence, not a flag somebody set, and its history is hash-chained so a rewritten past shows as a broken chain. You will watch this file lose its power in about ten minutes.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just read</p><p>A proven ladder, a per-tier bar, and a short contract owned by the people who know what "good" means for this service. Every claim traced to something you could open and read.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/1">← 1. Building the Workload</a><a class="pager-next" href="#/3">3. Introducing a Compromise →</a></nav></section>
-<section class="page" id="page-3" data-route="#/3" data-title="3. Introducing a Compromise"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>3. Introducing a Compromise</b></nav><p class="kicker">CHAPTER 3</p><header class="page-head"><h1>3. Introducing a Compromise</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>compromise the workload you built, then watch two controls catch it two different ways</p></div><div class="dolearn-row"><span>LEARN</span><p>why proof does not accumulate, and where a verdict can honestly come from</p></div><div class="dolearn-row"><span>CLAIM</span><p>green is a job status, not a verdict about your data.</p></div></div>
+<section class="page" id="page-3" data-route="#/3" data-title="3. Introducing a Compromise"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>3. Introducing a Compromise</b></nav><p class="kicker">CHAPTER 3</p><header class="page-head"><h1>Introducing a Compromise</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>compromise the workload you built, then watch two controls catch it two different ways</p></div><div class="dolearn-row"><span>LEARN</span><p>why proof does not accumulate, and where a verdict can honestly come from</p></div><div class="dolearn-row"><span>CLAIM</span><p>green is a job status, not a verdict about your data.</p></div></div>
 <p>You have a proven workload and a gate that says yes. Now break it. On purpose, with something harmless and detectable.</p>
 <p>But first, stay with this question, because the whole chapter turns on it:</p>
 <pre class="panel">Which recovery point did you just prove?</pre>
@@ -970,7 +1021,7 @@ BASELINE marker still present: yes</pre></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just proved</p><p>A green pipeline committed a compromise into an immutable vault, and the gate caught it twice: once because proof went stale, once because something looked inside.</p>
 <p>Green is a job status, not a verdict about your data.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/2">← 2. Reading the Proof</a><a class="pager-next" href="#/4">4. Choosing a Recovery Point →</a></nav></section>
-<section class="page" id="page-4" data-route="#/4" data-title="4. Choosing a Recovery Point"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>4. Choosing a Recovery Point</b></nav><p class="kicker">CHAPTER 4</p><header class="page-head"><h1>4. Choosing a Recovery Point</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>put your workload back, then pick a recovery point under the conditions that actually matter</p></div><div class="dolearn-row"><span>LEARN</span><p>why outage policy answers the wrong question under compromise, and the number that measures the right one</p></div><div class="dolearn-row"><span>CLAIM</span><p>under compromise, the freshest recovery point is the most dangerous one.</p></div></div>
+<section class="page" id="page-4" data-route="#/4" data-title="4. Choosing a Recovery Point"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>4. Choosing a Recovery Point</b></nav><p class="kicker">CHAPTER 4</p><header class="page-head"><h1>Choosing a Recovery Point</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>put your workload back, then pick a recovery point under the conditions that actually matter</p></div><div class="dolearn-row"><span>LEARN</span><p>why outage policy answers the wrong question under compromise, and the number that measures the right one</p></div><div class="dolearn-row"><span>CLAIM</span><p>under compromise, the freshest recovery point is the most dangerous one.</p></div></div>
 <h2 class="section">Put it back</h2>
 <p>First, put your own workload back. This runs while you do the exercise.</p>
 <div class="steps">
@@ -1006,7 +1057,7 @@ A   400 days ago    ●●●●●●  VALIDATED     RPO 9600.0h     HOLD</pre>
 <p>That is Mean Time to Clean Recovery. Not time to recovery. Time to CLEAN recovery. The word "clean" is the entire argument.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just decided</p><p>Recovery under compromise is a decision, made by a human, on evidence, against a clock. The tools narrow the choice; they do not make it. MTCR measures how fast your organization can make it well.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/3">← 3. Introducing a Compromise</a><a class="pager-next" href="#/5">5. Re-Proving Recovery →</a></nav></section>
-<section class="page" id="page-5" data-route="#/5" data-title="5. Re-Proving Recovery"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>5. Re-Proving Recovery</b></nav><p class="kicker">CHAPTER 5</p><header class="page-head"><h1>5. Re-Proving Recovery</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>close the loop: take a clean point, scan it, drill it, and earn the green verdict back</p></div><div class="dolearn-row"><span>LEARN</span><p>what actually restores trust after an incident, and what only looks like it does</p></div><div class="dolearn-row"><span>CLAIM</span><p>cleaning production changes nothing inside an immutable vault. Trust is re-opened, not re-assured.</p></div></div>
+<section class="page" id="page-5" data-route="#/5" data-title="5. Re-Proving Recovery"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>5. Re-Proving Recovery</b></nav><p class="kicker">CHAPTER 5</p><header class="page-head"><h1>Re-Proving Recovery</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>close the loop: take a clean point, scan it, drill it, and earn the green verdict back</p></div><div class="dolearn-row"><span>LEARN</span><p>what actually restores trust after an incident, and what only looks like it does</p></div><div class="dolearn-row"><span>CLAIM</span><p>cleaning production changes nothing inside an immutable vault. Trust is re-opened, not re-assured.</p></div></div>
 <p>Your VM is clean, but the gate still holds: the newest recovery point still contains the compromise, and cleaning production changes nothing inside an immutable vault. Trust is re-earned the same way it was earned the first time.</p>
 <h2 class="section">A clean point</h2>
 <div class="steps">
@@ -1040,7 +1091,7 @@ as clean, and does not clear the Scan rung on its own</pre></div>
 </aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just closed</p><p>Incident to trusted recovery, end to end: repair, clean point, scan, drill, gate. The verdict came back green because you re-proved it, not because time passed or a dashboard said so.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/4">← 4. Choosing a Recovery Point</a><a class="pager-next" href="#/6">6. Gating the Pipeline →</a></nav></section>
-<section class="page" id="page-6" data-route="#/6" data-title="6. Gating the Pipeline"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>6. Gating the Pipeline</b></nav><p class="kicker">CHAPTER 6</p><header class="page-head"><h1>6. Gating the Pipeline</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>run the gate across an estate, publish its numbers, and read the evidence and the CI file that make it a merge blocker</p></div><div class="dolearn-row"><span>LEARN</span><p>how a check survives contact with a real estate: the ratchet, the control evidence, and who owns what</p></div><div class="dolearn-row"><span>CLAIM</span><p>you have shifted this left three times already. This is the fourth, and it looks identical.</p></div></div>
+<section class="page" id="page-6" data-route="#/6" data-title="6. Gating the Pipeline"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>6. Gating the Pipeline</b></nav><p class="kicker">CHAPTER 6</p><header class="page-head"><h1>Gating the Pipeline</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>run the gate across an estate, publish its numbers, and read the evidence and the CI file that make it a merge blocker</p></div><div class="dolearn-row"><span>LEARN</span><p>how a check survives contact with a real estate: the ratchet, the control evidence, and who owns what</p></div><div class="dolearn-row"><span>CLAIM</span><p>you have shifted this left three times already. This is the fourth, and it looks identical.</p></div></div>
 <p>One workload proving itself is a demo. The discipline starts when the same gate runs across everything, on every pull request, publishing numbers somebody has to look at.</p>
 <h2 class="section">The estate</h2>
 <div class="steps">
@@ -1094,7 +1145,7 @@ tolerance_reason: "backup policy rebuild in flight"</pre>
 <aside class="aside" role="note"><p class="aside-title">? Will this wake someone at 3am?</p><p>No. Recoverability drift is not an incident. It fails a pull request and waits for office hours.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just wired</p><p>The fourth gate, shaped exactly like the other three: a required check, an honest number, evidence somebody outside engineering can read, and a ratchet that lets an estate adopt it without blocking releases.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/5">← 5. Re-Proving Recovery</a><a class="pager-next" href="#/7">7. Cleaning Up →</a></nav></section>
-<section class="page" id="page-7" data-route="#/7" data-title="7. Cleaning Up"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>7. Cleaning Up</b></nav><p class="kicker">CHAPTER 7</p><header class="page-head"><h1>7. Cleaning Up</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>destroy everything you built, and verify it is gone</p></div><div class="dolearn-row"><span>LEARN</span><p>why disposability is part of the discipline rather than the tidying up</p></div><div class="dolearn-row"><span>CLAIM</span><p>a drill you cannot afford to run twice is a drill you will run once.</p></div></div>
+<section class="page" id="page-7" data-route="#/7" data-title="7. Cleaning Up"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>7. Cleaning Up</b></nav><p class="kicker">CHAPTER 7</p><header class="page-head"><h1>Cleaning Up</h1></header><div class="dolearn"><div class="dolearn-row"><span>DO</span><p>destroy everything you built, and verify it is gone</p></div><div class="dolearn-row"><span>LEARN</span><p>why disposability is part of the discipline rather than the tidying up</p></div><div class="dolearn-row"><span>CLAIM</span><p>a drill you cannot afford to run twice is a drill you will run once.</p></div></div>
 <p>Everything you built is real, and it bills until it is gone: a VM, a disk, a storage account, a virtual network, and a protected workload on a backup platform.</p>
 <p>This is also the last time today you get to practice the only habit that has mattered all workshop. Something is about to report success. You are not going to believe it until you have opened the environment and read it yourself.</p>
 <h2 class="section">Retire the workload</h2>

@@ -165,8 +165,11 @@ main { padding: 0 40px 64px; }
 }
 #page-overview .page-head { padding-top: 0; border-bottom: 0;
   margin-bottom: 12px; }
-#page-overview .page-head h1 { color: #ffffff; font-size: 40px;
-  letter-spacing: -0.02em; }
+/* COVER VOLUME. The Overview is the cover; a chapter is an interior opener.
+   Both were 40px, which is why the document read at one volume from the
+   first page to the last. */
+#page-overview .page-head h1 { color: #ffffff; font-size: 72px;
+  letter-spacing: -0.03em; line-height: 1.02; }
 #page-overview .standfirst { color: var(--topbar-fg); }
 #page-overview .standfirst strong { color: #ffffff; }
 #page-overview .mast-meta { color: var(--topbar-dim); }
@@ -196,7 +199,7 @@ main { padding: 0 40px 64px; }
 
 @media (max-width: 1100px) {
   .mast { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  #page-overview .page-head h1 { font-size: 32px; }
+  #page-overview .page-head h1 { font-size: 44px; }
 }
 
 /* On paper there is no aura, so the masthead's white text needs ink. */

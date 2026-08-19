@@ -3,7 +3,11 @@
    ask for attention. */
 
 /* ---- landing header ---- */
-.standfirst { color: var(--muted); font-size: 15px; margin-top: 12px; }
+/* A deck, not a caption. This was 15px -- smaller than the 16px body it
+   introduces, which is backwards: on an editorial page the standfirst is the
+   second-loudest thing after the title. */
+.standfirst { color: var(--muted); font-size: 19px; line-height: 1.5;
+  margin-top: 14px; max-width: 46rem; }
 .mast-meta { color: var(--muted); font-family: var(--f-mono);
   font-size: 12px; }
 .mast-meta strong { color: var(--ink); font-family: var(--f-mono); }
@@ -42,8 +46,7 @@
 }
 .page-head {
   display: flex; align-items: baseline; gap: 16px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 12px; margin-bottom: 16px;
+  margin-bottom: 30px;    /* space, not a rule -- see base.css */
 }
 /* ---- the step rail: a command opens a step, its checks hang off it.
        Structure derived from authored order, never invented content. ---- */
@@ -170,11 +173,11 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
 /* ---- do/learn strip: the chapter's orientation, first thing on the page.
        Two labeled rows, hairline box, no tint: informative, not loud. ---- */
+/* The strip is three labeled lines, not a card. The accent-colored labels
+   already say "this is the orientation"; a border around them said it twice. */
 .dolearn {
-  border: 1px solid var(--line); border-left: 3px solid var(--accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  padding: 10px 14px; margin: 16px 0;
-  display: flex; flex-direction: column; gap: 6px;
+  padding: 0; margin: 4px 0 30px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .dolearn-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px;
   align-items: baseline; }
@@ -305,13 +308,54 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
        the whole day and it was rendering as grey mono in a box identical to
        every other panel. The bolded line takes Rose, because it is the one
        that is not true yet. ---- */
-.statement { margin: 26px 0 30px; }
-.statement p {
-  margin: 0; font-size: 26px; line-height: 1.35; font-weight: 700;
-  letter-spacing: -0.015em; color: var(--ink); text-wrap: balance;
+/* ---- THE ONE FULL-BLEED MOMENT ----------------------------------------
+   There is exactly ONE ```statement in the guide and it carries the thesis,
+   so it gets the only break in the column: the masthead's own surface, used
+   a second time, on the page everyone lands on. A repeat is a system; a new
+   dark surface would be a stripe. If a third one ever appears, this rule is
+   wrong and the fence is being overused.
+
+   GEOMETRY, and why this is not the aura bug again. `main` starts at
+   --sidebar-w and pads 40px each side, and the page column is CENTERED
+   inside it (layout.css). So the column's center IS the content area's
+   center, and left:50% + translateX(-50%) lands exactly on it. The aura bug
+   was the opposite case: there I aligned to the VIEWPORT center while the
+   containing block sat 150px off it. Width is the content area with the
+   sidebar excluded; below 880px the sidebar is gone and it is the viewport.
+
+   The TEXT stays on the column grid while the BACKGROUND bleeds, so the
+   thesis still starts at the same left edge as every paragraph above it. ---- */
+/* A heading that introduces the band must stay attached to it; 52px of h2
+   margin plus the band's own top padding orphaned it on a field of white. */
+h2 + .statement, h3 + .statement { margin-top: 22px; }
+.statement {
+  position: relative; left: 50%; transform: translateX(-50%);
+  width: calc(100vw - var(--sidebar-w));
+  margin: 48px 0 44px; padding: 52px 40px;
+  background: var(--ink);
 }
-.statement p strong { font-weight: 700; color: var(--no); }
-@media (max-width: 620px) { .statement p { font-size: 21px; } }
+.statement p {
+  max-width: var(--column); margin: 0 auto;
+  font-size: 34px; line-height: 1.3; font-weight: 700;
+  letter-spacing: -0.02em; color: #ffffff; text-wrap: balance;
+}
+/* rose at full strength is 4.15:1 on white and unusable there, but this is
+   Midnight: the hero card's lighter rose is already the answer for text on
+   this exact surface, so it is reused rather than re-derived. */
+.statement p strong { font-weight: 700; color: #ff8fae; }
+
+@media (max-width: 880px) { .statement { width: 100vw; } }
+@media (max-width: 620px) {
+  .statement { padding: 36px 20px; margin: 36px 0 32px; }
+  .statement p { font-size: 26px; }
+}
+/* On paper there is no aura and no ink to spare. */
+@media print {
+  .statement { background: none; padding: 0; width: auto;
+    left: 0; transform: none; }
+  .statement p { color: var(--ink); }
+  .statement p strong { color: var(--ink); }
+}
 
 /* ---- a verdict row in a definition list takes the verdict's own color as a
        rule, so four opposite answers read as a shape and not as four

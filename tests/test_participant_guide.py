@@ -678,9 +678,53 @@ def test_a_chapter_closes_as_deliberately_as_it_opens(page):
     assert ".kicker::before" in page
 
 
-def test_sections_are_divided(page):
-    """"Section dividers mark topic transitions between documentation
-    sections", and they are a different device from a callout. A four-section
-    chapter now reads as four sections rather than one scroll."""
-    assert "h2.section, .page > h3 { border-top: 1px solid var(--line);" in page
-    assert ".dolearn + h2.section, .page-head + h2.section { border-top: 0;" in page
+def test_the_document_has_more_than_one_volume(page):
+    """The scale ran 16px body to 40px title -- 2.5x -- and the Overview and a
+    chapter title were the SAME 40px, so the cover and the interior read at
+    one volume. Editorial references run 6-10x. This pins the range and, more
+    importantly, pins that the cover is louder than an opener.
+
+    It exists because the 72px edit silently did nothing the first time: the
+    replacement string had the wrong indent and no assert, and the narrow
+    rule landed while the wide one did not, leaving the title BIGGER on a
+    phone than on a laptop. A number nobody checks is a number that drifts."""
+    import re
+    def size(rx):
+        m = re.search(rx, page, re.S)
+        assert m, f"could not find {rx!r} -- the scale moved"
+        return int(m.group(1))
+
+    cover   = size(r"#page-overview \.page-head h1 \{ color: #ffffff; font-size: (\d+)px")
+    narrow  = size(r"#page-overview \.page-head h1 \{ font-size: (\d+)px")
+    opener  = size(r"\nh1 \{ font-size: (\d+)px")
+    thesis  = size(r"\.statement p \{[^}]*?font-size: (\d+)px")
+    deck    = size(r"\.standfirst \{ color: var\(--muted\); font-size: (\d+)px")
+    body    = 16
+
+    assert cover > opener, "the cover and the interior are at one volume again"
+    assert narrow < cover, "the title is larger on a phone than on a laptop"
+    assert opener > thesis > deck > body, "the scale lost its ordering"
+    assert cover / body >= 4, f"scale range is only {cover / body:.1f}x"
+
+
+def test_sections_are_divided_by_space_not_by_a_rule(page):
+    """A topic transition is still marked -- a four-section chapter must read
+    as four sections rather than one scroll -- but it is marked with silence
+    rather than with a hairline. A rule that only separates is a rule the eye
+    has to filter out. This replaced the border-top device on 2026-08-19.
+
+    The hairlines that SURVIVE are the ones that carry meaning, so this also
+    pins that they did not get swept away with it."""
+    assert "h2.section, .page > h3 { margin-top: 64px; }" in page
+    assert ".dolearn + h2.section, .page-head + h2.section { margin-top: 10px; }" in page
+    assert "h2.section, .page > h3 { border-top:" not in page, (
+        "the section hairline is back; sections are divided by space now")
+    assert ".page-head {" in page and "border-bottom: 1px solid var(--line);\n  padding-bottom" not in page, (
+        "the page-head rule is back")
+    # The pager KEEPS its rule: it marks where content ends and navigation
+    # begins, which is a boundary and not merely a separation.
+    assert "margin-top: 40px; padding-top: 16px; border-top: 1px solid" in page
+    # meaning-bearing rules, still here
+    assert ".aside { border-left: 2px solid var(--line);" in page   # aside
+    assert ".diag-yes { border-left-color: var(--yes);" in page     # verdict
+    assert ".dl-key.dl-yes { border-left-color: var(--yes); }" in page

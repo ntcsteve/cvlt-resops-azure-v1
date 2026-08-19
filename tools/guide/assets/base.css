@@ -19,13 +19,17 @@ body {
    last two are the SAME level and deliberately look identical, because a
    page whose title came from a `## ` heading renders its sections as h2. */
 h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
-h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; }
+h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.025em; }
 h2 { font-size: 22px; font-weight: 700; margin: 52px 0 14px; }
 h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
-/* A hairline marks the topic transition, so a four-section chapter reads as
-   four sections rather than one long scroll. No container, one rule. */
-h2.section, .page > h3 { border-top: 1px solid var(--line); padding-top: 30px; }
-.dolearn + h2.section, .page-head + h2.section { border-top: 0; padding-top: 0; }
+/* SPACE REPLACES LINES. A topic transition used to be marked with a hairline.
+   It is now marked with silence: 64px of it, which reads as a break at a
+   glance and costs the page nothing. A rule that only separates is a rule
+   the eye has to filter out. The hairlines that SURVIVE are the ones that
+   carry meaning -- the aside's left rule, the verdict tint on a row, the
+   terminal's title bar. */
+h2.section, .page > h3 { margin-top: 64px; }
+.dolearn + h2.section, .page-head + h2.section { margin-top: 10px; }
 
 p { margin: 14px 0; text-wrap: pretty; }
 strong { font-weight: 600; }
