@@ -10,8 +10,18 @@
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; gap: 16px;
   height: var(--topbar-h); padding: 0 16px;
-  background: var(--topbar-bg); color: var(--topbar-fg);
-  box-shadow: var(--shadow-sm);
+  color: var(--topbar-fg);
+  /* the top slice of the aura, so the bar and the Overview masthead are one
+     surface. On every other page it simply reads as a richer Midnight. */
+  background: var(--aura);
+  /* border-box, not the default padding-box: the bar has 16px of horizontal
+     padding, and sampling from the padding box would offset the gradient by
+     exactly that much against main's copy. */
+  background-origin: border-box;
+  background-size: 100vw var(--aura-h);
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  box-shadow: none;          /* the bar and the masthead are one surface */
 }
 .brand {
   display: flex; align-items: center; gap: 8px;
@@ -29,6 +39,7 @@
 /* ---- sidebar ---- */
 #sidebar {
   position: fixed; top: var(--topbar-h); bottom: 0; left: 0;
+  z-index: 5;      /* above the Overview's 100vw aura, which is z-index 0 */
   width: var(--sidebar-w); overflow-y: auto;
   background: var(--bg); border-right: 1px solid var(--line);
   padding: 12px 0 24px;
@@ -46,6 +57,7 @@
   border-radius: var(--radius-md);
   color: var(--ink); text-decoration: none; font-size: 14px;
 }
+.nav-row { transition: background-color 160ms ease, color 160ms ease; }
 .nav-row:hover { background: var(--code-bg); }
 .nav-row.active {
   background: var(--accent-soft); color: var(--accent); font-weight: 600;
@@ -56,16 +68,23 @@
 .nav-name { flex: 1; }
 
 /* ---- content: full width, like Workshop Studio ---- */
-main { padding: 20px 40px 64px; }
+main { padding: 0 40px 64px; }
 
 /* ---- routing: JS adds .routed to <html>. Without it, all pages render
        stacked in document order and the guide degrades to a scroll. ---- */
 .routed main > .page { display: none; }
 .routed main > .page.active { display: block; }
-.page { padding: 4px 0 24px; }
+.page { padding: 24px 0 24px; }
 
 @media (min-width: 881px) {
   main { margin-left: var(--sidebar-w); }
+  /* The column is CENTRED in the space beside the sidebar rather than
+     pinned to it: 400px of empty space all on one side reads as a layout
+     fault, while balanced margins read as a measure, which is what it is.
+     Confirmed as the common approach in GitBook, Vercel and Confluence;
+     the alternative is a right-hand "On this page" rail, which was cut on
+     2026-08-18 as duplicating an eleven-entry sidebar. */
+  main > .page { max-width: var(--column); margin-inline: auto; }
 }
 
 @media (max-width: 880px) {
@@ -74,17 +93,121 @@ main { padding: 20px 40px 64px; }
   .brand-name, .topbar-wordmark { display: none; }
   /* position replaces identity when space is scarce; the mark stays,
      and stays a tap target back to the contents page */
-  main { padding: 16px 16px 48px; }
+  main { padding: 0 16px 48px; }
+  .page { padding: 20px 0 24px; }
   h1 { font-size: 24px; }
 }
 
 /* ---- print: the guide doubles as the handout. Chrome off, everything
        expanded, callouts keep their rules. ---- */
 @media print {
-  #topbar, #sidebar, .pager, .copy { display: none !important; }
+  #topbar, #sidebar, .pager, .copy, .skip { display: none !important; }
   .routed main > .page { display: block !important; }
   body { background: #ffffff; }
   main { margin: 0; padding: 0; }
   .page { break-after: page; }
   .cmd { border: 1px solid #999999; }
+  /* A folded aside prints CLOSED, so the ROOM build was printing with its
+     explanations missing: the whole reason they are folded is that a human
+     is delivering them, and paper has no human. On paper everything is
+     open. Same for the reveal. */
+  details > *:not(summary) { display: block !important; }
+  details > summary { list-style: none; font-weight: 700; }
+  details > summary::after { content: ""; }
+  /* Never split a command from the box that says what it should print. */
+  .step, .diag, .cmd { break-inside: avoid; }
+}
+
+/* ---- GRADIENT AURA, Overview only.
+   The brand primer: "Soft gradient shapes combine to create a dynamic aura,
+   symbolizing the abstract environment in which data lives ... used as a
+   background element where visual interest is needed."
+
+   Every example in the primer is on a dark ground, so the masthead extends
+   the Midnight topbar rather than dropping a dark band into a light page --
+   which would read as a copy-paste accident. Below it the page is white as
+   before. Pure CSS radial gradients in the three primary hues, so it costs
+   nothing offline. ---- */
+/* ONE GRADIENT, TWO ELEMENTS, ONE ORIGIN.
+   The aura used to be a full-bleed pseudo-element on the page: width 100vw,
+   left 50%, translateX(-50%). That trick centres on the CONTAINING BLOCK,
+   and the containing block is the centred page column, which the 300px
+   sidebar pushes 150px off viewport centre. So the hero sampled a slice of
+   the gradient 150px away from the slice the topbar sampled, and the two
+   disagreed across the seam.
+
+   The fix is to give both the same origin: THE VIEWPORT. The topbar's box
+   already starts at viewport x=0. main's border box starts at the sidebar
+   width, so shifting its background left by exactly that amount, and up by
+   the topbar's height, lands the gradient's 0,0 at the viewport's 0,0. Both
+   now read from one image at one position, so there is nothing to align. */
+.at-overview main {
+  background: var(--aura);
+  background-origin: border-box;
+  background-size: 100vw var(--aura-h);
+  background-position: calc(-1 * var(--sidebar-w)) calc(-1 * var(--topbar-h));
+  background-repeat: no-repeat;
+}
+@media (max-width: 880px) {
+  /* the sidebar is hidden here, so main already starts at viewport x=0 */
+  .at-overview main { background-position: 0 calc(-1 * var(--topbar-h)); }
+}
+#page-overview {
+  padding-top: 0;          /* flush to the topbar: they are one surface */
+  min-height: calc(var(--aura-h) - var(--topbar-h));
+}
+/* ---- the masthead: title left, terminal transcript right. Dropbox's
+       developer guides use exactly this shape, and Grammarly floats a code
+       card in its hero. The right-hand 40% used to be empty. ---- */
+.mast {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
+  gap: 40px; align-items: start; padding: 34px 0 40px;
+}
+#page-overview .page-head { padding-top: 0; border-bottom: 0;
+  margin-bottom: 12px; }
+#page-overview .page-head h1 { color: #ffffff; font-size: 40px;
+  letter-spacing: -0.02em; }
+#page-overview .standfirst { color: var(--topbar-fg); }
+#page-overview .standfirst strong { color: #ffffff; }
+#page-overview .mast-meta { color: var(--topbar-dim); }
+#page-overview .mast-meta strong { color: var(--topbar-name); }
+
+/* the transcript. A card, not a screenshot: it is real text, so it stays
+   selectable, searchable and legible at any zoom. */
+.hero-card {
+  display: flex; flex-direction: column;
+  font-family: var(--f-mono); font-size: 13px; line-height: 1.7;
+  background: rgba(0, 5, 59, 0.42);
+  border: 1px solid rgba(226, 227, 241, 0.18);
+  border-radius: var(--radius-md);
+  padding: 16px 18px; color: var(--topbar-fg);
+  backdrop-filter: blur(2px);
+  font-variant-numeric: tabular-nums;
+}
+.hero-cmd { color: #ffffff; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; }
+.hero-cmd i { color: var(--topbar-name); font-style: normal;
+  margin-right: 8px; }
+.hero-out { color: var(--topbar-fg); opacity: 0.86; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.hero-gap { height: 10px; }
+.hero-card .v-yes { color: #7fd48f; }
+.hero-card .v-no  { color: #ff8fae; }
+
+@media (max-width: 1100px) {
+  .mast { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  #page-overview .page-head h1 { font-size: 32px; }
+}
+
+/* On paper there is no aura, so the masthead's white text needs ink. */
+@media print {
+  .at-overview main, #topbar { background: none !important; }
+  #page-overview { min-height: 0; }
+  #page-overview .page-head h1,
+  #page-overview .standfirst,
+  #page-overview .standfirst strong { color: #000 !important; }
+  #page-overview .mast-meta, #page-overview .mast-meta strong {
+    color: #333 !important;
+  }
+  .hero-card { display: none; }
 }

@@ -1,48 +1,88 @@
 /* Design tokens. The only file where a color, font, or scale is defined.
-   Light mode only, committed: the page paints its own white everywhere.
-   Values follow the Tailwind system (4px spacing grid, slate ramp biased
-   blue to match Commvault's neutrals, one radius scale, shadow-sm only),
-   written as plain hex so any locked-down browser renders identically.
 
-   The color budget, enforced here and nowhere else:
-     crocus  -> kicker, active nav, step circles, links, Next, progress
-     green   -> the ✓ callout and PROMOTE/VALIDATED words, nothing else
-     red     -> the ✗ callout and HOLD/THREATS words, nothing else
-     everything else is ink on white with hairlines. */
+   EVERY VALUE HERE COMES FROM THE COMMVAULT BRAND IDENTITY SYSTEM, either
+   as a primary/secondary color or as a permitted tint or shade of one.
+   The primer's own words: "tints and shades of our primary and secondary
+   colors are available, and can be an effective way to add depth."
+
+     Midnight  #00053B     Crocus  #844896     Rose  #EA2C68
+     Black     #000000     Fog     #EAEAEA     White #FFFFFF
+     secondary, sparingly:  Water #3699F4   Grass #40B426   Sun #EEC901
+
+   Rose and Grass FAIL WCAG AA on white at full strength (4.15:1 and
+   2.70:1), so the verdict colors are the lightest shade of each that
+   passes. That is a brand-permitted shade, not an invented color.
+
+   The color budget:
+     crocus  -> kicker, active nav, step circles, links, Next
+     grass   -> the ✓ callout and PROMOTE/VALIDATED words, nothing else
+     rose    -> the ✗ callout and HOLD/THREATS words, nothing else
+     everything else is Midnight on White with Fog hairlines. */
 :root {
-  --bg:          #ffffff;
-  --ink:         #1b1f3b;   /* slate-900, blue-biased */
-  --muted:       #5a5f73;   /* slate-500, blue-biased */
-  --line:        #e5e7f0;   /* slate-200, blue-biased */
+  --bg:          #ffffff;   /* White */
+  --ink:         #00053b;   /* Midnight */
+  --muted:       #707391;   /* 44% tint of Midnight, lightest that holds AA */
+  --line:        #eaeaea;   /* Fog */
 
-  --accent:      #844896;   /* Commvault crocus */
-  --accent-dark: #6d3a7c;   /* hover */
-  --accent-soft: #f5eef8;   /* active nav tint, selection */
+  --accent:      #844896;   /* Crocus */
+  --accent-dark: #6d3a7c;   /* 82% shade of Crocus, for hover */
+  --accent-soft: #f5f0f7;   /* 92% tint of Crocus */
+  --rose:        #ea2c68;   /* Rose, at full strength: decorative only,
+                               never text. See --no for the AA shade. */
 
-  --yes:         #266c1c;
-  --yes-tint:    #f2f9ef;
-  --no:          #b11240;
-  --no-tint:     #fdf2f5;
-  --clock:       #5a5f73;
-  --clock-tint:  #f6f7fa;
+  --yes:         #30881c;   /* 76% shade of Grass, 4.50:1 */
+  --yes-tint:    #f3faf1;   /* 94% tint of Grass */
+  --no:          #db2961;   /* 94% shade of Rose, 4.66:1 */
+  --no-tint:     #fdf2f5;   /* 94% tint of Rose */
+  --clock:       #707391;   /* Midnight tint */
+  --clock-tint:  #f7f7f7;   /* 62% tint of Fog */
 
-  --code-bg:     #f8f8fb;
-  --code-head:   #f1f2f7;
-  --code-border: #e5e7f0;
-  --prompt:      #844896;
+  --code-bg:     #f6f6f6;   /* 55% tint of Fog */
+  --code-border: #eaeaea;   /* Fog */
+  --prompt:      #c397d8;   /* Crocus tint: the $ on a Midnight terminal */
 
-  --topbar-bg:   #00053b;   /* Commvault midnight */
-  --topbar-fg:   #e2e3f1;
+  --topbar-fg:   #e2e3f1;   /* Midnight tint, on Midnight */
   --topbar-dim:  #8b90b3;
-  --topbar-name: #c397d8;   /* crocus-400 on midnight */
+  --topbar-name: #c397d8;   /* Crocus tint, on Midnight */
 
-  --f-sans: -apple-system, 'Segoe UI', system-ui, Roboto, sans-serif;
+  /* TYPEFACE. The primer names Galano Grotesque primary and Arial as "the
+     approved system font ... available to use WITHOUT A LICENSE". Galano is
+     a licensed webfont and this build FAILS on any external reference,
+     because the guide has to open from file:// with the network off. Arial
+     is therefore the compliant choice AND the offline-safe one. */
+  --f-sans: Arial, Helvetica, sans-serif;
   --f-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   --radius-sm: 4px;
   --radius-md: 6px;
-  --shadow-sm: 0 1px 2px rgba(27, 31, 59, 0.06);
+  --shadow: 0 4px 14px rgba(0, 5, 59, 0.16);      /* tinted with Midnight */
+
+  /* GRADIENT AURA, defined once. The primer: "soft gradient shapes combine
+     to create a dynamic aura, symbolizing the abstract environment in which
+     data lives." Sized to topbar + masthead so the two elements paint ONE
+     continuous surface with no seam between them. */
+  --aura: radial-gradient(60% 120% at 82% 10%, rgba(234, 44, 104, 0.55) 0%,
+                                               rgba(234, 44, 104, 0) 60%),
+          radial-gradient(55% 110% at 58% 32%, rgba(132, 72, 150, 0.65) 0%,
+                                               rgba(132, 72, 150, 0) 62%),
+          radial-gradient(90% 140% at 10% 0%,  rgba(0, 5, 59, 1) 0%,
+                                               rgba(0, 5, 59, 0.92) 55%,
+                                               rgba(0, 5, 59, 0.9) 100%),
+          linear-gradient(var(--ink), var(--ink));
+  --aura-h: 384px;          /* topbar 44 + masthead 340 */
 
   --topbar-h: 44px;
-  --sidebar-w: 280px;
+  --sidebar-w: 300px;
+
+  /* NO PROSE MEASURE, and this is a measured decision rather than an
+     oversight. A 72ch cap was tried, then the two references this workshop
+     is modelled on were measured at 1512px:
+
+       disaster-recovery.workshop.aws   1020px prose, median 105 chars, 67% vw
+       codelabs.developers.google.com    856px prose, median  96 chars, 57% vw
+
+     Both run wide. Neither is edge-to-edge though: each has a container.
+     So the column is capped and PROSE FILLS IT, putting us between the two
+     at 960px and 63% of the viewport. */
+  --column: 60rem;
 }

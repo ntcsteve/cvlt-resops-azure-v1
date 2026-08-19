@@ -1,15 +1,15 @@
 # Worksheets
 
-> Six sheets. Print them, or copy each into a shared doc — one page per sheet.
+> Six sheets. Print them, or copy each into a shared doc – one page per sheet.
 > Sheets 2, 4 and 6 are the ones you take home and use.
 
 > Participants: [WORKSHOP.md](WORKSHOP.md) is the guide these belong to.
-> Facilitators: collect sheet 1 at M1.2 — you hand it back at the close and the
+> Facilitators: collect sheet 1 at M1.2 – you hand it back at the close and the
 > delta is the day's only measurement. The full runbook is shared directly.
 
 ```
  W1  M1.2   your number          sealed, returned at the close
- W2  M1.3   trust map            KEEP IT — scored in M5.1
+ W2  M1.3   trust map            KEEP IT – scored in M5.1
  W3  M3.2   three checks         take home
  W4  M4.2   your verify contract take home
  W5  M5     predict · choose · evidence
@@ -48,9 +48,9 @@ Name / table: ______________________
 
 # Worksheet 2 · Trust map
 
-**M1.3 · 35 minutes · KEEP THIS — it is scored in M5.1**
+**M1.3 · 35 minutes · KEEP THIS – it is scored in M5.1**
 
-**Scenario.** `orders-api`, tier-1 payments, 41,892 customer records. A deployment landed Tuesday. A storage credential with broad access was over-permissioned and used from an unrecognised address. This morning there is a `README_RECOVER.txt` in the data directory. The service is still responding. Dashboards are green.
+**Scenario.** `orders-api`, tier-1 payments, 41,892 customer records. A deployment landed Tuesday. A storage credential with broad access was over-permissioned and used from an unrecognized address. This morning there is a `README_RECOVER.txt` in the data directory. The service is still responding. Dashboards are green.
 
 Mark each and justify in one line. **UNKNOWN is a real answer and often the honest one.**
 
@@ -82,7 +82,7 @@ Mark each and justify in one line. **UNKNOWN is a real answer and often the hone
    ______________________________________________________________
 ```
 
-**5. Your backups. Trusted, untrusted, or unknown — and why?**
+**5. Your backups. Trusted, untrusted, or unknown – and why?**
 
 ```
    ☐ trusted   ☐ untrusted   ☐ unknown
@@ -126,7 +126,7 @@ Starters: a test filter that matched 0 tests · a scanner with no ruleset for th
 
 # Worksheet 4 · Your verify contract
 
-**M4.2 · 35 minutes · TAKE THIS HOME — it is L2 of the adoption ladder**
+**M4.2 · 35 minutes · TAKE THIS HOME – it is L2 of the adoption ladder**
 
 **My workload shape:** ☐ VM ☐ managed DB ☐ object storage ☐ kubernetes ☐ other ______
 
@@ -295,7 +295,7 @@ Pick exactly one. Name it. Date it.
 ### Where to start on Monday
 
 ```
- L1  SEE       resops gate — read-only, cannot mutate anything     day 1
+ L1  SEE       resops gate – read-only, cannot mutate anything     day 1
  L2  DECLARE   verify.sh for ONE tier-1 workload (worksheet 4)     week 1
  L3  PROVE     one scheduled drill. one attestation.               week 2
  L4  GATE      required check on that ONE workload. ratchet.       month 1

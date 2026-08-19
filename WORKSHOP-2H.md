@@ -5,9 +5,18 @@
 > the expected result, and every concept is proven on a live workload as
 > you go.
 
-**Level** 300-400 · **Duration** 2h facilitated, about 3h self-paced ·
-**Audience** platform engineers, SREs, cloud architects, and the people who
-fund them
+```hero
+$ op gate infra/workloads
+●●●●●●  VALIDATED  ·  RPO 0.1h
+PROMOTE  recoverability proven · exit 0
+
+$ op backup infra/workloads
+  backup Completed
+
+$ op gate infra/workloads
+●●●●●●  VALIDATED  ·  RPO 0.1h
+HOLD  attestation does not cover the newest recovery point · exit 1
+```
 
 ---
 
@@ -23,23 +32,49 @@ It is an operating model, not a product.
 
 ```
  Backup asks    do we have copies?
- DR asks        can we recover if the datacenter is down?
+ DR asks        can we recover if the data center is down?
+ BCP asks       have we written down what we would do?
  ResOps asks    can we PROVE critical services recover, clean,
                 within tolerance, on demand?
 ```
 
 Each era bolted its answer onto the last: backup, then disaster recovery,
 then cyber resilience, each arriving as a separate tool and a separate
-team. ResOps replaces the bolted-on stack with one discipline, run the way
-you already run delivery. This workshop is that discipline, in your hands,
-in one afternoon.
+team. The first three all describe intent. Only the fourth insists on
+evidence, and the difference is the whole subject of this workshop.
+
+```
+ From assumption-based resilience
+   to evidence-based, measurable, predictable recoverability.
+```
+
+That is one sentence to describe a shift that takes an afternoon to feel.
+By the end of this workshop you will have made it happen to a real service,
+with your own hands, and you will have the output to show for it.
+
+## Who this is for
+
+```list
+ LEVEL            300-400.
+ DURATION         Two hours facilitated, about three hours self-paced.
+ WRITTEN FOR      Platform engineers, SREs and cloud architects who already
+                  run CI, infrastructure as code and required checks, and
+                  the people who fund that work.
+ ASSUMES          You are comfortable with a terminal, a pull request and a
+                  cloud console. No backup or recovery background is needed.
+ NOT FOR          Teams looking for a backup product evaluation, or a
+                  step-by-step guide to configuring one. Neither is what
+                  this covers.
+ YOU WILL LEAVE   Able to explain, and to demonstrate, why recoverability
+                  belongs in the same place as your other required checks.
+```
 
 ## The one idea
 
-```
- You gate on tests.
- You gate on security scans.
- You do not gate on recoverability.
+```statement
+You gate on tests.
+You gate on security scans.
+**You do not gate on recoverability.**
 ```
 
 You have taken a whole class of failure and moved it from *we find out in
@@ -72,59 +107,112 @@ year. This workshop is about the fourth one.
 The production plane is an Azure VM running a live service, locked down
 the way production should be: no public IP, no inbound rules, no
 interactive access. All operations flow through managed control planes,
-the Azure guest agent and the Commvault API, which is exactly how the
-workshop's commands, and a real incident response, reach it.
+the Azure guest agent and the Commvault Cloud API, which is exactly how
+the workshop's commands, and a real incident response, reach it.
 
-Commvault protects that service into an air-gapped, immutable storage
-pool: the recovery plane. Nothing running on the VM can reach that pool,
-including anything an attacker plants there. Restore drills rebuild a copy
-of the service in isolation, verify it from the inside, and remove it.
+Commvault Cloud protects that service into an air-gapped, immutable
+storage pool: the recovery plane. Nothing running on the VM can reach that
+pool, including anything an attacker plants there. Restore drills rebuild a
+copy of the service in isolation, verify it from the inside, and remove it.
 
 Three planes. Trust flows one way, and every verdict in this workshop
 comes from the plane that cannot be lied to.
+
+If you have not used Commvault before, this is what you are about to touch:
+
+```list
+@cloud-server PRODUCTION PLANE   An Azure VM, built by Terraform, running a
+                    small service.
+@secure-storage RECOVERY PLANE   Commvault Cloud, protecting that VM into an
+                    immutable copy held in its own security domain, with
+                    credentials the VM never has.
+@ransomware DETECTION            A scan that opens a recovery point in the
+                    recovery plane and reads it there, without touching
+                    production.
+@vm-restore ISOLATED PLANE       An out-of-place restore: a new VM built from
+                    one recovery point, verified from the inside, then deleted.
+@command-center THE CONSOLE      Command Center, the web console the platform
+                    is operated from. You open it once in this workshop, on
+                    purpose. Everything else is API, and that is the whole
+                    argument of the day.
+```
+
+**What is portable here, and what is not.** The lab runs on
+Commvault® Cloud, powered by Metallic® AI. The discipline is the point,
+though, and it transfers to any backup platform: declare a bar per tier, open a recovery
+point and read it, gate on the result, keep the evidence. The lab is built
+on Azure and Commvault Cloud because a lab has to run on something real. In the
+toolkit itself the gate, the evidence chain, the control crosswalk and the
+metrics are vendor-neutral; the layer that reads a workload's state is not,
+and there is no second adapter today. That is stated plainly so nobody has
+to discover it later.
 
 When a concept deserves the fuller story, look for the UNDER THE HOOD notes
 as you go.
 
 ## What you will walk
 
-```
- 1  BUILD      stand up the service, protect it, climb the ladder
- 2  PROVE      read the proof: the ladder, the gate, the contract
- 3  BREAK      compromise it, and watch two controls catch it
- 4  CHOOSE     pick a recovery point under pressure
- 5  RE-PROVE   repair, then earn the green verdict back
- 6  GATE IT    make recoverability a merge blocker
- 7  OWN IT     write the argument you will actually use
+```list
+ 1 · Building the Workload      Recovery, demonstrated. Most estates have
+                                 never done it once.
+ 2 · Reading the Proof           What good looks like, on a day when yes is
+                                 boring.
+ 3 · Introducing a Compromise    Green is a job status, not a verdict about
+                                 your data.
+ 4 · Choosing a Recovery Point   Under compromise, the freshest recovery
+                                 point is the most dangerous one.
+ 5 · Re-Proving Recovery         Trust is re-opened, not re-assured.
+ 6 · Gating the Pipeline         The fourth shift-left, shaped exactly like
+                                 the other three.
+ 7 · Cleaning Up                 Disposable by design, because a drill has
+                                 to be cheap to repeat.
 ```
 
-```
- OFFLINE   no cloud, no token, instant, cannot fail
- LIVE      a real Azure VM and a real backup platform
-```
+Some of these chapters run against a real Azure VM and a real backup
+platform. The rest run entirely offline, with no cloud and no token, and
+cannot fail. Setup lists what the live half needs.
 
-In a facilitated session, chapters 1 and 5 are done for you before you
-arrive and your workload is already at `VALIDATED`.
+This page works with the network off. In a facilitated session the lab is
+provisioned, drilled and retired for you, and you arrive with your workload
+already at `VALIDATED`.
+
+**Every expected result on this page is checked against real command output
+by a test that fails if either the tool or this guide changes.** If your
+screen does not match a box, the difference is in your environment rather
+than in these instructions, and the box tells you what to do about it.
 
 ## Setup
 
 Ten minutes of readiness, so the rest of the workshop is all signal. In a
 facilitated session most of this is done for you.
 
-### Prerequisites (self-paced)
+**What you need, on the self-paced path.**
 
-```
- an Azure subscription      1 free vCPU in your region. The lab is one
-                            small VM plus a short-lived restore copy.
- a Commvault tenant         API endpoint + access token, an Azure
-                            hypervisor connection, a protection plan
-                            backed by air-gapped immutable storage
- this repository            with config/workshop.yaml filled in: your
-                            codename, subscription and plan ids
- terraform · python 3.11+   and the az CLI, logged in
+```list
+ an Azure subscription      One free vCPU in your region. The lab is one
+                            small VM, plus a short-lived restore copy.
+ Commvault Cloud            A tenant, its API endpoint, and an access token
+                            from Command Center under avatar -> Access
+                            Tokens.
+
+                            Two things inside it have to be configured, both
+                            one-time. A **hypervisor connection** is the link
+                            between Commvault Cloud and your Azure
+                            subscription. A **protection plan** is the policy
+                            saying how often to back up, how long to keep it,
+                            and to which storage. That plan must use
+                            air-gapped immutable storage, or the workshop has
+                            nothing to argue about.
+ this repository            With `config/workshop.yaml` filled in: your
+                            codename, and your subscription and plan ids.
+ terraform, python 3.11+    And the az CLI, logged in.
 ```
 
-### Before you start
+**This lab provisions real Azure resources and they bill until you retire
+them in the final chapter.** Budget eight minutes at the end, and do not
+skip it.
+
+### Prove your machine is ready
 
 ```bash
 cd ~/resops-cvlt-azure
@@ -132,30 +220,51 @@ source .venv/bin/activate
 ```
 
 ```
- ✓ YOU SHOULD SEE   the prompt change to (.venv)
- ✗ IF NOT           fix the venv before anything else; nothing below
-                    works without it. In a room: ask.
+ ✓ YOU SHOULD SEE   your shell prompt gains a (.venv) prefix. That is the whole check.
+ ✗ IF NOT           fix the virtual environment before anything else; nothing below works without it. In a room, ask now rather than when the first command runs.
 ```
 
-**WORKSHEET 1. Write it down now and set it aside.** You come back to it at
-the end, and the distance between your two answers is the only measurement
+### Three questions, before anything runs
+
+Write these down now and set them aside. You come back to them at the end,
+and the distance between your two sets of answers is the only measurement
 this workshop makes.
 
-```
- 1. What % of your production estate could you PROVE is recoverable?
- 2. How would you prove it, to someone who did not believe you?
- 3. How long would producing that proof take?
+Very few organizations can answer the first question with confidence. That
+is the industry's position today, not a judgement on any one team, and it is
+the reason this workshop exists. An honest low number is worth more here
+than a confident one.
+
+```list
+ 1   What percentage of your production estate could you PROVE is
+     recoverable, right now?
+
+     Not "is backed up". Proved, by something that opened a copy and read
+     what was inside it. A backup dashboard reports that a job ran. That
+     is a different claim, and most estates have only that one.
+ 2   Who would you have to convince, and what would they accept as proof?
+
+     Name a real person. An auditor accepts a document. A staff engineer
+     accepts a command they can run themselves. Those are different
+     artifacts, and most teams have only the first.
+ 3   How long would producing that proof take, starting now?
+
+     Count the people who would have to be asked. Where that answer is
+     measured in weeks, the constraint is usually organizational rather
+     than technical.
 ```
 
 ---
 
-## Chapter 1 · Build · ~35 min · LIVE · SOLO
+## Chapter 1 · Building the Workload · SOLO
 
 ```
- DO      stand up a production service, protect it, and climb it to
-         a proven recovery
- LEARN   the three planes, the one door into a sealed VM, where a
-         backup actually lives, and what a drill really does
+ DO      stand up a production service, protect it, and climb it to a
+         proven recovery
+ LEARN   the three planes, the one door into a sealed VM, and what a
+         drill actually opens
+ CLAIM   most estates have never demonstrated recovery once. You will
+         have, in twenty minutes.
 ```
 
 One `terraform apply` gives you a real service: a VM with no public IP, no
@@ -170,12 +279,13 @@ terraform -chdir=infra/workloads apply -auto-approve
 ```
 
 ```
- ✓ YOU SHOULD SEE   Apply complete, then Outputs: including
+ ✓ YOU SHOULD SEE   the apply finish, then print the resource group and VM name it created for you
+                    Apply complete!
+                    Outputs:
                     resource_group = "resops-<your-codename>-rg"
-                    and vm_name = "<your-codename>"
- ⏱ HOW LONG         2-4 minutes
- ✗ IF NOT           read the first error line. Quota and login are the
-                    usual causes: az account show, then retry once.
+                    vm_name        = "<your-codename>"
+ ⏱ HOW LONG         two to four minutes
+ ✗ IF NOT           read the first error line and nothing else. Quota and expired login are the usual causes: run az account show, then retry once.
 ```
 
 ```
@@ -190,21 +300,24 @@ terraform -chdir=infra/workloads apply -auto-approve
 
 ### Connect the platform
 
-**The one manual step.** Open your Commvault Command Center and trigger
-Azure discovery on the hypervisor connection, then wait for the Cloud
-Discovery job to complete. About two minutes. This step is a decision, not
-a workaround: discovery of new cloud resources is an operation the platform
-keeps behind its own controls.
+**The one manual step, and the only time you open the console.** Sign in to
+**Command Center**, the Commvault Cloud web console. Go to your **hypervisor
+connection**, which is the link between Commvault Cloud and your Azure
+subscription, and trigger Azure discovery on it. Wait for the Cloud Discovery
+job to finish, about two minutes.
+
+This is a decision rather than a workaround: bringing new cloud resources
+under protection is an operation the platform keeps behind its own controls.
+Everything after this is API.
 
 ```bash
 python3 -m resops.operator.op preflight infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   five PASS lines, including
+ ✓ YOU SHOULD SEE   five PASS lines. The one that matters names your workload as discovered by the platform.
                     <your-codename> discovered (cloud-native inventory)
- ✗ IF NOT           a FAIL line names the fix. "not discovered" means
-                    the discovery job has not finished; wait and re-run.
+ ✗ IF NOT           a FAIL line names its own fix. "not discovered" means the discovery job has not finished yet; wait a minute and run it again.
 ```
 
 ### The first recovery point
@@ -214,8 +327,8 @@ python3 -m resops.operator.op protect infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   protected: group resops-<your-codename>-vg
-                    with your VM's id beside it
+ ✓ YOU SHOULD SEE   a VM group created, with your VM's id attached to it. A VM group is what Commvault Cloud protects: a named set of machines with one protection plan applied to all of them.
+                    protected: group resops-<your-codename>-vg
 ```
 
 ```bash
@@ -223,16 +336,19 @@ python3 -m resops.operator.op backup infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   a backup job, then  backup Completed
- ⏱ HOW LONG         about 2 minutes
- ✗ IF NOT           if it sits on "Waiting", that is the media agent
-                    queue, not a failure. DO NOT KILL IT.
+ ✓ YOU SHOULD SEE   a job id, then that job reaching its final state
+                    backup Completed
+ ⏱ HOW LONG         about two minutes
+ ✗ IF NOT           if it sits on "Waiting", it is queued for a media agent: the shared worker that moves the data. Waiting for one is normal and not a failure. DO NOT KILL IT.
 ```
 
 ```
  ? UNDER THE HOOD: AIR GAP AND IMMUTABILITY
    The recovery point you just created landed in an air-gapped,
    immutable storage pool.
+
+   That pool is AIR GAP PROTECT, and it is worth knowing the name,
+   because it is the control the rest of this workshop rests on.
 
    Air-gapped here is logical, not a cable in a drawer. The pool lives
    in a separate security domain with its own credentials, held by the
@@ -261,16 +377,11 @@ python3 -m resops.operator.op restore infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   the restore job complete, a restored VM validated
-                    in Azure, then the attester's verdict from inside
-                    the copy, ending:
-                    OK: code intact, baseline present, 3 customer
-                    records, no encryption markers, write/read verified
-                    and finally the restored VM tearing itself down
- ⏱ HOW LONG         about 5 minutes end to end
- ✗ IF NOT           a guest-agent-not-ready failure on a fresh restore
-                    is transient: run it again. Any FAIL: line is the
-                    attester doing its job; read it before retrying.
+ ✓ YOU SHOULD SEE   the restore job complete, a restored VM validated in Azure, then the attester's verdict read from inside that copy, and finally the copy tearing itself down
+                    OK: code intact, baseline present, 3 customer records,
+                        no encryption markers, write/read verified
+ ⏱ HOW LONG         about five minutes end to end
+ ✗ IF NOT           a guest-agent-not-ready failure on a fresh restore is transient: run it again. Any FAIL: line is the attester doing its job, so read it before you retry.
 ```
 
 ```
@@ -291,17 +402,18 @@ python3 -m resops.operator.op restore infra/workloads
    never done once: recovery, demonstrated.
 ```
 
-## Chapter 2 · Prove · ~10 min · LIVE
+## Chapter 2 · Reading the Proof
 
 ```
  DO      read the ladder, the gate, and the contract that earned them
  LEARN   what a Service Resilience Indicator is, and what an
          attestation actually claims
+ CLAIM   if yes is not boring, no will not mean anything.
 ```
 
 Your workload stands at the top of its ladder. Before anything gets broken,
 see what good looks like and where each claim comes from. This part is
-deliberately calm: if yes is not boring, no will mean nothing.
+deliberately calm.
 
 ### Read the ladder
 
@@ -310,18 +422,17 @@ python3 -m resops.operator.op status infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   ●●●●●●  VALIDATED
-                    six dots filled, and a reason beside every line
-                    discover names your group: 'resops-<your-codename>-vg'
- ✗ IF NOT           re-run the climb from chapter 1. In a room: tell
-                    the facilitator your codename: <your-codename>.
-                    Do not debug it.
+ ✓ YOU SHOULD SEE   six dots filled, the state beside them, and a reason on every line. The discover line names your own group.
+                    ●●●●●●  VALIDATED
+                    discover  resops-<your-codename>-vg
+ ✗ IF NOT           re-run the climb that built this workload. In a room, tell the facilitator your codename rather than debugging it yourself.
 ```
 
 Every line of that output pairs a recovery fact with a DevOps practice you
-already run: discovery like service discovery, protection like GitOps
-drift, detection like health checks, recovery like rollback readiness,
-verification like scanning an artifact before deploy.
+already run. Discovery works like service discovery. Protection works like
+GitOps drift detection. Detection works like a health check, recovery like
+rollback readiness, and verification like scanning an artifact before you
+deploy it.
 
 ### The bar it passed
 
@@ -330,11 +441,27 @@ python3 -m resops.operator.op gate infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   PROMOTE  recoverability proven · exit 0
- ✗ IF NOT           if it says HOLD and names coverage, a backup ran
-                    after your last drill. Run the drill again and
-                    re-gate, or keep reading. You will meet that exact
-                    behaviour, on purpose, in the next chapter.
+ ✓ YOU SHOULD SEE   the ladder, then a verdict line, then the question the gate is answering on your behalf
+                    ●●●●●●  VALIDATED  ·  RPO 0.1h
+                    ↳ recovery proven – job 8210418
+                    = held at VALIDATED over 3 runs
+                    ─────────────────────────────────────────
+                    PROMOTE  recoverability proven · exit 0
+                    ↳ Continuous Service – a promotion gate: safe to ship to prod?
+ ✗ IF NOT           if it says HOLD and names coverage, a backup ran after your last drill. Run the drill again and re-gate, or keep reading: you meet that exact behavior on purpose in the next chapter.
+```
+
+Two lines in that output are worth naming now, because you will see them on
+every run from here.
+
+```
+ = held at VALIDATED over 3 runs
+       the trend. Read from this workload's own history, so it answers
+       "is this normal, or did it just change?" without you asking.
+
+ ↳ Continuous Service – a promotion gate: safe to ship to prod?
+       the question this gate exists to answer. Not "did the backup
+       run", not "is the service up". Is it safe to ship.
 ```
 
 Now look at the bar it passed. It is not one threshold, it is a per-tier
@@ -345,8 +472,10 @@ cat config/tiers.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   tier1 and tier2, each declaring rpo_hours,
-                    rto_minutes and attestation_max_age_days
+ ✓ YOU SHOULD SEE   two tiers, each declaring three numbers: how much data loss it tolerates, how long recovery may take, and how recently something must have verified a recovery point
+                    rpo_hours
+                    rto_minutes
+                    attestation_max_age_days
 ```
 
 ```
@@ -370,10 +499,7 @@ grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   about seventy lines of shell. Five checks.
-                    the last one WRITES a record and reads it back, and
-                    the script ends at  exit 0  (the start of the next
-                    file in the listing may show below it)
+ ✓ YOU SHOULD SEE   about seventy lines of shell, carrying five checks. The last one WRITES a record and reads it back, and the script ends at exit 0. The start of the next file in the listing may show below that.
 ```
 
 ```
@@ -402,31 +528,33 @@ mount passes the first four and fails a real service on its first write.
 
 ```
  ✦ WHAT YOU JUST READ
-   A proven ladder, a per-tier bar, and a twenty-line contract owned
-   by the people who know what "good" means for this service. Every
-   claim traced to something you could open and read.
+   A proven ladder, a per-tier bar, and a short contract owned by the
+   people who know what "good" means for this service. Every claim
+   traced to something you could open and read.
 ```
 
-## Chapter 3 · Break · ~15 min · LIVE
+## Chapter 3 · Introducing a Compromise
 
 ```
  DO      compromise the workload you built, then watch two controls
          catch it two different ways
  LEARN   why proof does not accumulate, and where a verdict can
          honestly come from
+ CLAIM   green is a job status, not a verdict about your data.
 ```
 
 You have a proven workload and a gate that says yes. Now break it. On
 purpose, with something harmless and detectable.
 
-But first, sit with this question, because the whole chapter turns on it:
+But first, stay with this question, because the whole chapter turns on it:
 
 ```
-                    Recoverable to WHAT?
+          Which recovery point did you just prove?
 ```
 
-You proved this workload is recoverable. Which recovery point is that
-claim about? Hold your answer. The tools are about to give you theirs.
+You proved this workload recovers. That proof was about one moment, and
+there will be a newer one within the hour. Hold your answer. The tools are
+about to give you theirs.
 
 ### Plant the compromise
 
@@ -435,19 +563,18 @@ python3 -m resops.operator.op incident infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   incident: planting a detectable compromise in
+ ✓ YOU SHOULD SEE   what was planted, where, and confirmation that the known-good marker survived
+                    incident: planting a detectable compromise in
                     <your-codename> (resops-<your-codename>-rg)
                     planted: 2 EICAR files, 14 .locked files, 1 note
                     BASELINE marker still present: yes
- ✗ IF NOT           check the VM is running: the guest agent needs
-                    about 2 minutes after boot. Retry once, then stop.
+ ✗ IF NOT           check the VM is running: the guest agent needs about two minutes after boot. Retry once, then stop and ask.
 ```
 
 EICAR is a 68-character test string the antivirus industry standardized in
-the 1990s: every scanner on earth agrees to detect it as if it were
-malware, precisely so people can test detection without handling anything
-dangerous. The `.locked` files are high-entropy junk wearing ransomware's
-naming pattern. Nothing here is armed; everything here is detectable. That
+the 1990s. Every scanner agrees to detect it as though it were malware, so
+that detection can be tested without handling anything dangerous. The
+`.locked` files are high-entropy junk using ransomware's naming pattern. Nothing here is armed; everything here is detectable. That
 is the point: we need the alarms to be real, not the fire.
 
 ### Commit it into a recovery point
@@ -457,10 +584,10 @@ python3 -m resops.operator.op backup infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   a backup job, then  backup Completed
- ⏱ HOW LONG         about 2 minutes
- ✗ IF NOT           if it sits on "Waiting", that is the media agent
-                    queue, not a failure. DO NOT KILL IT.
+ ✓ YOU SHOULD SEE   the same clean, green result you got the first time
+                    backup Completed
+ ⏱ HOW LONG         about two minutes
+ ✗ IF NOT           if it sits on "Waiting", it is queued for a media agent: the shared worker that moves the data. Waiting for one is normal and not a failure. DO NOT KILL IT.
 ```
 
 ```
@@ -487,9 +614,14 @@ python3 -m resops.operator.op gate infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   HOLD · exit 1
-                    ↳ attestation does not cover the newest recovery point
+ ✓ YOU SHOULD SEE   the ladder unchanged at the top, and the verdict beneath it reversed
+                    ●●●●●●  VALIDATED  ·  RPO 0.1h
+                    ─────────────────────────────────────────
+                    HOLD  attestation does not cover the newest recovery point · exit 1
 ```
+
+The ladder still reads VALIDATED. The gate is the thing that changed its
+mind, and the difference between those two lines is the entire lesson.
 
 ```
  ? WHY THIS MATTERS, AND NOBODY PREDICTS THIS ONE
@@ -501,9 +633,9 @@ python3 -m resops.operator.op gate infra/workloads
    it, so the proof you had ten minutes ago vouches for nothing. Most
    people expect proof to accumulate. It does not.
 
-   The distance between what you think you can recover and what you
-   can prove is your RESILIENCE GAP. You just measured yours, in one
-   line.
+   The distance between what an organization believes it can recover
+   and what it can prove is the RESILIENCE GAP. This workload's gap
+   just appeared in one line.
 ```
 
 Now ask the threat lane what it thinks:
@@ -513,19 +645,19 @@ python3 -m resops.operator.op threatscan infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   THREATS DETECTED · exit 1
-                    the scan ran, and this recovery point is NOT safe
- ✗ IF NOT           if it stops asking for scan_plan_id, set it in
-                    config/workshop.yaml and re-run. The first lesson
-                    above already landed either way.
+ ✓ YOU SHOULD SEE   a scan that ran, and a verdict that this recovery point is not safe to restore from
+                    THREATS DETECTED · exit 1
+ ✗ IF NOT           if it stops and asks for scan_plan_id, set it in config/workshop.yaml and run it again. The first lesson above has already landed either way.
 ```
 
 ```
- ? WHERE THE SCAN RAN
-   Not on the VM. ThreatScan opened the backup copy in the recovery
-   plane and read it there; production was never touched. A verdict
-   about a recovery point can only honestly come from the copy itself,
-   and the copy lives where nothing from the VM can reach it.
+ ? WHERE THE SCAN RAN, AND WHAT IT IS CALLED
+   That was THREAT SCAN, and it did not run on the VM. It opened the
+   backup copy in the recovery plane and read it there; production was
+   never touched.
+
+   A verdict about a recovery point can only honestly come from the copy
+   itself, and the copy lives where nothing from the VM can reach it.
 ```
 
 ```
@@ -544,17 +676,20 @@ green, and the recovery point you would have restored from is poison.
  ✦ WHAT YOU JUST PROVED
    A green pipeline committed a compromise into an immutable vault,
    and the gate caught it twice: once because proof went stale, once
-   because something looked inside. Green is a job status, not a
-   verdict about your data.
+   because something looked inside.
+
+   Green is a job status, not a verdict about your data.
 ```
 
-## Chapter 4 · Choose · ~15 min · OFFLINE
+## Chapter 4 · Choosing a Recovery Point
 
 ```
  DO      put your workload back, then pick a recovery point under the
          conditions that actually matter
  LEARN   why outage policy answers the wrong question under
          compromise, and the number that measures the right one
+ CLAIM   under compromise, the freshest recovery point is the most
+         dangerous one.
 ```
 
 ### Put it back
@@ -566,12 +701,8 @@ python3 -m resops.operator.op remediate infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   it removes exactly what the incident planted,
-                    restores exactly what it took, then re-runs
-                    verify.sh — the last line starts  OK:
- ✗ IF NOT           it raises rather than reporting success. Read what
-                    it raised before touching anything; do not run it
-                    twice blindly.
+ ✓ YOU SHOULD SEE   the planted files removed, the stashed files restored, and the attester re-run, ending on a verdict line that starts OK:
+ ✗ IF NOT           it raises rather than reporting success. Read what it raised before you touch anything, and do not run it twice blindly.
 ```
 
 ```
@@ -592,17 +723,21 @@ python3 -m resops gate config/incident.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE
+ ✓ YOU SHOULD SEE   four recovery points, each rendered as a seven-line block: header, ladder, reason, trend, rule, verdict, and the question the gate answers. Read the verdict line of each, then the aggregate at the bottom.
+                    PROMOTE  recoverability proven · exit 0
+                    HOLD  stuck at RECOVERABLE: recovery point is UNATTESTED · exit 1
+                    HOLD  rpo 144.0h > target 8h · exit 1
+                    HOLD  attestation stale (400.0d > 30d) · exit 1
+                    AGGREGATE  HOLD – C-32-hours-ago, B-6-days-ago, A-400-days-ago · exit 1
+```
 
-   ▸ D-7-hours-ago      ●●●●●●  VALIDATED   RPO 7.0h      PROMOTE
-   ▸ C-32-hours-ago     ●●●●✗·  blocked at Scan           HOLD
-     ↳ recovery point is UNATTESTED
-   ▸ B-6-days-ago       ●●●●●●  VALIDATED   RPO 144.0h    HOLD
-     ↳ rpo 144.0h > target 8h
-   ▸ A-400-days-ago     ●●●●●●  VALIDATED   RPO 9600.0h   HOLD
-     ↳ attestation stale (400.0d > 30d)
+The four points, side by side:
 
-   AGGREGATE  HOLD — C-32-hours-ago, B-6-days-ago, A-400-days-ago · exit 1
+```
+ D   7 hours ago     ●●●●●●  VALIDATED     RPO 7.0h        PROMOTE
+ C   32 hours ago    ●●●●✗·  RECOVERABLE   unattested      HOLD
+ B   6 days ago      ●●●●●●  VALIDATED     RPO 144.0h      HOLD
+ A   400 days ago    ●●●●●●  VALIDATED     RPO 9600.0h     HOLD
 ```
 
 **The fact you do not have:** the first anomalous log entry is *"sometime
@@ -618,7 +753,8 @@ already abnormal. It may have started three days ago. Or nine.
    inside the incident window. That is not a bug. It is a policy
    written for OUTAGES answering a question about COMPROMISE.
 
-   An RPO target assumes the only cost of an older point is LOST DATA.
+   A recovery point objective (RPO) target assumes the only cost of an
+   older point is LOST DATA.
    Under compromise, the freshest point is the most DANGEROUS one.
 
    And look at A. The only point anyone can be certain about costs 400
@@ -641,16 +777,18 @@ already abnormal. It may have started three days ago. Or nine.
  ✦ WHAT YOU JUST DECIDED
    Recovery under compromise is a decision, made by a human, on
    evidence, against a clock. The tools narrow the choice; they do not
-   make it. MTCR measures how fast your organisation can make it well.
+   make it. MTCR measures how fast your organization can make it well.
 ```
 
-## Chapter 5 · Re-prove · ~20 min · LIVE · SOLO
+## Chapter 5 · Re-Proving Recovery · SOLO
 
 ```
  DO      close the loop: take a clean point, scan it, drill it, and
          earn the green verdict back
  LEARN   what actually restores trust after an incident, and what
-         does not
+         only looks like it does
+ CLAIM   cleaning production changes nothing inside an immutable
+         vault. Trust is re-opened, not re-assured.
 ```
 
 Your VM is clean, but the gate still holds: the newest recovery point
@@ -665,8 +803,9 @@ python3 -m resops.operator.op backup infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   backup Completed — a new point, from the clean VM
- ⏱ HOW LONG         about 2 min
+ ✓ YOU SHOULD SEE   the same green result, from a VM that is now clean
+                    backup Completed
+ ⏱ HOW LONG         about two minutes
 ```
 
 ### Scan it
@@ -676,9 +815,9 @@ python3 -m resops.operator.op threatscan infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   no threat recorded for this workload — and the
-                    output says plainly that this is NOT the same as
-                    clean, and does not clear the Scan rung on its own
+ ✓ YOU SHOULD SEE   no threat recorded, and the tool refusing to call that clean. Read its wording carefully, because it is the best sentence in the toolkit.
+                    no threat recorded for this workload - which is NOT the same
+                    as clean, and does not clear the Scan rung on its own
 ```
 
 ```
@@ -696,9 +835,10 @@ python3 -m resops.operator.op restore infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   the drill verdict, ending
-                    OK: ... write/read verified
- ⏱ HOW LONG         about 5 minutes
+ ✓ YOU SHOULD SEE   the drill verdict, read from inside a fresh copy of the clean point
+                    OK: code intact, baseline present, 3 customer records,
+                        no encryption markers, write/read verified
+ ⏱ HOW LONG         about five minutes
 ```
 
 ```bash
@@ -706,7 +846,8 @@ python3 -m resops.operator.op gate infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   ●●●●●●  VALIDATED
+ ✓ YOU SHOULD SEE   the verdict back where it started, on new evidence rather than on time passing
+                    ●●●●●●  VALIDATED
                     PROMOTE  recoverability proven · exit 0
 ```
 
@@ -717,13 +858,15 @@ python3 -m resops.operator.op gate infra/workloads
    re-proved it, not because time passed or a dashboard said so.
 ```
 
-## Chapter 6 · Gate it · ~12 min · OFFLINE
+## Chapter 6 · Gating the Pipeline
 
 ```
  DO      run the gate across an estate, publish its numbers, and read
-         the CI file that makes it a merge blocker
+         the evidence and the CI file that make it a merge blocker
  LEARN   how a check survives contact with a real estate: the ratchet,
-         and who owns what
+         the control evidence, and who owns what
+ CLAIM   you have shifted this left three times already. This is the
+         fourth, and it looks identical.
 ```
 
 One workload proving itself is a demo. The discipline starts when the same
@@ -737,10 +880,9 @@ python3 -m resops gate config/estate.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   six workloads, five of them HOLD, and a final line
-                    AGGREGATE  HOLD — checkout-api, identity-svc,
-                                      reporting-db, edge-cache, legacy-batch
-                    exit 1
+ ✓ YOU SHOULD SEE   six workloads, five of them holding, and one aggregate line at the bottom that a pipeline can act on
+                    AGGREGATE  HOLD – checkout-api, identity-svc, reporting-db,
+                                      edge-cache, legacy-batch · exit 1
 ```
 
 **Stop on `checkout-api` and `identity-svc`.** Same rung. Opposite reasons.
@@ -754,11 +896,44 @@ python3 -m resops metrics config/estate.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   Prometheus text: resops_rung, resops_promotable,
+ ✓ YOU SHOULD SEE   Prometheus exposition text, ready to scrape
+                    resops_rung
+                    resops_promotable
                     resops_tolerated
- ✗ IF NOT           "no run to publish" means you skipped the gate
-                    command above. Run it first; metrics publishes the
-                    LAST run.
+ ✗ IF NOT           "no run to publish" means you skipped the gate command above. Run it first; metrics publishes the LAST run.
+```
+
+### The evidence underneath
+
+The gate does not only decide. It writes down why, in a form somebody
+outside engineering can read.
+
+```bash
+cat evidence/estate/payments-api/report.md
+```
+
+```
+ ✓ YOU SHOULD SEE   the run, its verdict, and a control crosswalk mapping each capability onto the regimes this repository ships as examples, with an honest disclaimer under it
+                    | Capability | dora | nist-800-53 | apra-cps230 |
+                    | CAP-RESTORE-TESTED | Art. 11/12 | CP-4, CP-9(1) | scenario & business continuity testing |
+                    Indicative mapping ... supports an internal resilience
+                    program, not a compliance attestation.
+ ✗ IF NOT           "No such file" means the estate gate above has not run yet. It is what writes this file.
+```
+
+```
+ ? WHY THE DISCLAIMER IS THE POINT
+   That last line is not a legal hedge, it is the same discipline the
+   Scan rung applies to a recovery point. A crosswalk maps our
+   evidence onto a regime's language. It does not audit you, and a
+   tool that claimed otherwise would be doing exactly what a backup
+   dashboard does when it reports green.
+
+   What it IS good for: whoever answers for your organization's regime
+   gets to point at a command your CI already runs, instead of a
+   spreadsheet somebody maintains by hand. Three regimes ship here as
+   examples. A pack is a small YAML file, so adding the one you answer
+   to is a data change, not an engineering project.
 ```
 
 ### The merge blocker
@@ -768,7 +943,10 @@ cat .github/workflows/resops-gate.yml
 ```
 
 ```
- ✓ YOU SHOULD SEE   about sixty lines. on pull_request, and daily.
+ ✓ YOU SHOULD SEE   a short workflow, triggered on pull requests and once a day
+                    on:
+                      pull_request:
+                      schedule:
 ```
 
 ```
@@ -798,17 +976,18 @@ cat .github/workflows/resops-gate.yml
    that has to go down.
 ```
 
-```
- WHO OWNS WHAT, the argument you will have when you get back
+**Who owns what.** This is the conversation you will have when you get back.
 
-   verify.sh    the app team      only they know what "good" means
-   the drill    platform          it is infrastructure
-   the gate     CI                it is a required check
-   tiers.yaml   platform + risk   it is policy
+```list
+ verify.sh     The app team, because only they know what "good" means for
+               their service.
+ the drill     Platform. It is infrastructure.
+ the gate      CI. It is a required check like any other.
+ tiers.yaml    Platform and risk together. It is policy.
 ```
 
 ```
- ? DOES THIS PAGE ME AT 3AM?
+ ? WILL THIS WAKE SOMEONE AT 3AM?
    No. Recoverability drift is not an incident. It fails a pull request
    and waits for office hours.
 ```
@@ -816,137 +995,295 @@ cat .github/workflows/resops-gate.yml
 ```
  ✦ WHAT YOU JUST WIRED
    The fourth gate, shaped exactly like the other three: a required
-   check, an honest number, and a ratchet that lets an estate adopt it
-   without stopping the ships.
+   check, an honest number, evidence somebody outside engineering can
+   read, and a ratchet that lets an estate adopt it without blocking
+   releases.
 ```
 
-## Chapter 7 · Own it · ~30 min
+## Chapter 7 · Cleaning Up · SOLO
 
 ```
- DO      write the argument you will actually face, and your answer
-         to it
- LEARN   nothing new. This is where you find out what stuck.
+ DO      destroy everything you built, and verify it is gone
+ LEARN   why disposability is part of the discipline rather than the
+         tidying up
+ CLAIM   a drill you cannot afford to run twice is a drill you will
+         run once.
 ```
 
-### Write the argument
+Everything you built is real, and it bills until it is gone: a VM, a disk,
+a storage account, a virtual network, and a protected workload on a backup
+platform.
 
-You will have this argument within a month, in a design review or a budget
-meeting. Have it now, on paper, while the evidence is still under your
-fingers.
+This is also the last time today you get to practise the only habit that
+has mattered all workshop. Something is about to report
+success. You are not going to believe it until you have opened the
+environment and read it yourself.
 
-```
- 05 min   Write the three objections your staff engineer will raise.
-          No answers yet. Just collect them, honestly.
+### Retire the workload
 
- 15 min   Answer each one in writing. Then read the ammunition below
-          and steal anything better than what you wrote.
-
- 05 min   Keep the ONE objection you will actually face, and your
-          answer. That page is what you take home.
-```
-
-**Your ammunition. Pick three.**
-
-```
- 1  We gate on tests. We gate on scans. We do not gate on recoverability.
-
- 2  A green backup dashboard is a build artefact, not a run signal. It
-    proves the job ran, not that the data is recoverable.
-
- 3  Available is not trusted. The distance between them is our
-    resilience gap.
-
- 4  A check that examined nothing must never report a pass.
-
- 5  The number is time to CLEAN recovery. Not time to recovery.
-
- 6  This is not a page at 3am. It is a merge blocker.
+```bash
+PYTHONUNBUFFERED=1 python3 -m resops.operator.op teardown infra/workloads
 ```
 
 ```
- ? WHY THIS AND NOT A SUMMARY
-   An argument you have never made does not survive a design review.
-   Writing it down, against real objections, is the difference between
-   having attended a workshop and owning one.
-```
-
-### Your number, revisited
-
-Now go back to your worksheet from the start. Read your three answers as if
-a colleague wrote them.
-
-```
- L1  SEE       resops gate, read-only, your own number       day 1
- L2  DECLARE   verify.sh for ONE tier-1 workload             week 1
- L3  PROVE     one scheduled drill, one attestation          week 2
- L4  GATE      one required check, with the ratchet          month 1
- L5  PUBLISH   % provably recoverable, on a wall             quarter 1
-```
-
-**What L1 actually needs, so nobody is surprised on Monday:**
-
-```
- 1  an access token from Command Center (avatar -> Access Tokens)
- 2  your tenant's API endpoint
- 3  two ids from a console URL: the hypervisor, and the protection plan
- 4  the workload's group. `resops list` finds it by name
-```
-
-L1 is read-only and **physically cannot mutate your environment.** The
-engine makes no create, update or delete calls of any kind, and a test in
-the suite fails if anyone adds one. That is the point of starting there: it
-costs an afternoon and risks nothing.
-
-**One next action. Named workload. Dated. Owner.** Not three.
-
-```
- In seven days there is one question: did you run it against anything real?
+ ✓ YOU SHOULD SEE   four things happen in order: the backup platform's group is queued for deletion, leftover snapshots are swept, an auto-created network watcher is removed, and Terraform destroys the rest.
+                    CV group ##### delete → HTTP 202 (pending admin approval)
+                    swept GXMD snapshot: <name>
+                    removed auto-created NetworkWatcher in <region>
+                    Destroy complete!
+ ⏱ HOW LONG         about four minutes
+ ✗ IF NOT           a stall almost always means something still holds a lock on the resource group. Read the last line, then run it again: teardown checks whether each resource exists before deleting it, so running it twice is safe.
 ```
 
 ```
- ✦ WHAT YOU OWN NOW
-   A number you measured, an argument you wrote, and a first step that
-   costs an afternoon and risks nothing.
+ ? UNDER THE HOOD: WHAT A TEARDOWN HAS TO SWEEP
+   terraform destroy removes what Terraform created, and that is not
+   everything that exists. Your backup platform left snapshots behind.
+   Azure created a network watcher nobody asked for. Either one blocks
+   the resource group from deleting, and neither appears where you
+   would look for it.
+
+   This is the ordinary shape of cloud infrastructure: the thing that
+   created a resource is not always the thing that can remove it.
+   Teardown sweeps them first, then hands over to Terraform.
+```
+
+```
+ ? WHY THE BACKUP PLATFORM REFUSES TO DELETE THE GROUP
+   HTTP 202 is not a failure. The platform accepted your request and
+   queued it for an administrator. The group disappears from listings,
+   which reads exactly like success, and if nobody approves it, it
+   comes back.
+
+   That is correct behavior for a system whose entire job is to stop
+   protected things being destroyed. The same control that made your
+   recovery points immutable in the first place is the one standing in
+   your way now.
+
+   The practical consequence: your codename is spent. If you run this
+   lab again, pick a new one. Reusing it adopts the old group and
+   attaches it to a machine that no longer exists, and the failure
+   surfaces later at backup, reading like nothing at all.
+```
+
+### Verify it is gone
+
+Teardown just told you it succeeded. Go and check.
+
+```bash
+az resource list --query "length(@)" -o tsv
+```
+
+```
+ ✓ YOU SHOULD SEE   a single number, and that number is zero
+                    0
+ ✗ IF NOT           confirm you are on the right subscription first, with az account show. A count from someone else's subscription looks exactly like a failed teardown. If it really is yours, run the teardown again.
+```
+
+```bash
+terraform -chdir=infra/workloads state list | wc -l
+```
+
+```
+ ✓ YOU SHOULD SEE   zero resources left in state
+                    0
+```
+
+```
+ ? WHY YOU VERIFY INSTEAD OF TRUSTING
+   You have spent two hours on one idea: a green result is a claim,
+   and a claim is worth exactly what the check behind it is worth.
+   Teardown printed success. These two commands are the only things
+   that know whether it is true.
+
+   Apply that habit to a backup dashboard on Monday and you have the
+   whole workshop.
+```
+
+```
+ ✦ WHAT YOU JUST CLOSED
+   A lab that costs nothing to leave behind, retired and verified
+   empty by command rather than by report.
+
+   Recovery drills only happen on a schedule if they are cheap to
+   start and cheap to end. That is not an operational detail. It is
+   the difference between a discipline and an annual exercise.
 ```
 
 ---
 
-## Wrap-up
+## Wrap-Up
+
+### What you proved
+
+One command. One workload. Four different answers, across two hours.
+
+```list card
+ after the first drill    `op gate` says PROMOTE. The proof covers the
+                          newest recovery point.
+ after a BACKUP           `op gate` says HOLD. You took a backup. That is
+                          the only thing you did.
+ after the scan           `op threatscan` says HOLD. Something looked, and
+                          it found malware.
+ after the second drill   `op gate` says PROMOTE. Re-proved, not re-assured.
+```
+
+Nothing in that column moved because the VM changed. It moved because what
+had been **opened and read** changed. That is assumption-based resilience
+becoming evidence-based, in four lines.
 
 ### The model you just walked
 
+ResOps is five domains. This workshop walks three of them properly, touches
+a fourth, and does not attempt the fifth. Saying which is which is the same
+discipline the gate applies to a recovery point.
+
+```list
+@governance Resilience governance        **Lightly.** The per-tier bar you read
+                    in `tiers.yaml`: a Service Resilience Indicator, declared
+                    and testable.
+@planning Recovery planning              **Not at all.** Dependency mapping and
+                    impact tolerances across a real estate is a program, not a
+                    lab, and two hours cannot fake it.
+@architecture Recovery architecture      **Fully.** The three planes: air gap,
+                    immutability, and drills run in isolation.
+@repetition Resilience through repetition  **Fully.** The drill, and re-earning
+                    the verdict after an incident.
+@measuring Measuring resilience          **Fully.** MTCR and the resilience gap,
+                    published as a number somebody has to look at.
 ```
- 01 RESILIENCE GOVERNANCE          the tier bar you read in tiers.yaml:
-                                   a Service Resilience Indicator,
-                                   declared and testable
- 02 RECOVERY PLANNING              choosing recovery points on
-                                   evidence, not hope
- 03 RECOVERY ARCHITECTURE          the three planes: air gap,
-                                   immutability, isolated drills
- 04 RESILIENCE THROUGH REPETITION  the drill, on a schedule; chapter
-                                   5's whole argument
- 05 MEASURING RESILIENCE           MTCR and the resilience gap, on a
-                                   wall somebody has to look at
-```
+
 
 Capability answers "could we?". Outcomes answer "did we, and can we prove
 it?". ResOps measures outcomes.
 
+### What you used, and what it is called
+
+Four ResOps ideas are below. These are the Commvault Cloud capabilities that
+carried them, so you can name them to a colleague or look them up later.
+
+```list
+@command-center Command Center    The web console. You opened it once, to
+                   bring a new Azure workload under protection. Everything
+                   else in this workshop was API.
+@data-protection Protection plan   The policy: how often to back up, how long
+                   to keep it, and to which storage. A workload picks a plan.
+                   It does not configure recoverability itself.
+@locked Air Gap Protect            The immutable, air-gapped pool your
+                   recovery points landed in. Its credentials are held by the
+                   service and never by the workload, which is why a
+                   compromised machine could not reach the copies.
+@ransomware Threat Scan            Opens a recovery point in the recovery
+                   plane and reads it for malware, without touching
+                   production. It found the two planted files, and it
+                   honestly reported no encryption, which our own check
+                   caught instead.
+```
+
+Everything else you ran was ours and is in this repository: the readiness
+ladder, the promotion gate, the restore drill, `verify.sh`, the evidence
+chain and the control crosswalk.
+
 ### The four terms you earned
 
-```
- ResOps           recovery run as an operating discipline, the way you
-                  already run delivery
- SRI              a measurable, testable resilience bar, per tier
- resilience gap   the distance between what you think you can recover
-                  and what you can prove
- MTCR             mean time to CLEAN recovery. The word clean is the
-                  entire argument.
+```list
+ ResOps           Recovery run as an operating discipline, the way you
+                  already run delivery.
+ SRI              A measurable, testable resilience bar, declared per tier.
+ resilience gap   The distance between what an organization believes it can
+                  recover and what it can prove.
+ MTCR             Mean time to CLEAN recovery. The word clean is the entire
+                  argument.
 ```
 
-### Your first step
+### What you can say
 
-L1 costs one afternoon and touches nothing. Run `resops gate` against one
-workload you own, this week, and read your real number. Heroism cannot
-scale; a discipline can, and it starts with one honest measurement. In
-seven days there is one question: did you run it against anything real?
+Six sentences that survive a design review, because each one is a fact you
+watched happen rather than a claim you are repeating.
+
+```list
+ 1   We gate on tests. We gate on scans. We do not gate on recoverability.
+ 2   A green backup dashboard is a build artefact, not a run signal. It
+     proves the job ran, not that the data is recoverable.
+ 3   Available is not trusted. The distance between them is the resilience
+     gap.
+ 4   A check that examined nothing must never report a pass.
+ 5   The number is time to CLEAN recovery. Not time to recovery.
+ 6   This does not wake anyone at 3am. It fails a pull request.
+```
+
+### The one question
+
+You will be asked about this within a month, and the questions will be
+reasonable ones. Answer the hardest of them now, while the evidence is
+still in front of you.
+
+**Write down the one question you are most likely to be asked, and your
+answer to it.** That page is what you take back.
+
+### What this workshop does not solve
+
+```list
+ the lab workload is a VM     The contract transfers, but worked examples
+                              for managed databases and object storage are
+                              not written yet.
+ restore-verify costs money   Sampling plus a per-tier freshness bar is a
+                              policy, not a cost model, and we do not have
+                              a cost model.
+ the crosswalk is indicative  It supports a resilience program. It is not
+                              a compliance attestation, and it will not
+                              become one.
+ recovery planning            Dependency mapping and impact tolerances
+                              across a real estate is a program, not a
+                              lab. Two hours cannot fake it.
+ nobody owns this by default  It spans three teams who mostly do not talk
+                              about recovery together.
+```
+
+### Where this stops being something you can do alone
+
+```list
+ L1 · SEE       Read-only, against one workload you own. Your real number.
+                Day one.
+ L2 · DECLARE   verify.sh for one tier-1 workload. Week one.
+ L3 · PROVE     One scheduled drill, producing one attestation. Week two.
+ L4 · GATE      One required check, with the ratchet. Month one.
+ L5 · PUBLISH   Percentage provably recoverable, somewhere people see it.
+                Quarter one.
+```
+
+L1 you can do this week, alone, and it cannot touch anything. L2 needs the
+app team. L4 needs CI. L5 needs somebody who owns the number.
+
+**What L1 actually needs, so nobody is surprised on Monday:**
+
+```list
+ 1   An access token from Command Center, under avatar -> Access Tokens.
+ 2   Your Commvault Cloud tenant's API endpoint.
+ 3   Two ids, both readable from a console URL: the hypervisor and the
+     protection plan.
+ 4   The workload's group. `resops list` finds it by name.
+```
+
+L1 is read-only and **cannot modify your environment.** The engine makes no
+create, update or delete calls of any kind, and a test in the suite fails if
+anyone adds one. That is the point of starting there: it costs an afternoon
+and risks nothing.
+
+**One next action. Named workload. Dated. Owner.** Not three.
+
+Nobody owns this by default. It spans three teams who mostly do not talk
+about recovery together. That is not a tooling gap, and no product closes
+it alone. It is why ResOps is described as an operating discipline rather
+than a feature.
+
+```
+ From assumption-based resilience
+   to evidence-based, measurable, predictable recoverability.
+```
+
+Heroism cannot scale. A discipline can, and it starts with one honest
+measurement.
+
+**In seven days there is one question: did you run it against anything
+real?**

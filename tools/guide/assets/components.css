@@ -27,20 +27,24 @@
 .crumb-sep { margin: 0 6px; color: var(--line); }
 .crumb b { color: var(--ink); font-weight: 600; }
 
+/* The kicker carries a short aura accent, so the nine content pages belong
+   to the same system as the Overview's masthead without repeating its band. */
 .kicker {
+  position: relative; padding-top: 18px;
   font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
   color: var(--accent); margin: 0 0 4px;
+}
+.kicker::before {
+  content: ""; position: absolute; top: 0; left: 0;
+  width: 104px; height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--ink) 0%, var(--accent) 58%,
+                                     var(--rose) 100%);
 }
 .page-head {
   display: flex; align-items: baseline; gap: 16px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 12px; margin-bottom: 16px;
 }
-.page-meta {
-  margin-left: auto; font-family: var(--f-mono); font-size: 12px;
-  color: var(--muted); white-space: nowrap;
-}
-
 /* ---- the step rail: a command opens a step, its checks hang off it.
        Structure derived from authored order, never invented content. ---- */
 .steps { margin: 16px 0; }
@@ -63,34 +67,45 @@
 .step-body { min-width: 0; }
 .step-body > :first-child { margin-top: 4px; }
 
-/* ---- command block: light, with a labeled header row. The $ prompt is
-       a pseudo-element, so manual select-copy can never capture it.
-       The whole block is a copy target (app.js). ---- */
+/* ---- command block: DARK, because this guide holds exactly two kinds of
+       content -- what a human reads and what a machine says -- and until
+       2026-08-19 they looked identical. Midnight is the brand primary, so
+       commands cost nothing in compliance and gain a rhythm that carries
+       meaning: dark is the machine, light is the human, and the ✓ box in
+       between quotes the machine's answer.
+
+       The $ prompt stays a pseudo-element, so a manual select-and-copy can
+       never capture it. The whole block is a copy target (app.js). ---- */
 .cmd {
-  border: 1px solid var(--code-border); border-radius: var(--radius-md);
-  overflow: hidden; margin: 12px 0; cursor: copy; background: var(--code-bg);
+  background: var(--ink); border: 1px solid var(--ink);
+  border-radius: var(--radius-md); margin: 12px 0; overflow: hidden;
+  cursor: pointer; transition: box-shadow 160ms ease, border-color 160ms ease;
 }
+.cmd:hover { border-color: var(--accent); box-shadow: var(--shadow); }
 .cmd-head {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 4px 8px 4px 12px; background: var(--code-head);
-  border-bottom: 1px solid var(--code-border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; font-family: var(--f-mono); font-size: 12px;
+  color: var(--topbar-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.cmd-head span {
-  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.05em;
-  color: var(--muted);
+.cmd pre {
+  padding: 14px; overflow-x: auto; color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+.cmd pre code::before {
+  content: "$"; color: var(--prompt); margin-right: 10px;
 }
 .copy {
-  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.04em;
-  color: var(--muted); background: transparent;
-  border: 1px solid var(--line); border-radius: var(--radius-sm);
-  padding: 2px 10px; cursor: pointer;
+  font: inherit; color: var(--topbar-dim); background: none;
+  border: 1px solid rgba(255, 255, 255, 0.18); border-radius: var(--radius-sm);
+  padding: 2px 9px; cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease,
+              background-color 160ms ease;
 }
-.copy:hover { color: var(--ink); border-color: var(--muted); }
-.cmd pre {
-  padding: 12px 14px; overflow-x: auto; line-height: 1.6;
-  color: var(--ink);
-}
-.cmd code::before { content: "$ "; color: var(--prompt); font-weight: 600; }
+.copy:hover { color: #ffffff; border-color: var(--topbar-name);
+  background: rgba(255, 255, 255, 0.08); }
+.copy:active { transform: translateY(1px); }
 .cmd.copied { animation: copied-pulse 0.35s ease-out; }
 @keyframes copied-pulse {
   0% { box-shadow: 0 0 0 0 rgba(132, 72, 150, 0.45); }
@@ -101,22 +116,30 @@
 }
 
 /* ---- diagnostic pair: quiet callouts, adjacent, unmistakable ---- */
-.diag { margin: 12px 0; display: flex; flex-direction: column; gap: 4px; }
-.diag-row {
-  border-left: 3px solid; border-radius: 0 var(--radius-sm)
-  var(--radius-sm) 0; padding: 8px 12px;
+/* THE DIAGNOSTIC INSTRUMENT. ✓ what you should see, ⏱ how long, ✗ what to
+   do if not: one object, hairline-divided, attached to the command above it.
+   It used to be three separately-rounded bands with gaps between them, which
+   read as three unrelated alerts that happened to be adjacent. Each row keeps
+   its own colour, because the loudness is deliberate: stalling is what kills
+   a workshop, so this stays the most visually distinct thing on the page. */
+.diag {
+  margin: 10px 0 18px; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--radius-md);
 }
-.diag-yes { border-color: var(--yes); background: var(--yes-tint); }
-.diag-no { border-color: var(--no); background: var(--no-tint); }
-.diag-clock { border-color: var(--line); background: var(--clock-tint); }
-.diag-label { margin: 0; font-size: 12px; font-weight: 700; }
+.diag-row { padding: 10px 14px 12px; border-left: 3px solid; }
+.diag-row + .diag-row { border-top: 1px solid var(--line); }
+.diag-yes { border-left-color: var(--yes); background: var(--yes-tint); }
+.diag-no { border-left-color: var(--no); background: var(--no-tint); }
+.diag-clock { border-left-color: var(--line); background: var(--clock-tint); }
+.diag-label { margin: 0; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.03em; }
 .diag-yes .diag-label { color: var(--yes); }
 .diag-no .diag-label { color: var(--no); }
 .diag-clock .diag-label { color: var(--clock); }
-.diag-mark { margin-right: 6px; }
-.diag-row pre { margin-top: 4px; overflow-x: auto; line-height: 1.55;
+.diag-mark { margin-right: 7px; }
+.diag-row pre { margin-top: 6px; overflow-x: auto; line-height: 1.55;
   color: var(--ink); }
-.diag-text { margin: 4px 0 0; font-size: 14px; color: var(--ink); }
+.diag-text { margin: 6px 0 0; color: var(--ink); }
 .v-yes { color: var(--yes); font-weight: 700; }
 .v-no { color: var(--no); font-weight: 700; }
 
@@ -125,7 +148,7 @@
   margin: 16px 0; color: var(--muted); }
 .aside-title { font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--muted); margin: 0; }
-.aside p { margin: 8px 0; font-size: 13px; line-height: 20px; }
+.aside p { margin: 10px 0; font-size: 15px; line-height: 24px; }
 .aside pre { background: var(--code-bg); border: 1px solid
   var(--code-border); border-radius: var(--radius-sm);
   padding: 8px 12px; overflow-x: auto; margin: 8px 0; }
@@ -153,16 +176,22 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
   padding: 10px 14px; margin: 16px 0;
   display: flex; flex-direction: column; gap: 6px;
 }
-.dolearn-row { display: grid; grid-template-columns: 52px 1fr; gap: 12px;
+.dolearn-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px;
   align-items: baseline; }
 .dolearn-row span { font-size: 11px; font-weight: 700;
   letter-spacing: 0.06em; color: var(--accent); }
-.dolearn-row p { margin: 0; font-size: 14px; }
+.dolearn-row p { margin: 0; }
 
 /* ---- checkpoint card: quiet consolidation at a chapter's end ---- */
 .mark {
+  position: relative; overflow: hidden;
   border: 1px solid var(--line); border-radius: var(--radius-md);
-  padding: 12px 16px; margin: 24px 0 12px; background: var(--code-bg);
+  padding: 16px 18px 14px; margin: 34px 0 12px; background: var(--code-bg);
+}
+.mark::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--ink) 0%, var(--accent) 58%,
+                                     var(--rose) 100%);
 }
 .mark-title { margin: 0 0 4px; font-size: 12px; font-weight: 700;
   letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); }
@@ -198,5 +227,114 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 }
 .pager-next:hover { background: var(--accent-dark);
   border-color: var(--accent-dark); }
-.pager-next span { font-weight: 400; font-family: var(--f-mono);
-  font-size: 11px; opacity: 0.85; margin-left: 4px; }
+
+/* ---- inherited band: what a ROOM participant arrives holding, carried
+       from the SOLO chapters that build did not render. Sits above the
+       page head, quieter than a checkpoint because it is not theirs. ---- */
+.inherited {
+  border: 1px dashed var(--line); border-radius: var(--radius-md);
+  padding: 10px 14px 2px; margin: 0 0 20px; background: var(--code-bg);
+}
+.inherited-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 4px;
+}
+.inherited .mark { border: 0; background: none; padding: 0; margin: 4px 0; }
+
+/* ---- folded aside (ROOM build): the facilitator's material, present but
+       not competing with them for the room's attention. ---- */
+.aside-fold { padding-left: 14px; }
+.aside-fold > summary {
+  cursor: pointer; list-style: none;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted);
+}
+.aside-fold > summary::-webkit-details-marker { display: none; }
+.aside-fold > summary::after { content: " ▸"; }
+.aside-fold[open] > summary::after { content: " ▾"; }
+
+/* ---- definition list (```list): a label column and PROSE that flows.
+       The label column sizes to its own longest label, so a list of short
+       keys stays tight and one with "Commvault Cloud" in it still lines up.
+       Stacks under 560px rather than squeezing the sentence. ---- */
+/* THE GRID IS ON THE CONTAINER, not the row. With it on the row, max-content
+   was evaluated per row, so every row sized its own key column and one list
+   showed four different text-start positions. `display: contents` lets the
+   keys and values of every row participate in ONE shared grid. */
+.deflist { margin: 16px 0; display: grid;
+  grid-template-columns: max-content minmax(0, 1fr); gap: 12px 24px;
+  align-items: baseline; }
+.dl-row { display: contents; }
+.dl-key { font-family: var(--f-mono); font-size: 14px; color: var(--ink); }
+.dl-val { min-width: 0; }
+.dl-val p { margin: 0 0 8px; }
+.dl-val p:last-child { margin-bottom: 0; }
+@media (max-width: 620px) {
+  .deflist { grid-template-columns: 1fr; gap: 4px; }
+  .dl-key { color: var(--muted); margin-top: 10px; }
+}
+
+/* ---- official Commvault icons on a definition list. Sanctioned by the
+       brand primer: "iconography can be leveraged wherever complex industry
+       topics may benefit from a visual aid." Used on exactly two lists --
+       what the lab is built from, and what you used and what it is called --
+       because both ask a newcomer to map an abstract concept to a name. ---- */
+/* 30px, not 22px. The source files are a 60px viewBox with real detail --
+   a monitor with a screen, a padlock with a shackle -- and below about 28px
+   they read as dark blobs rather than as anything. */
+.deflist-iconed { grid-template-columns: 30px max-content minmax(0, 1fr);
+  gap: 14px 18px; }
+.dl-icon { width: 30px; height: 30px; display: block; align-self: start;
+  margin-top: -3px; }
+@media (max-width: 620px) {
+  .deflist-iconed { grid-template-columns: 30px 1fr; }
+}
+
+/* ---- a carded definition list (```list card). Used ONCE, on the verdict
+       trail, because that is the workshop's completion moment: one command,
+       one workload, four opposite answers. Nothing else is carded, which is
+       what makes it read. ---- */
+.deflist-card {
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: 18px 20px; background: var(--code-bg);
+}
+
+/* ---- ```statement: display type, for the one or two lines the workshop
+       exists to make somebody repeat. "You gate on tests. You gate on
+       security scans. You do not gate on recoverability." is the thesis of
+       the whole day and it was rendering as grey mono in a box identical to
+       every other panel. The bolded line takes Rose, because it is the one
+       that is not true yet. ---- */
+.statement { margin: 26px 0 30px; }
+.statement p {
+  margin: 0; font-size: 26px; line-height: 1.35; font-weight: 700;
+  letter-spacing: -0.015em; color: var(--ink); text-wrap: balance;
+}
+.statement p strong { font-weight: 700; color: var(--no); }
+@media (max-width: 620px) { .statement p { font-size: 21px; } }
+
+/* ---- a verdict row in a definition list takes the verdict's own color as a
+       rule, so four opposite answers read as a shape and not as four
+       identical lines. ---- */
+.dl-key.dl-yes, .dl-key.dl-no {
+  border-left: 3px solid var(--line); padding-left: 12px; margin-left: -15px;
+}
+.dl-key.dl-yes { border-left-color: var(--yes); }
+.dl-key.dl-no  { border-left-color: var(--no); }
+
+
+/* ---- MOTION. 160ms on everything a reader touches. There was none at all
+       until 2026-08-19, so every hover snapped. The research on Stripe,
+       Linear and Vercel puts hover states and focus rings in the same
+       sentence as the craft; this is that sentence, applied. ---- */
+.reveal summary, .aside-fold > summary, .pager a, .crumb a {
+  transition: color 160ms ease, background-color 160ms ease,
+              border-color 160ms ease;
+}
+.mark, .deflist-card, .inherited {
+  transition: box-shadow 160ms ease;
+}
+.deflist-card:hover { box-shadow: var(--shadow); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}

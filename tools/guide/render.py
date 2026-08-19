@@ -6,9 +6,9 @@ behavior in assets/app.js; this module only produces markup.
 
 Two build modes from one markdown:
   solo  every chapter renders in full (the self-paced product)
-  room  chapters tagged SOLO render as inherited stubs: one sentence plus
-        that chapter's ✦ checkpoint as the summary of what participants
-        arrive with. Numbering stays stable across modes.
+  room  chapters tagged SOLO are not rendered at all; each one's ✦
+        checkpoint rides on the next rendered page as what the
+        participant arrives holding. Chapters are numbered per build.
 
 The step rail: within a page, each command block opens a numbered step and
 everything until the next command belongs to it. Derived purely from the
@@ -61,7 +61,7 @@ def sentence(label):
 DIAG_CLASS = {"✓": "yes", "✗": "no", "⏱": "clock"}
 
 
-def render_nodes(nodes, images):
+def render_nodes(nodes, images, mode='solo', icons=None):
     out = []
     for node in nodes:
         kind = node[0]
@@ -71,18 +71,27 @@ def render_nodes(nodes, images):
             out.append(f"<blockquote>{inline(node[1])}</blockquote>")
         elif kind in ("h2", "h3"):
             out.append(f"<{kind}>{inline(node[1])}</{kind}>")
+        elif kind == "h2s":                      # a chapter's ### section
+            out.append(f'<h2 class="section">{inline(node[1])}</h2>')
         elif kind == "cmd":
             out.append(render_cmd(node[1]))
         elif kind == "diag":
             out.append(render_diag(node[1]))
         elif kind == "aside":
-            out.append(render_titled(node, "aside", "aside-title"))
+            out.append(render_aside(node, mode))
         elif kind == "reveal":
             out.append(render_reveal(node[1], node[2]))
         elif kind == "mark":
             out.append(render_titled(node, "mark", "mark-title"))
         elif kind == "dolearn":
             out.append(render_dolearn(node[1]))
+        elif kind == "deflist":
+            out.append(render_deflist(node[1], icons, len(node) > 2 and node[2]))
+        elif kind == "statement":
+            out.append(
+                '<div class="statement">'
+                + "".join(f"<p>{inline(l)}</p>" for l in node[1])
+                + "</div>")
         elif kind == "panel":
             out.append(f'<pre class="panel">{esc(node[1])}</pre>')
         elif kind == "fig":
@@ -100,26 +109,40 @@ def render_cmd(code):
 
 
 def render_diag(rows):
-    """✓ rows quote OUTPUT: line breaks are meaning, so they render
-    preformatted. ✗ and ⏱ rows are GUIDANCE: prose that flows to the
-    full content width."""
-    parts = ['<div class="diag">']
+    """A diagnostic row has two halves and they are not the same kind of text.
+
+    The label line is DESCRIPTION: the author's sentence about what the
+    participant is looking at. It is prose, so it flows to the full content
+    width and rewraps with the window.
+
+    The indented continuation is QUOTED OUTPUT: line breaks carry meaning
+    (a ladder bar, an aggregate line), so it stays preformatted.
+
+    Rendering both as one <pre> is why expected-output boxes used to wrap at
+    the ~46 columns they happened to be authored at, inside a container twice
+    that wide, breaking sentences mid-clause for no reason. ✗ and ⏱ rows are
+    guidance throughout and have no quoted half."""
+    parts = ['<aside class="diag" role="note">']
     for row in rows:
         cls = DIAG_CLASS[row["glyph"]]
-        if row["glyph"] == "✓":
-            body = row["text"]
-            if row["cont"]:
-                body = (body + "\n" if body else "") + "\n".join(row["cont"])
-            content = f"<pre>{verdicts(esc(body))}</pre>"
-        else:
-            joined = " ".join(
-                [row["text"]] + [l.strip() for l in row["cont"] if l.strip()])
-            content = f'<p class="diag-text">{verdicts(esc(joined.strip()))}</p>'
+        chunks = []
+        if row["text"]:
+            chunks.append(
+                f'<p class="diag-text">{verdicts(esc(row["text"]))}</p>')
+        if row["cont"]:
+            if row["glyph"] == "✓":
+                quoted = "\n".join(row["cont"])
+                chunks.append(f"<pre>{verdicts(esc(quoted))}</pre>")
+            else:
+                flowed = " ".join(l.strip() for l in row["cont"] if l.strip())
+                chunks.append(
+                    f'<p class="diag-text">{verdicts(esc(flowed))}</p>')
+        content = "".join(chunks)
         parts.append(
             f'<div class="diag-row diag-{cls}">'
             f'<p class="diag-label"><span class="diag-mark">{row["glyph"]}'
             f"</span>{esc(sentence(row['label']))}</p>{content}</div>")
-    parts.append("</div>")
+    parts.append("</aside>")
     return "\n".join(parts)
 
 
@@ -136,8 +159,28 @@ def render_parts(parts):
 def render_titled(node, cls, title_cls):
     _, title, parts = node
     marker = "? " if cls == "aside" else "✦ "
-    return (f'<div class="{cls}"><p class="{title_cls}">{marker}'
-            f"{esc(sentence(title))}</p>{render_parts(parts)}</div>")
+    tag = "aside" if cls == "aside" else "div"
+    role = ' role="note"' if cls == "aside" else ""
+    return (f'<{tag} class="{cls}"{role}><p class="{title_cls}">{marker}'
+            f"{esc(sentence(title))}</p>{render_parts(parts)}</{tag}>")
+
+
+def render_aside(node, mode):
+    """An aside explains WHY. In a SOLO build the page is the only teacher, so
+    it is open. In a ROOM the facilitator is the teacher, and several of these
+    are their lines: the reveal in Break is the moment the day turns on. A page
+    that prints it beside the command hands the punchline to anyone reading
+    ahead, and competes with the human for the same 15 minutes.
+
+    So the room build collapses them. Same words, same file, one click away,
+    and the take-home reading is not lost: participants who want the full text
+    open it, or read the solo build afterwards."""
+    if mode != "room":
+        return render_titled(node, "aside", "aside-title")
+    _, title, parts = node
+    return (f'<details class="aside aside-fold"><summary>? '
+            f"{esc(sentence(title))}</summary><div>{render_parts(parts)}"
+            "</div></details>")
 
 
 def render_reveal(title, parts):
@@ -152,6 +195,40 @@ def render_dolearn(rows):
     return f'<div class="dolearn">{cells}</div>'
 
 
+def render_deflist(rows, icons=None, card=False):
+    """A ```list fence: label in a mono column, text as PROSE that flows to
+    the full content width and rewraps with the window.
+
+    This is the same distinction the ✓ box makes. A plain fence is
+    preformatted because a diagram's alignment is its meaning; a definition
+    list is a label beside a sentence, and a sentence that breaks where the
+    author's editor happened to wrap is just a narrower page for no reason."""
+    icons = icons or {}
+    cells = []
+    any_icon = any(row.get("icon") for row in rows)
+    for row in rows:
+        body = "".join(f"<p>{inline(par)}</p>" for par in row["paras"])
+        joined = " ".join(row["paras"])
+        vclass = ""
+        if any(w in joined for w in VERDICTS_YES):
+            vclass = " dl-yes"
+        elif any(w in joined for w in VERDICTS_NO):
+            vclass = " dl-no"
+        mark = ""
+        if row.get("icon"):
+            mark = (f'<img class="dl-icon" src="{icons[row["icon"]]}" alt="">')
+        elif any_icon:
+            mark = '<span class="dl-icon"></span>'   # keep the column aligned
+        cells.append(f'<div class="dl-row">{mark}'
+                     f'<span class="dl-key{vclass}">'
+                     f'{esc(row["label"])}</span><div class="dl-val">'
+                     f"{body}</div></div>")
+    cls = "deflist deflist-iconed" if any_icon else "deflist"
+    if card:
+        cls += " deflist-card"
+    return f'<div class="{cls}">{"".join(cells)}</div>'
+
+
 def render_fig(caption, path, images):
     uri = images[path]
     cap = f"<figcaption>{inline(caption)}</figcaption>" if caption else ""
@@ -161,7 +238,7 @@ def render_fig(caption, path, images):
 
 # ---------------------------------------------------------------- steps
 
-def render_body(nodes, images):
+def render_body(nodes, images, mode='solo', icons=None):
     """Section-aware: a ### heading or chapter-level furniture (DO/LEARN,
     ✦ checkpoint, ?! reveal) closes the step rail; step numbering runs
     continuously across a chapter's sections."""
@@ -175,7 +252,7 @@ def render_body(nodes, images):
         if step is not None:
             parts.append(
                 f'<div class="step"><span class="step-num">{counter}</span>'
-                f'<div class="step-body">{render_nodes(step, images)}'
+                f'<div class="step-body">{render_nodes(step, images, mode, icons)}'
                 "</div></div>")
             step = None
 
@@ -195,56 +272,87 @@ def render_body(nodes, images):
                 rail_open = True
             counter += 1
             step = [node]
-        elif kind in ("h2", "h3", "dolearn", "mark", "reveal"):
+        elif kind in ("h2", "h2s", "h3", "dolearn", "mark", "reveal"):
             close_rail()
-            parts.append(render_nodes([node], images))
+            parts.append(render_nodes([node], images, mode, icons))
         elif step is not None:
             step.append(node)
         else:
-            parts.append(render_nodes([node], images))
+            parts.append(render_nodes([node], images, mode, icons))
     close_rail()
     return "\n".join(parts)
 
 
-def stub_body(chapter, images):
-    """A SOLO chapter in a room build: participants inherit its result.
-    The chapter's own ✦ checkpoint is the honest summary of what they get."""
-    mark = next((n for n in chapter["body"] if n[0] == "mark"), None)
-    out = ["<p>This chapter was completed for you before the session. "
-           "Your workload arrives with its result already in place:</p>"]
-    if mark:
-        out.append(render_nodes([mark], images))
-    return "\n".join(out)
+def inherited_band(chapters, images):
+    """A ROOM build does not render SOLO chapters, because a room does not do
+    them: the facilitator provisions, drills and retires the lab in prep.
+
+    Emitting them as their own pages produced a sidebar where a fifth of the
+    entries said "there is nothing here for you". Instead each omitted
+    chapter's ✦ checkpoint rides on top of the next page that IS rendered, as
+    a statement of what the participant arrives holding. Nothing is lost;
+    tests/test_participant_guide.py pins that every ✦ in the solo build also
+    reaches the room build."""
+    marks = [n for ch in chapters for n in ch["body"] if n[0] == "mark"]
+    if not marks:
+        return ""
+    return ('<div class="inherited">'
+            '<p class="inherited-title">You arrive with</p>'
+            + render_nodes(marks, images) + "</div>")
 
 
 # ---------------------------------------------------------------- pages
 
-def build_pages(ws, images, mode):
+def promote_sections(nodes):
+    """A page whose title came from a `## ` heading has that heading as its
+    h1, so the `### ` sections beneath it are the page's SECOND level and
+    have to render as <h2>. Emitting <h3> skipped a level and gave a screen
+    reader a broken outline on every chapter, on Setup and on the closing
+    page at once.
+
+    The test is simply whether the page already has an h2 of its own: the
+    Overview does, because its `## ` sections stay in the body, so this is a
+    no-op there. Authoring never changes; `## ` remains reserved for page
+    boundaries in the dialect."""
+    if any(n[0] == "h2" for n in nodes):
+        return list(nodes)
+    return [("h2s", n[1]) if n[0] == "h3" else n for n in nodes]
+
+
+def build_pages(ws, images, mode, icons=None):
     """The ordered page list: Overview, Setup, the chapters, close."""
+    overview = [n for n in ws["overview"] if n[0] != "hero"]
     pages = [{
         "route": "#/overview", "pid": "page-overview", "title": "Overview",
-        "crumb": None, "kicker": None, "meta": None,
-        "body": render_body(ws["overview"], images),
+        "crumb": None, "kicker": None, "meta": None, "icon": None,
+        "hero": next((n[1] for n in ws["overview"] if n[0] == "hero"), None),
+        "body": render_body(promote_sections(overview), images, mode, icons),
     }]
     if ws["setup"]:
         pages.append({
             "route": "#/setup", "pid": "page-setup", "title": "Setup",
-            "crumb": None, "kicker": None, "meta": None,
-            "body": render_body(ws["setup"], images),
+            "crumb": None, "kicker": None, "meta": None, "icon": None,
+            "body": render_body(promote_sections(ws["setup"]), images, mode, icons),
         })
+    # Chapters are numbered per BUILD, not per markdown: a room build omits the
+    # SOLO chapters, so numbering it 1..N keeps its sidebar gapless. Solo skips
+    # nothing, so there `shown` always equals the authored number.
+    shown = 0
+    inherited = []
     for ch in ws["chapters"]:
-        stubbed = mode == "room" and ch["solo"]
-        meta = " · ".join(x for x in (ch["time"], ch["mode"]) if x)
-        if stubbed:
-            meta = "done in prep"
+        if mode == "room" and ch["solo"]:
+            inherited.append(ch)
+            continue
+        shown += 1
+        band = inherited_band(inherited, images)
+        inherited = []
+        body_nodes = promote_sections(ch["body"])
         pages.append({
-            "route": f"#/{ch['num']}", "pid": f"page-{ch['num']}",
-            "title": f"{ch['num']}. {ch['name']}",
-            "crumb": f"Chapter {ch['num']}",
-            "kicker": f"CHAPTER {ch['num']}",
-            "meta": meta,
-            "body": (stub_body(ch, images) if stubbed
-                     else render_body(ch["body"], images)),
+            "route": f"#/{shown}", "pid": f"page-{shown}",
+            "title": f"{shown}. {ch['name']}",
+            "crumb": f"Chapter {shown}",
+            "kicker": f"CHAPTER {shown}", "icon": ch.get("icon"),
+            "body": band + render_body(body_nodes, images, mode, icons),
         })
     close_nodes = list(ws["close"])
     close_title = "Close"
@@ -253,25 +361,49 @@ def build_pages(ws, images, mode):
         close_nodes = close_nodes[1:]
     pages.append({
         "route": "#/close", "pid": "page-close", "title": close_title,
-        "crumb": None, "kicker": None, "meta": None,
-        "body": render_body(close_nodes, images),
+        "crumb": None, "kicker": None, "meta": None, "icon": None,
+        "body": inherited_band(inherited, images)
+                + render_body(promote_sections(close_nodes), images, mode, icons),
     })
     return pages
 
 
-def render_landing_head(ws, codename):
-    name = codename or "‹your-codename›"
-    name_cls = "" if codename else " unset"
+def render_hero_card(lines):
+    """The masthead's terminal transcript: the workshop's whole argument in
+    eight lines, above the fold. No AWS or Google workshop opens by showing
+    you the punchline as evidence, and it is the most distinctive thing we
+    have -- it used to be on page ten.
+
+    A `$` opens a command; everything else is output, so the verdict words
+    get the same tint they carry everywhere else on the page."""
+    out = []
+    for line in lines:
+        if not line.strip():
+            out.append('<span class="hero-gap"></span>')
+        elif line.lstrip().startswith("$"):
+            out.append('<span class="hero-cmd"><i>$</i>'
+                       + esc(line.lstrip()[1:].strip()) + "</span>")
+        else:
+            out.append('<span class="hero-out">' + verdicts(esc(line)) + "</span>")
+    return f'<div class="hero-card" aria-hidden="true">{"".join(out)}</div>'
+
+
+def render_landing_head(ws, hero=None):
+    """The codename chip was removed on 2026-08-19. The codename still does
+    its real work inside the ✓ expected-output boxes, where a participant
+    compares their own resource names against the page; a chip restating it
+    at the top was a label with nothing to label."""
     stand = (f'<p class="standfirst">{inline(ws["standfirst"])}</p>'
              if ws["standfirst"] else "")
     meta = f'<p class="mast-meta">{inline(ws["meta"])}</p>' if ws["meta"] else ""
-    return (
-        '<header class="page-head"><h1>'
-        f"{esc(ws['title'])}</h1></header>{stand}{meta}"
-        f'<p class="codename{name_cls}"><span>CODENAME</span>{esc(name)}</p>')
+    card = render_hero_card(hero) if hero else ""
+    return ('<div class="mast"><div class="mast-text">'
+            '<header class="page-head"><h1>'
+            f"{esc(ws['title'])}</h1></header>{stand}{meta}"
+            f"</div>{card}</div>")
 
 
-def render_page_sections(ws, pages, codename):
+def render_page_sections(ws, pages):
     out = []
     for k, page in enumerate(pages):
         crumb = ""
@@ -281,14 +413,12 @@ def render_page_sections(ws, pages, codename):
                      '<span class="crumb-sep">›</span>'
                      f"<b>{esc(page['title'])}</b></nav>")
         if page["pid"] == "page-overview":
-            head = render_landing_head(ws, codename)
+            head = render_landing_head(ws, page.get("hero"))
         else:
             kicker = (f'<p class="kicker">{esc(page["kicker"])}</p>'
                       if page["kicker"] else "")
-            meta = (f'<span class="page-meta">{esc(page["meta"])}</span>'
-                    if page["meta"] else "")
             head = (f'{kicker}<header class="page-head">'
-                    f'<h1>{esc(page["title"])}</h1>{meta}</header>')
+                    f'<h1>{esc(page["title"])}</h1></header>')
         pager = render_pager(pages, k)
         out.append(
             f'<section class="page" id="{page["pid"]}" '
@@ -305,9 +435,8 @@ def render_pager(pages, k):
                      f'← {esc(p["title"])}</a>')
     if k < len(pages) - 1:
         p = pages[k + 1]
-        meta = f' <span>{esc(p["meta"])}</span>' if p.get("meta") else ""
         parts.append(f'<a class="pager-next" href="{p["route"]}">'
-                     f'{esc(p["title"])}{meta} →</a>')
+                     f'{esc(p["title"])} →</a>')
     parts.append("</nav>")
     return "".join(parts)
 
@@ -316,7 +445,12 @@ def render_pager(pages, k):
 
 def render_sidebar(pages):
     """The sidebar is the page list, nothing else: Overview, Setup, the
-    numbered chapters, the closing page. No ticks, no times, no badges."""
+    numbered chapters, the closing page. No ticks, no times, no badges.
+
+    Chapters carry an official Commvault icon, authored as `@name` on the
+    heading. It is navigation rather than decoration -- Mintlify and GitBook
+    both do this -- and pages without one keep the same indent so the column
+    stays straight."""
     rows = []
     for p in pages:
         m = re.match(r"^(\d+)\. (.*)$", p["title"])
@@ -350,15 +484,17 @@ TEMPLATE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}}</title>
+<link rel="icon" href="{{FAVICON}}">
 <style>
 {{CSS}}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 {{TOPBAR}}
 <div class="shell">
 {{SIDEBAR}}
-<main>
+<main id="main" tabindex="-1">
 {{PAGES}}
 </main>
 </div>
@@ -370,12 +506,13 @@ TEMPLATE = """<!doctype html>
 """
 
 
-def render_document(ws, codename, css, js, images, brand, mode):
-    pages = build_pages(ws, images, mode)
+def render_document(ws, css, js, images, brand, mode, icons=None):
+    pages = build_pages(ws, images, mode, icons)
     return (TEMPLATE
             .replace("{{TITLE}}", esc(ws["title"]))
+            .replace("{{FAVICON}}", brand["favicon"])
             .replace("{{CSS}}", css)
             .replace("{{TOPBAR}}", render_topbar(ws, brand))
             .replace("{{SIDEBAR}}", render_sidebar(pages))
-            .replace("{{PAGES}}", render_page_sections(ws, pages, codename))
+            .replace("{{PAGES}}", render_page_sections(ws, pages))
             .replace("{{JS}}", js))

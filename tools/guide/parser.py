@@ -7,11 +7,12 @@ to hand-edit HTML.
 
 The dialect:
   # TITLE                       first h1 = workshop title
-  ## Chapter N · Name · ~Nm · MODE · SOLO
-                                one page per chapter; time, mode
-                                (LIVE/OFFLINE) and the SOLO audience tag
-                                are optional. SOLO chapters render as
-                                inherited stubs in a room-mode build.
+  ## Chapter N · Name · @icon · SOLO
+                                one page per chapter. @icon puts an official
+                                Commvault icon in the sidebar. SOLO is a tag
+                                and it is optional: a SOLO chapter is
+                                omitted from a room-mode build, its ✦
+                                checkpoint carried onto the next page.
   ## / ### other headings       start-page sections before chapter 1,
                                 closing-page sections after the last
   > quote                       blockquote
@@ -19,6 +20,18 @@ The dialect:
   ![caption](images/x.png)      figure, inlined as a data URI at build
   ```bash fences                participant commands
   ``` starting ✓/✗/⏱            diagnostic rows (expected / if-not / timing)
+  ```hero fences                a terminal transcript for the masthead. One
+                                per workshop, authored in the front matter,
+                                rendered beside the title rather than in the
+                                body. `$` opens a command line.
+  ```statement fences           display type. For the one or two lines the
+                                workshop exists to make somebody repeat.
+                                Inline markup is processed, so **bold**
+                                carries the punch line.
+  ```list fences                a definition list: `label  text` rows,
+                                label in a column, text FLOWING full width.
+                                An optional `@icon-name ` prefix attaches an
+                                official Commvault icon to the row
   ``` starting DO               the DO/LEARN orientation strip
   ``` starting ?!               a collapsed reveal (answers), title first
   ``` starting ?                a quiet aside, title first
@@ -30,7 +43,7 @@ IR shape (plain dicts, no classes to maintain):
   workshop = {
     "title": str, "standfirst": str, "meta": str,
     "setup": [node, ...],
-    "chapters": [{"num", "name", "time", "mode", "solo", "body": [...]}],
+    "chapters": [{"num", "name", "solo", "body": [...]}],
     "close": [node, ...],
   }
 """
@@ -105,11 +118,22 @@ def parse(text):
             flush()
             parts = [p.strip() for p in m.group(2).split("·")]
             name = parts[0]
-            time = next((p for p in parts[1:]
-                         if re.match(r"^~?\d+ ?min$", p)), "")
-            mode = next((p for p in parts[1:] if p in ("OFFLINE", "LIVE")), "")
-            solo = any(p == "SOLO" for p in parts[1:])
-            nodes.append(("chapter", int(m.group(1)), name, time, mode, solo))
+            # SOLO is the ONLY tag a chapter heading carries. Per-chapter time
+            # and mode badges were removed on 2026-08-19: the page no longer
+            # shows them, so the markdown no longer holds them. A leftover
+            # `~15 min` or `LIVE` is a hard error rather than a silent no-op,
+            # because data nothing displays is data nobody maintains.
+            icon = next((p[1:] for p in parts[1:] if p.startswith("@")), None)
+            unknown = [p for p in parts[1:]
+                       if p != "SOLO" and not p.startswith("@")]
+            if unknown:
+                raise SystemExit(
+                    f"line {i + 1}: chapter heading carries {unknown!r}; a "
+                    "chapter takes SOLO and an @icon-name, nothing else. "
+                    "Per-chapter time and mode are not rendered, so they are "
+                    "not authored. See tools/guide/DIALECT.md.")
+            nodes.append(("chapter", int(m.group(1)), name,
+                          any(p == "SOLO" for p in parts[1:]), icon))
             i += 1
             continue
 
@@ -135,10 +159,17 @@ def parse(text):
 def classify_fence(lang, body, fence_line):
     if lang == "bash":
         return ("cmd", "\n".join(body).strip())
+    if lang == "hero":
+        return ("hero", [l.rstrip() for l in body])
+    if lang == "statement":
+        return ("statement", [l.strip() for l in body if l.strip()])
+    if lang in ("list", "list card"):
+        return ("deflist", list_rows(body, fence_line + 1), lang == "list card")
     if lang != "":
         raise SystemExit(
             f"line {fence_line}: unknown fence language {lang!r}; the "
-            "dialect knows ```bash and plain fences only")
+            "dialect knows ```bash, ```list, ```list card, ```statement, "
+            "```hero and plain fences only")
     first = next((l.strip() for l in body if l.strip()), "")
     if first and first[0] in GLYPHS:
         return ("diag", diag_rows(body, fence_line + 1))
@@ -197,6 +228,66 @@ def diag_rows(body, body_start):
     for row in rows:
         row["cont"] = dedent(row["cont"]).split("\n") if any(
             l.strip() for l in row["cont"]) else []
+    return rows
+
+
+def list_rows(body, body_start):
+    """A ```list fence: a definition list of `label  text` rows.
+
+    WHY THIS EXISTS. Most of this guide's list content is not a diagram, it
+    is a label beside a sentence. Authored in a plain fence it rendered
+    preformatted, so it broke wherever the AUTHOR happened to wrap it and
+    used about half the page. Prose has to reflow; a diagram must not. The
+    build cannot tell them apart safely -- a two-column table has no box
+    characters either -- so the author says which, the same way ```bash
+    already says a fence is a command.
+
+    A blank line inside a row's continuation starts a new paragraph."""
+    rows = []
+    # Fence bodies in this dialect are indented one space by house style, so
+    # "column zero" is the shallowest indent present, not literal column 0.
+    kept = [l for l in body if l.strip()]
+    base = min(len(l) - len(l.lstrip()) for l in kept) if kept else 0
+    for idx, line in enumerate(body):
+        s = line.strip()
+        if not s and rows:
+            rows[-1]["cont"].append("")
+            continue
+        if not s:
+            continue
+        if len(line) - len(line.lstrip()) <= base:
+            # An optional @icon-name prefix attaches an official Commvault
+            # icon to the row. Explicit in the markdown on purpose: an icon
+            # chosen by a lookup table somewhere in the build would be a
+            # second home for a decision the author is making.
+            icon = None
+            im = re.match(r"^@([a-z0-9-]+)\s+(.*)$", s)
+            if im:
+                icon, s = im.group(1), im.group(2).strip()
+            m = re.match(r"^(\S.*?)\s{2,}(.*)$", s)
+            if not m:
+                raise SystemExit(
+                    f"line {body_start + idx}: list row {s!r} has no text; "
+                    "the rule is a label, then two or more spaces, then the "
+                    "text. Indent a line to continue the row above.")
+            rows.append({"label": m.group(1).strip(), "icon": icon,
+                         "text": m.group(2).strip(), "cont": []})
+        elif rows:
+            rows[-1]["cont"].append(s)
+        else:
+            raise SystemExit(
+                f"line {body_start + idx}: a ```list fence starts with an "
+                f"indented line {s!r}; the first line must be a label row")
+    for row in rows:
+        paras, current = [], [row["text"]]
+        for piece in row["cont"]:
+            if piece == "":
+                if current: paras.append(" ".join(current)); current = []
+            else:
+                current.append(piece)
+        if current:
+            paras.append(" ".join(current))
+        row["paras"] = [x for x in paras if x]
     return rows
 
 
@@ -282,8 +373,8 @@ def group(nodes):
                     "'## Chapter' found after closing-page content began. "
                     "A bare '## ' heading inside a chapter starts the "
                     "closing page; use '### ' for sections inside chapters")
-            chapter = {"num": node[1], "name": node[2], "time": node[3],
-                       "mode": node[4], "solo": node[5], "body": []}
+            chapter = {"num": node[1], "name": node[2], "solo": node[3],
+                       "icon": node[4], "body": []}
             chapters.append(chapter)
             seen_chapter = True
             continue

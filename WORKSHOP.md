@@ -5,7 +5,9 @@
 
 **Level** 300-400 · **Duration** 6h35m door to door · **Audience** platform engineers, SREs, cloud architects
 
-Worksheets: [WORKSHEETS.md](WORKSHEETS.md). Delivering this? There is a facilitator runbook — prep, timings, break-glass and what not to claim. It is shared directly rather than published; ask whoever owns the workshop.
+Worksheets: [WORKSHEETS.md](WORKSHEETS.md). Delivering this? There is a facilitator runbook – prep, timings, break-glass and what not to claim. It is shared directly rather than published; ask whoever owns the workshop.
+
+**This is the six-hour day, and it is a separate artifact from the two-hour one.** [WORKSHOP-2H.md](WORKSHOP-2H.md) aims at conviction and is built into a participant HTML by `tools/guide/`; this document aims at capability, is read as markdown, and carries three exercises the short day has no room for: the trust map, verify-your-verifier, and writing an attester for a workload shape you actually run. The two share a subject and deliberately not a structure. Do not expect them to match.
 
 ---
 
@@ -37,7 +39,7 @@ Recovering a service you can no longer trust is five decisions. **You are not go
  M1  Broken trust                60m   what can you still trust?
  M2  Recoverability as code      50m   the check, and how it scales
  M3  Verify your verifier        30m   the most transferable 30 minutes
- M4  Lab — declare and prove     75m   you write an attester
+ M4  Lab – declare and prove     75m   you write an attester
  M5  Game day                    75m   break it, then choose
      Close                       20m
 ```
@@ -63,7 +65,7 @@ source .venv/bin/activate
 
 ---
 
-# M1 · Recovery under broken trust
+# M1 · Recovery Under Broken Trust
 
 **60 minutes · OFFLINE**
 
@@ -76,22 +78,22 @@ python3 -m resops gate config/estate.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   six workloads, each rendered like this —
+ ✓ YOU SHOULD SEE   six workloads, each rendered like this –
 
    ▸ payments-api  prod  payments  (critical)
      ●●●●●●  VALIDATED  ·  RPO 3.0h
-     ↳ recovery proven — job 884730
+     ↳ recovery proven – job 884730
      PROMOTE  recoverability proven · exit 0
 
    ▸ checkout-api  prod  payments  (critical)
      ●●●●✗·  RECOVERABLE  ·  RPO 4.0h  blocked at Scan
-     ↳ recovery point failed restore-verify — 14 encrypted (.locked) files present
+     ↳ recovery point failed restore-verify – 14 encrypted (.locked) files present
      HOLD  ... · exit 1
 
-   — and four more blocked at Validate, Detect, Recover and Discover,
+   – and four more blocked at Validate, Detect, Recover and Discover,
    then a final line:
 
-   AGGREGATE  HOLD — checkout-api, identity-svc, reporting-db,
+   AGGREGATE  HOLD – checkout-api, identity-svc, reporting-db,
                      edge-cache, legacy-batch · exit 1
 
  ✗ IF NOT   `pip install -e .` then try again.
@@ -108,7 +110,7 @@ The **bar** is the six stages. The **state** is where you stopped. **blocked at*
    problem you already know how to describe. That one is not.
 
    checkout-api and identity-svc sit on the SAME rung for opposite
-   reasons — one was tested and is contaminated, one was never
+   reasons – one was tested and is contaminated, one was never
    tested. The rung hides that. The blocked stage names it.
 ```
 
@@ -134,7 +136,7 @@ Write it. Fold it. Hand it in. You get it back at the close.
 
 `orders-api` is a tier-1 payments service. 41,892 customer records.
 
-A deployment landed Tuesday. A storage credential with broad access was over-permissioned and used from an address nobody recognises. This morning there is a `README_RECOVER.txt` in the data directory.
+A deployment landed Tuesday. A storage credential with broad access was over-permissioned and used from an address nobody recognizes. This morning there is a `README_RECOVER.txt` in the data directory.
 
 The service is still responding. Dashboards are green.
 
@@ -145,7 +147,7 @@ Every workload, at any size, is made of four things. Yours has forty services an
 ```
  CODE       what executes            did this come from the pipeline?
  STATE      what it has written      it changed after the deploy. expected?
- CONFIG     what shapes behaviour    who can write this?
+ CONFIG     what shapes behavior    who can write this?
  IDENTITY   what it can reach with   this is the blast radius
 ```
 
@@ -172,7 +174,7 @@ Then:
 
 ```
  4. What single missing fact would move the most boxes out of UNKNOWN?
- 5. Your backups. Trusted, untrusted or unknown — and why?
+ 5. Your backups. Trusted, untrusted or unknown – and why?
 ```
 
 ```
@@ -189,7 +191,7 @@ Then:
 Most tables write **unknown** at question 5. So:
 
 ```
- The credential that was misused — could it reach your backups?
+ The credential that was misused – could it reach your backups?
  Could it delete them? Could it change their retention?
  Who would know if it had?
 ```
@@ -204,7 +206,7 @@ Most tables write **unknown** at question 5. So:
                                  is attached, on every run
 
    A control you declared and never verified is a control you
-   hope you have. Hold that thought — M2 explains why some things
+   hope you have. Hold that thought – M2 explains why some things
    belong in a console and some never do.
 ```
 
@@ -212,7 +214,7 @@ Most tables write **unknown** at question 5. So:
 
 ---
 
-# M2 · Recoverability as code
+# M2 · Recoverability as Code
 
 **50 minutes · OFFLINE**
 
@@ -305,10 +307,10 @@ python3 -m resops gate config/estate.yaml
  ✓ YOU SHOULD SEE
 
    HOLD  stuck at PROTECTED: last backup not clean ... · exit 1
-   ↳ TOLERATED until 2027-01-01 — still a HOLD, excluded from the
+   ↳ TOLERATED until 2027-01-01 – still a HOLD, excluded from the
      aggregate until that date
 
-   AGGREGATE  HOLD — checkout-api, identity-svc, edge-cache,
+   AGGREGATE  HOLD – checkout-api, identity-svc, edge-cache,
                      legacy-batch · 1 TOLERATED (reporting-db) · exit 1
 
  ✗ IF NOT   exit 2 means a malformed date. it must be YYYY-MM-DD.
@@ -326,7 +328,7 @@ git checkout config/estate.yaml
    Only the aggregate stopped counting it, and only until that date.
 
    A bypass hides a gap. This declares one, counts it, and expires
-   by itself. A date, not a flag — a flag is permanent the moment
+   by itself. A date, not a flag – a flag is permanent the moment
    someone forgets it.
 
    The count publishes as resops_tolerated, so "we have 3 unenforced"
@@ -371,7 +373,7 @@ Discussion. No commands.
 ```
 
 ```
- WHO OWNS WHAT — the argument you will have when you get back
+ WHO OWNS WHAT – the argument you will have when you get back
 
    verify.sh    the app team      only they know what "good" is
    the drill    platform          it is infrastructure
@@ -383,7 +385,7 @@ Discussion. No commands.
 
 ---
 
-# M3 · Verify your verifier
+# M3 · Verify Your Verifier
 
 **30 minutes · WORKSHEET 3**
 
@@ -401,7 +403,7 @@ A real recovery point, from a real tenant. This is what you would be restoring f
 
 **Vote. Out loud, hands up, before anything else is said.**
 
-Then open the recovery point yourself and find the field nobody reads —
+Then open the recovery point yourself and find the field nobody reads –
 `threatStatsForRecovery`:
 
 ```
@@ -424,7 +426,7 @@ Measured on our own workload: **19 recovery points, every one of them `0`.**
 
 ```
  ⚠ THE SCANNED EXAMPLE IS FROM A DIFFERENT VM GROUP.
-   Threat scan populates Client/Anomaly for our workload, and it works — it
+   Threat scan populates Client/Anomaly for our workload, and it works – it
    found the 2 planted files. It has never populated threatStatsForRecovery
    for us. So you can reproduce the LEFT column on your own workload, and
    the right-hand counts only on the one group in this tenant that ever
@@ -484,7 +486,7 @@ Starters:
 
 ---
 
-# M4 · Lab — declare and prove
+# M4 · Lab – Declare and Prove
 
 **75 minutes · LIVE · WORKSHEET 4**
 
@@ -514,14 +516,14 @@ grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
  ? WHY YOU READ IT HERE AND NOT OVER SSH
    That VM has no public IP, no inbound NSG rule, no open ports.
    You cannot reach it and neither can anything else. The only way
-   in is the guest agent — which is exactly how the drill runs this
+   in is the guest agent – which is exactly how the drill runs this
    script inside the RESTORED copy.
 
    The workload being unreachable is the point. The attester still
    ran, inside a machine nobody could log into.
 ```
 
-Twenty-five lines. Five checks. Full contract in [VERIFY.md](VERIFY.md).
+About seventy lines. Five checks. Full contract in [VERIFY.md](VERIFY.md).
 
 ## 4.2 · Write a check for YOUR shape · 45 min · WORKSHEET 4
 
@@ -564,7 +566,7 @@ The right column is what a backup product already tells you. The left requires o
 ```
 
 ```
- ✗ DO NOT TEAR DOWN   your workload is needed in M5 — the game day
+ ✗ DO NOT TEAR DOWN   your workload is needed in M5 – the game day
                       breaks and restores this same VM. you retire
                       it at the close, and not before.
 ```
@@ -573,7 +575,7 @@ The right column is what a backup product already tells you. The left requires o
 
 ---
 
-# M5 · Game day
+# M5 · Game Day
 
 **75 minutes · LIVE + OFFLINE · WORKSHEET 5**
 
@@ -615,7 +617,7 @@ op backup   infra/workloads
 ```
  ? WHAT YOU ARE WATCHING
    Your own planted compromise being committed into a recovery point.
-   The job goes Completed. Green. Correct. Nothing is broken —
+   The job goes Completed. Green. Correct. Nothing is broken –
    which is exactly what makes it dangerous.
 ```
 
@@ -636,28 +638,28 @@ op gate    infra/workloads
                     you want. It has no public IP, so there is nothing to
                     connect to, by design. Press Enter when you are done.
 
- ✓ YOU SHOULD SEE   from op restore —
+ ✓ YOU SHOULD SEE   from op restore –
 
    FAIL: 14 encrypted (.locked) files present
 
    === DRILL VERDICT ===
      job status : Completed
-     azure VM   : PASS — exists & running
-     attestation: FAIL — attestation failed
+     azure VM   : PASS – exists & running
+     attestation: FAIL – attestation failed
 
-   RESTORE DRILL DID NOT PASS — the restored copy is not clean —
+   RESTORE DRILL DID NOT PASS – the restored copy is not clean –
    verify.sh said so inside it.
 
-                    then from op gate —
+                    then from op gate –
 
    ●●●●✗·  RECOVERABLE  blocked at Scan
-   ↳ recovery point failed restore-verify — 14 encrypted (.locked) files present
+   ↳ recovery point failed restore-verify – 14 encrypted (.locked) files present
    ↓ regressed VALIDATED→RECOVERABLE
    HOLD  exit 1
 ```
 
 ```
- ✗ IF NOT   op restore exiting NON-ZERO here is CORRECT — it is the drill
+ ✗ IF NOT   op restore exiting NON-ZERO here is CORRECT – it is the drill
             refusing to certify a compromised copy, not a broken command.
 
             If the HOLD says "failed threatscan" instead of
@@ -726,7 +728,7 @@ python3 -m resops verify config/incident.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   audit trail intact — hash chain verified
+ ✓ YOU SHOULD SEE   audit trail intact – hash chain verified
 ```
 
 **Pull a report in the console** and put it beside the bundle.
@@ -752,7 +754,7 @@ Write the evidence outline: what would you show leadership, an auditor, and your
 **20 minutes · WORKSHEET 6**
 
 **First, retire your workload.** It has done its job, and it costs money until it
-is gone. Start this now — it runs while you write.
+is gone. Start this now – it runs while you write.
 
 ```bash
 op teardown infra/workloads
@@ -795,7 +797,7 @@ L1 is read-only and physically cannot mutate your environment. There is a test e
                                for managed DB and buckets are not written
  restore-verify costs money    sampling plus a per-tier freshness bar is
                                a policy, not a cost model. we have none.
- the crosswalk is INDICATIVE   supports a resilience programme.
+ the crosswalk is INDICATIVE   supports a resilience program.
                                not a formal attestation.
  nobody owns this by default   it spans three teams who mostly do not
                                talk about recovery together

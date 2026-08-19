@@ -20,6 +20,7 @@ from guide import parser, render  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent.parent
 ASSETS = Path(__file__).resolve().parent / "assets"
+ICONS = ASSETS / "icons"
 
 CSS_ORDER = ["tokens.css", "base.css", "components.css", "layout.css"]
 MIME = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -52,6 +53,32 @@ def inline_images(nodes_flat, md_dir):
                 print(f"warning: images/{f.name} is not referenced by "
                       "WORKSHOP-2H.md", file=sys.stderr)
     return images
+
+
+def inline_icons(needed):
+    """Official Commvault icons from assets/icons/, inlined as data URIs.
+
+    Data URI rather than inline markup because the source files share ids
+    (`In_progress`, `COMPLETED_ICONS`) and a `.cls-1` class, so pasting
+    several into one document produces duplicate ids and colliding CSS.
+    They are the MIDNIGHT variants: the color budget reserves crocus for
+    interaction, and an icon is content."""
+    out = {}
+    for name in sorted(needed):
+        path = ICONS / f"{name}.svg"
+        if not path.is_file():
+            raise SystemExit(
+                f"unknown icon @{name}: expected "
+                f"{path.relative_to(REPO)}. Official icons only.")
+        raw = path.read_bytes()
+        out[name] = "data:image/svg+xml;base64," + \
+            base64.b64encode(raw).decode("ascii")
+    if ICONS.is_dir():
+        for f in sorted(ICONS.glob("*.svg")):
+            if f.stem not in needed:
+                print(f"warning: assets/icons/{f.name} is not used by any "
+                      "@icon row", file=sys.stderr)
+    return out
 
 
 def check_expected_output(workshop):
@@ -114,6 +141,10 @@ def build(md_path, out_path, codename=None, mode="solo"):
     check_expected_output(workshop)
 
     images = inline_images(nodes, Path(md_path).resolve().parent)
+    needed = {r["icon"] for n in nodes if n[0] == "deflist"
+              for r in n[1] if r.get("icon")}
+    needed |= {n[4] for n in nodes if n[0] == "chapter" and n[4]}
+    icons = inline_icons(needed)
     css = "\n".join((ASSETS / name).read_text(encoding="utf-8")
                     for name in CSS_ORDER)
     js = (ASSETS / "app.js").read_text(encoding="utf-8")
@@ -122,9 +153,9 @@ def build(md_path, out_path, codename=None, mode="solo"):
             (ASSETS / f"brand-{name}.png").read_bytes()).decode("ascii")
         for name in ("mark", "wordmark")
     }
+    brand["favicon"] = brand["mark"]      # the tab gets the hexagon too
 
-    page = render.render_document(workshop, codename, css, js, images, brand,
-                                  mode)
+    page = render.render_document(workshop, css, js, images, brand, mode, icons)
     check_offline(page)
     if codename:
         check_codename(page, codename)

@@ -41,6 +41,10 @@
       if (active) { r.setAttribute('aria-current', 'page'); }
       else { r.removeAttribute('aria-current'); }
     });
+    /* the Overview is the only page with the aura masthead, and the aura is
+       painted on `main` so it can share the topbar's viewport origin. */
+    document.documentElement.classList.toggle(
+      'at-overview', page.dataset.route === '#/overview');
     here.textContent = page.dataset.title;
     document.title = page.dataset.title + ' · ' + brandName;
     var state = load();

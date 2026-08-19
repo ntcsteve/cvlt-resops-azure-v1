@@ -19,38 +19,38 @@ Already have an Azure subscription, a Metallic tenant, and a filled `config/work
 
 ```bash
 source .venv/bin/activate                    # pip install -e . if first time
-resops gate  config/estate.yaml              # no cloud, no token — the whole idea in one second
-op validate  infra/workloads                 # config + IAM + environment — fix blockers before touching anything
+resops gate  config/estate.yaml              # no cloud, no token – the whole idea in one second
+op validate  infra/workloads                 # config + IAM + environment – fix blockers before touching anything
 terraform -chdir=infra/workloads apply       # provision the VM
 op climb     infra/workloads                 # protect → backup → restore + verify → VALIDATED
 op gate      infra/workloads                 # PROMOTE / HOLD + DORA/NIST/APRA evidence report
-op incident  infra/workloads                 # optional — break trust, then backup + restore → HOLD
-op teardown  infra/workloads                 # always run this — the VM costs money until you do
+op incident  infra/workloads                 # optional – break trust, then backup + restore → HOLD
+op teardown  infra/workloads                 # always run this – the VM costs money until you do
 ```
 
-New here? Start with [See it first](#see-it-first---one-command-no-cloud-no-token) below (zero setup), then follow [Part 1 — Set up](#part-1---set-up-once-15-min).
+New here? Start with [See it first](#see-it-first---one-command-no-cloud-no-token) below (zero setup), then follow [Part 1 – Set up](#part-1---set-up-once-15-min).
 
 ### Which document do you want?
 
 Two different things live in this repo, and it's worth knowing which one you're reading.
 
 ```
- THE TOOLKIT — work through it yourself, at your own pace
+ THE TOOLKIT – work through it yourself, at your own pace
    README.md        ← you are here. how do I run it?      Parts 1-3 below
    RESOPS.md        what is the idea, and why adopt it?
    VERIFY.md        how do I write the one file nobody can write for me?
 
- THE FACILITATED DAY — one room, two lengths, same commands
+ THE FACILITATED DAY – one room, two lengths, same commands
    WORKSHOP.md      6h35m · five modules · you WRITE an attester
    WORKSHOP-2H.md   2h    · eight beats · you WIN THE ARGUMENT
    WORKSHEETS.md    six printable sheets (the 2h form uses only sheet 1)
-   (a facilitator runbook exists and is shared directly, not published —
+   (a facilitator runbook exists and is shared directly, not published –
     it carries delivery coaching and tenant-specific detail)
 ```
 
 **Parts 1-3 in this file** are the solo walkthrough: provision, climb, break trust, tear down. The two guides are a facilitated day built on the same commands, with setup done in advance so a room never touches terraform.
 
-**The two lengths are not long and short versions of one thing.** They aim at different outcomes, so they are shaped differently. The 6h35m form spends 45 minutes having you write a verify script for your own workload shape, because capability is the goal. The 2h form cuts that and spends 20 minutes having you argue the case out loud against someone trying to break it, because conviction is the goal — and it moves the compromise to the first half hour rather than saving it for the end. Pick the outcome, not the duration.
+**The two lengths are not long and short versions of one thing.** They aim at different outcomes, so they are shaped differently. The 6h35m form spends 45 minutes having you write a verify script for your own workload shape, because capability is the goal. The 2h form cuts that and spends 20 minutes having you argue the case out loud against someone trying to break it, because conviction is the goal – and it moves the compromise to the first half hour rather than saving it for the end. Pick the outcome, not the duration.
 
 ## See it first - one command, no cloud, no token
 
@@ -145,7 +145,7 @@ The compliance rollup is the part auditors ask for and nobody has:
  DORA Art. 11/12  periodic recovery testing    1/6  ██▁▁▁▁▁▁▁▁  ◀
 ```
 
-Everyone can identify assets. Almost nobody can *prove* they tested recovery. **This is the only compliance view that gets less green the closer you look** - because it measures whether recovery was proven, not whether a policy exists. Cardinality is bounded by controls, not workloads, so it stays ~60 series at 6 workloads or 600. *(The mapping is indicative - it supports a resilience programme, not a formal attestation.)*
+Everyone can identify assets. Almost nobody can *prove* they tested recovery. **This is the only compliance view that gets less green the closer you look** - because it measures whether recovery was proven, not whether a policy exists. Cardinality is bounded by controls, not workloads, so it stays ~60 series at 6 workloads or 600. *(The mapping is indicative - it supports a resilience program, not a formal attestation.)*
 
 ## The idea
 
@@ -215,7 +215,7 @@ platform:
   storage_pool_name: <managed-pool-name>
 ```
 
-> **Where to get `plan_id`:** two options — (a) create a plan in the console (Protect > Plans), then copy its id from the URL; or (b) run `infra/platform/` as Terraform code (`CV_TER_TOKEN` required) and copy from `terraform -chdir=infra/platform output plan_ids`. Either path lands in the same `plan_id` field — pick whichever suits your setup.
+> **Where to get `plan_id`:** two options – (a) create a plan in the console (Protect > Plans), then copy its id from the URL; or (b) run `infra/platform/` as Terraform code (`CV_TER_TOKEN` required) and copy from `terraform -chdir=infra/platform output plan_ids`. Either path lands in the same `plan_id` field – pick whichever suits your setup.
 
 **3. Tokens + tools** - copy `.env.example` to `.env` and fill in `CV_ACCESS_TOKEN` + `CV_REFRESH_TOKEN` (Command Center > avatar > Access Tokens > Add); `az login`; `pip install -e .` (puts `op` + `resops` on PATH - use a **venv** to avoid touching your system Python). No install? Run `python3 -m resops …` / `python3 -m resops.operator.op …` instead.
 
@@ -294,7 +294,7 @@ op gate      infra/workloads   # HOLD · exit 1
  HOLD  exit 1
 ```
 
-Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - twenty-five lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers, and a write that comes back as the same bytes. The one line it prints - `OK:` or `FAIL:` - is the attestation. The contract is in [VERIFY.md](VERIFY.md): it's the one file you have to write yourself, and the one nobody can write for you.
+Same workload, same commands, opposite verdict - because the recovery point is no longer trustworthy. Note *what caught it*: not a scan verdict, but `/opt/app/verify.sh` - about seventy lines of shell your workload ships, run **inside the restored copy**. Code present, baseline intact, records readable, no encryption markers, and a write that comes back as the same bytes. The one line it prints - `OK:` or `FAIL:` - is the attestation. The contract is in [VERIFY.md](VERIFY.md): it's the one file you have to write yourself, and the one nobody can write for you.
 
 ### Why a script and not a backup-product scan
 
@@ -305,7 +305,7 @@ We tried two shortcuts first and both were blind:
 | Threat scan on the backup | **works** - proven 2026-08-12: two planted EICAR files found inside an Azure VM image backup, with a clean scan either side of the dirty one. It missed fourteen encrypted files that `verify.sh` caught. A second attester, not a substitute |
 | Dedupe ratio as an integrity signal | the same idle VM ranges **57.9% - 99.7%**; 42 points of natural variance is noise, not signal |
 
-There is no way to know a backup is good without opening it - **you have to look inside.** The vendor's scan does look, for what *it* recognises. Only your own check knows whether *your* service still works. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
+There is no way to know a backup is good without opening it - **you have to look inside.** The vendor's scan does look, for what *it* recognizes. Only your own check knows whether *your* service still works. `restore-verify` is the attester you own end to end, and its verdict is one anybody in the room can read.
 
 #### What a threat scan on an Azure VM actually needs
 
@@ -360,7 +360,7 @@ gate:
   frameworks: [dora, nist-800-53, apra-cps230]
 ```
 
-Every run writes `evidence/` - `report.md` (a **Controls** column), `bundle.json`, JUnit, and a hash-chained history. **`op gate` exits 0 (PROMOTE) only at `VALIDATED` with fresh proof** (`gate.recovery_proof_max_age_days`, default 7), else exit 1 (HOLD). Wire it as a required CI check so recoverability drift fails the pipeline like a failing test - a ready-to-use workflow ships in [`.github/workflows/resops-gate.yml`](.github/workflows/resops-gate.yml). *(The mapping is indicative - it supports a resilience programme, not a formal attestation.)*
+Every run writes `evidence/` - `report.md` (a **Controls** column), `bundle.json`, JUnit, and a hash-chained history. **`op gate` exits 0 (PROMOTE) only at `VALIDATED` with fresh proof** (`gate.recovery_proof_max_age_days`, default 7), else exit 1 (HOLD). Wire it as a required CI check so recoverability drift fails the pipeline like a failing test - a ready-to-use workflow ships in [`.github/workflows/resops-gate.yml`](.github/workflows/resops-gate.yml). *(The mapping is indicative - it supports a resilience program, not a formal attestation.)*
 
 ## How it works under the hood
 

@@ -1,4 +1,4 @@
-# `verify.sh` — the recovery contract
+# `verify.sh` – the recovery contract
 
 > **This is the one file you have to write yourself, and the one nobody can write for you.**
 
@@ -55,11 +55,11 @@ From `infra/modules/azure-vm/cloud-init.yaml`. Five checks, five different quest
 [ -x /opt/app/serve.sh ] || fail "/opt/app/serve.sh missing or not executable"
 [ -s /opt/app/VERSION ]  || fail "/opt/app/VERSION missing"
 
-# 2. the known-good marker survived — "what did we still trust?"
-[ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing — no known-good state in this recovery point"
+# 2. the known-good marker survived – "what did we still trust?"
+[ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing – no known-good state in this recovery point"
 
 # 3. the records are READABLE, not merely present
-[ -s "$DATA/customers.csv" ] || fail "customers.csv missing — records lost"
+[ -s "$DATA/customers.csv" ] || fail "customers.csv missing – records lost"
 rows=$(($(wc -l < "$DATA/customers.csv") - 1))
 [ "$rows" -ge 1 ] || fail "customers.csv has no data rows"
 head -1 "$DATA/customers.csv" | grep -q '^customer,' || fail "customers.csv header is corrupt"
@@ -72,9 +72,9 @@ locked=$(find "$DATA" -name '*.locked' | wc -l)
 # 5. can it ACCEPT and RETURN data, or only hold it? A synthetic transaction.
 probe="$DATA/.verify-probe.$$"; token="resops-probe-$$"
 { echo "$token" > "$probe"; } 2>/dev/null \
-  || fail "data store not writable — the recovery point cannot accept a transaction"
+  || fail "data store not writable – the recovery point cannot accept a transaction"
 readback=$(cat "$probe" 2>/dev/null) \
-  || { rm -f "$probe"; fail "data store not readable — wrote a record, could not read it back"; }
+  || { rm -f "$probe"; fail "data store not readable – wrote a record, could not read it back"; }
 rm -f "$probe"
 [ "$readback" = "$token" ] || fail "write/read mismatch in the data store"
 
