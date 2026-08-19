@@ -11,7 +11,7 @@
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
   "walked_at": "2026-08-19",
-  "walked_commit": "ff0e74a",
+  "walked_commit": "6a5991f",
   "verified": {
     "M4.1  op gate -> ●●●●●● VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
@@ -157,5 +157,12 @@
     "RESTORE DRILL DID NOT PASS – the restored copy is not clean": "op.py:312. Spaced en dash, matching the box. Also still carried in carried_over_not_re_observed from af521f3 for the same reason.",
     "the recency HOLD changed and NO box quotes it": "gate.py's '– nothing has verified this recovery point recently' was swept too. Grepped both guides: quoted nowhere. Consistent with the note at 23cbc4f that the recency guard cannot fire inside the workshop window.",
     "the one grep hit that looked stale was not": "'failed threatscan' survives in WORKSHOP.md:665, but that is the guide's OWN prose telling a reader what a wrong HOLD would look like, and the matching line in resops/ is a comment. Neither is quoted output."
+  },
+  "reviewed_not_re_walked_at_6a5991f": {
+    "_why": "6a5991f replaced the nine-word spelling denylist with pattern guards and fixed the 28 spellings it had been letting through. Four of those were in resops/, so the guard fired. It is comment-only, and this time I did not read the four lines and call it done: I parsed both sides.",
+    "proved with the AST, not with my eyes": "For each of the four changed files I parsed HEAD~1 and HEAD and compared every string constant that is NOT a docstring. __main__.py 266 literals, op.py 519, run_restore.py 154, metrics.py 106. All four sets identical. So the commit cannot have moved a single character of printed output, which is the only thing a quoted box can go stale against.",
+    "the four words, and where they live": "run_restore.py:207 'SANITIZE BEFORE PRINTING' is a comment heading. metrics.py:59 'would be theater' is inside a docstring. op.py:374 'materialized view' is a comment. __main__.py:289 'str() normalizes both' is a docstring. None is reachable by print().",
+    "the two words that WERE shipped are in the guide, not the engine": "'authorises' and 'practise' were in WORKSHOP-2H.md, which builds dist/preview*.html. That is the participant guide, not WORKSHOP.md's live half, and the previews were rebuilt and byte-compared by their own guard. No live box is involved.",
+    "parser.py labelled -> labeled is the guide builder": "It renames a private helper in tools/guide/, which no WORKSHOP.md box quotes and which the byte-identical preview rebuild covers."
   }
 }
