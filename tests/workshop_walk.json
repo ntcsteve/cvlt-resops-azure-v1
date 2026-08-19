@@ -10,14 +10,14 @@
     "TO UPDATE: walk the live boxes against a real run, then set walked_commit to",
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
-  "walked_at": "2026-08-18",
-  "walked_commit": "ebace7d",
+  "walked_at": "2026-08-19",
+  "walked_commit": "ff0e74a",
   "verified": {
-    "M4.1  op gate -> \u25cf\u25cf\u25cf\u25cf\u25cf\u25cf VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
+    "M4.1  op gate -> ●●●●●● VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
     "M5.2  op incident -> BASELINE marker still present: yes": "loop passes + live walk",
     "M5.3  op restore -> FAIL: 14 encrypted (.locked) files present": "live walk, job 8163492",
-    "M5.3  op gate -> \u25cf\u25cf\u25cf\u25cf\u2717\u00b7 RECOVERABLE blocked at Scan, HOLD exit 1": "live walk",
+    "M5.3  op gate -> ●●●●✗· RECOVERABLE blocked at Scan, HOLD exit 1": "live walk",
     "M5.3  the HOLD names restore-verify, NOT threatscan": "live walk. The loop cannot produce this: it inserts a threat scan, whose negative outranks the drill's verdict.",
     "close  op teardown -> destroy complete": "live, 2026-08-12. 17 GXMD snapshots swept, 11 terraform resources destroyed, NetworkWatcher removed, CV group DELETE returned 202 pending approval. Verified independently afterwards: 0 VMs, 0 resops RGs, 0 disks, 0 snapshots, 0 in terraform state."
   },
@@ -61,7 +61,7 @@
       "output was re-run live (job 8163659) and observed. These are the lines",
       "that were checked, not assumed:"
     ],
-    "POST /CreateTask renders legibly": "was }8163492\"809089,\"jobIds\":[0: { \u2014 the \\r sanitise works",
+    "POST /CreateTask renders legibly": "was }8163492\"809089,\"jobIds\":[0: { — the \\r sanitise works",
     "the teardown pause text, exactly as M5.3 quotes it": "including the no-public-IP explanation",
     "poll_job's media agent message carries both numbers": "typical and the 27-min tail",
     "the exit-0 path still completes and tears down": "job 8163659"
@@ -80,8 +80,8 @@
       "reasons. REVIEWED rather than re-walked, because Azure is empty and the",
       "affected output is fully reproducible offline. What was checked:"
     ],
-    "M5.4 quotes the Scan line": "WORKSHOP.md line ~651 shows '\u21b3 recovery point is UNATTESTED' in ABBREVIATED form, and did so before this change too. The longer text is still a true prefix, so the box is not contradicted. Verified by running `resops gate config/incident.yaml` and comparing.",
-    "no other box quotes a changed line": "The Validate and Recover reasons appear nowhere in a '\u2713 YOU SHOULD SEE' box. The 'recovery point failed <source>' branch that M5.3 and M1 DO quote was not touched by 7eea421.",
+    "M5.4 quotes the Scan line": "WORKSHOP.md line ~651 shows '↳ recovery point is UNATTESTED' in ABBREVIATED form, and did so before this change too. The longer text is still a true prefix, so the box is not contradicted. Verified by running `resops gate config/incident.yaml` and comparing.",
+    "no other box quotes a changed line": "The Validate and Recover reasons appear nowhere in a '✓ YOU SHOULD SEE' box. The 'recovery point failed <source>' branch that M5.3 and M1 DO quote was not touched by 7eea421.",
     "caught by the guard, not by review": "The first draft of the Scan fix ran past 150 chars and hurt M5.4's four-way comparison. That is why the fix is now an imperative. The guard is the only reason it was noticed."
   },
   "re_observed_at_23cbc4f": {
@@ -142,5 +142,20 @@
     "my own new test did NOT catch either": "test_no_doc_claims_a_backup_timing... listed 'typically 5-15 min' but not 'a 5-15 minute queue', and not 'never exceeded 90s'. Widened to match the FIGURES rather than the phrasing. The walk guard found what the targeted test missed, which is the argument for keeping a broad trigger alongside narrow ones.",
     "no other box quotes poll_job": "grep for 'Waiting', 'media agent' and 'queue' across both guides. M5.2's HOW LONG box and WORKSHOP-2H's beat 4 box are the only two, and both are now corrected. Neither quotes the message verbatim; both paraphrase the range, which is why they could drift without a string match noticing.",
     "the timing numbers themselves": "re-measured from the tenant on this date, not carried over. 17 completed parent jobs 77-134s median 91s, one 27-min failover; op backup wall clock 88-149s over 6 runs from loop.sh's own step stamps."
+  },
+  "re_observed_at_ff0e74a": {
+    "_why": "ff0e74a swept every em dash to a spaced en dash and every British spelling to US across resops/. Both reach PRINTED output, not just comments, so the guard was right to fire: a box quoting ' — ' would now be stale by one character. Rather than review it, I re-RAN the offline half and diffed the real terminal against the boxes.",
+    "the sweep is provably dash-and-spelling only": "Normalised both sides of the whole diff (dashes folded, British->US folded) and every hunk collapsed to identity. Five apparent residuals were the normaliser's own blind spot: a BARE dash with no surrounding spaces. So no hunk changes meaning, only characters, which bounds what can be stale.",
+    "M1.1  op gate config/estate.yaml -> all six workloads": "Ran it. Every quoted line matches byte for byte with ANSI stripped: '↳ recovery proven – job 884730', '↳ recovery point failed restore-verify – 14 encrypted (.locked) files present', '●●●●✗·  RECOVERABLE  ·  RPO 4.0h  blocked at Scan', and 'AGGREGATE  HOLD – checkout-api, identity-svc, reporting-db, edge-cache, legacy-batch · exit 1'. Every dash is the en dash the box shows.",
+    "M4.2  the ratchet -> TOLERATED": "Uncommented enforce_from/tolerance_reason on reporting-db, ran the gate, restored the file. Got '↳ TOLERATED until 2027-01-01 – still a HOLD, excluded from the aggregate until that date' and 'AGGREGATE  HOLD – checkout-api, identity-svc, edge-cache, legacy-batch · 1 TOLERATED (reporting-db) · exit 1'. Exact.",
+    "M5.4  op verify -> chain intact": "Ran it. 'audit trail intact – hash chain verified', exit 0. Exact."
+  },
+  "reviewed_not_re_walked_at_ff0e74a": {
+    "_why": "Three dash-bearing boxes are in the LIVE half and need real Azure plus a real tenant. I did not stand infrastructure up for a character sweep. Instead I read the producing line at HEAD and confirmed it emits the same character the box shows, which is the only thing this commit could break.",
+    "azure VM   : PASS – exists & running": "run_restore.py:253. Spaced en dash in the literal, matching the box.",
+    "attestation: FAIL – attestation failed": "run_restore.py:249, the verdict table. Spaced en dash, matching the box.",
+    "RESTORE DRILL DID NOT PASS – the restored copy is not clean": "op.py:312. Spaced en dash, matching the box. Also still carried in carried_over_not_re_observed from af521f3 for the same reason.",
+    "the recency HOLD changed and NO box quotes it": "gate.py's '– nothing has verified this recovery point recently' was swept too. Grepped both guides: quoted nowhere. Consistent with the note at 23cbc4f that the recency guard cannot fire inside the workshop window.",
+    "the one grep hit that looked stale was not": "'failed threatscan' survives in WORKSHOP.md:665, but that is the guide's OWN prose telling a reader what a wrong HOLD would look like, and the matching line in resops/ is a comment. Neither is quoted output."
   }
 }
