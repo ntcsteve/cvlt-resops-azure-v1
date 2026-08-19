@@ -179,3 +179,31 @@ An unknown `@name` fails the build; an unreferenced icon warns.
 - The codename never appears inside a command.
 - Zero external references: the file works offline or does not build.
 - No facilitator material: the guide renders participant content only.
+
+## 9. What the build does NOT check, and the suite does
+
+Two editorial rules hold over everything this repo ships, including your
+markdown. The BUILD does not enforce them, so a page with either will build
+happily and the SUITE will go red:
+
+```
+no em dashes        Use a spaced en dash where a sentence breaks, or a
+                    period, a comma, or a rephrase. The em dash is not in
+                    the Commvault editorial guide at all
+US spelling         The guide defers to AP Style. color, center, analyze,
+                    catalog, program, license, labeled, authorize
+```
+
+Both live in `tests/test_participant_guide.py` as `test_no_em_dashes` and
+`test_no_british_spellings`. They are PATTERNS over the suffix classes that
+separate British from US spelling, not word lists, because the word list they
+replaced let two British spellings through into both built guides on
+2026-08-19, for the ordinary reason: it only held words somebody had already
+thought of. Neither offending word is reproduced here, because this file is
+covered by the same guard.
+
+If one flags a word that is correct English, add it to `NOT_BRITISH` with the
+word visible on its own line. That is the cheap direction to be wrong in.
+
+Scope is every file git does not ignore, so a new workshop markdown is covered
+the moment it exists, before anyone stages it.
