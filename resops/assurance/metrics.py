@@ -56,7 +56,7 @@ def control_coverage(bundles: list) -> dict:
 
     Expect this to be mostly RED. It measures whether recovery was PROVEN, not
     whether a policy exists, and that is the entire point: a compliance view that
-    is green without work would be theatre."""
+    is green without work would be theater."""
     tally: dict = {}
     for bundle in bundles:
         for function in bundle.get("functions", []):

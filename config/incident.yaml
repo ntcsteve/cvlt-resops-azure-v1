@@ -4,8 +4,8 @@
 #
 # Offline, one second, no cloud and no token, exactly like config/estate.yaml.
 #
-# ── HONEST NOTE ON THE MODELLING ─────────────────────────────────────────────
-# resops judges a WORKLOAD, not a catalogue of recovery points. This file reuses
+# ── HONEST NOTE ON THE MODELING ─────────────────────────────────────────────
+# resops judges a WORKLOAD, not a catalog of recovery points. This file reuses
 # the multi-workload view to put four candidate points side by side, so each row
 # reads as "if you restored from THIS point, here is what the gate would say".
 # That is a teaching device. Do not read it as a claim that the tool enumerates

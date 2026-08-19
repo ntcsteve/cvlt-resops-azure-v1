@@ -174,11 +174,11 @@ def classify_fence(lang, body, fence_line):
     if first and first[0] in GLYPHS:
         return ("diag", diag_rows(body, fence_line + 1))
     if first.startswith("?!"):
-        return labelled(body, "reveal", 2)
+        return labeled(body, "reveal", 2)
     if first.startswith("?"):
-        return labelled(body, "aside", 1)
+        return labeled(body, "aside", 1)
     if first.startswith("✦"):
-        return labelled(body, "mark", 1)
+        return labeled(body, "mark", 1)
     if re.match(r"^DO\s{2,}", first):
         return ("dolearn", strip_rows(body, fence_line + 1))
     check_not_a_mistyped_diag(body, fence_line + 1)
@@ -309,7 +309,7 @@ def strip_rows(body, body_start):
     return rows
 
 
-def labelled(body, kind, marker_len):
+def labeled(body, kind, marker_len):
     """A titled fence (? aside, ?! reveal, ✦ mark): title on the first
     line after the marker, then prose paragraphs and indented pre chunks."""
     first = next(l for l in body if l.strip())

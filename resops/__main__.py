@@ -286,7 +286,7 @@ def _resolve_tolerance(workload: dict, today: str) -> str:
 
     Returns an error message to die() on, or "" when fine. YAML parses an
     unquoted ISO date into a date object and a malformed one into a string, so
-    str() normalises both and gate.tolerated() rejects whatever isn't a date."""
+    str() normalizes both and gate.tolerated() rejects whatever isn't a date."""
     declared = workload.get("enforce_from")
     if declared in (None, ""):
         workload["tolerated"] = False

@@ -78,7 +78,7 @@ main { padding: 0 40px 64px; }
 
 @media (min-width: 881px) {
   main { margin-left: var(--sidebar-w); }
-  /* The column is CENTRED in the space beside the sidebar rather than
+  /* The column is CENTERED in the space beside the sidebar rather than
      pinned to it: 400px of empty space all on one side reads as a layout
      fault, while balanced margins read as a measure, which is what it is.
      Confirmed as the common approach in GitBook, Vercel and Confluence;
@@ -130,9 +130,9 @@ main { padding: 0 40px 64px; }
    nothing offline. ---- */
 /* ONE GRADIENT, TWO ELEMENTS, ONE ORIGIN.
    The aura used to be a full-bleed pseudo-element on the page: width 100vw,
-   left 50%, translateX(-50%). That trick centres on the CONTAINING BLOCK,
-   and the containing block is the centred page column, which the 300px
-   sidebar pushes 150px off viewport centre. So the hero sampled a slice of
+   left 50%, translateX(-50%). That trick centers on the CONTAINING BLOCK,
+   and the containing block is the centered page column, which the 300px
+   sidebar pushes 150px off viewport center. So the hero sampled a slice of
    the gradient 150px away from the slice the topbar sampled, and the two
    disagreed across the seam.
 

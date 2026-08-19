@@ -26,7 +26,7 @@
 #
 # Step 1 is `remediate`, and it is not decoration. The loop's third step takes a
 # backup it labels CLEAN, and that label has to be TRUE or every downstream
-# verdict is theatre. A workload left dirty by a previous session – which is the
+# verdict is theater. A workload left dirty by a previous session – which is the
 # normal state to find one in, and exactly how aug12-narwhal was found on
 # 2026-08-12 – would be backed up and called clean.
 #

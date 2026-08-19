@@ -371,7 +371,7 @@ def threatscan(run_dir: str) -> dict | None:
 
     # The VM does NOT need to appear in the Resources tab first. This was fired
     # against a clientId with no row there and it bound correctly. That tab is a
-    # materialised view on a slow cycle, and waiting for it would make this command
+    # materialized view on a slow cycle, and waiting for it would make this command
     # unusable on a workload built the same morning.
     payload = {"clients": [{"tdPlan": {"planId": scan_plan},
                             "client": {"entityType": 3, "_type_": 3,

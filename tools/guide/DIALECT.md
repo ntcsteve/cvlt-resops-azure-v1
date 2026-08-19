@@ -7,7 +7,7 @@ opens from `file://` with the network off. The shell (topbar, sidebar,
 router, pager, tests) is inherited, never rebuilt.
 
 To start a new workshop: write a conforming markdown file. `assets/tokens.css`
-holds every colour, and each value there is a Commvault brand colour or a
+holds every color, and each value there is a Commvault brand color or a
 permitted tint or shade of one, with the reasoning beside it. Change nothing
 there without a brand reason.
 
@@ -161,7 +161,7 @@ Missing image: build fails. Over ~300KB: build warns, compress it. In the
 folder but unreferenced: build warns.
 
 Icons live in `assets/icons/` and are official Commvault icons only, in the
-MIDNIGHT variant, because the colour budget reserves crocus for interaction
+MIDNIGHT variant, because the color budget reserves crocus for interaction
 and an icon is content. They are inlined as data URIs rather than as markup,
 since the source files share ids and a `.cls-1` class and would collide.
 An unknown `@name` fails the build; an unreferenced icon warns.

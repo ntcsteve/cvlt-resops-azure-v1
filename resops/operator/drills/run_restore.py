@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
     print("  token ready")
 
     resp = bearer_session(client.access_token).post(f"{host}/CreateTask", data=json.dumps(payload), timeout=60)
-    # SANITISE BEFORE PRINTING. This tenant returns JSON containing bare carriage
+    # SANITIZE BEFORE PRINTING. This tenant returns JSON containing bare carriage
     # returns: {\r"taskId":809089,"jobIds":[\r"8163492"\r]\r}. Printed raw, every
     # \r rewinds the cursor to column 0 and the line overwrites itself, rendering
     # as `}8163492"809089,"jobIds":[0: {` – which reads exactly like a crash, on

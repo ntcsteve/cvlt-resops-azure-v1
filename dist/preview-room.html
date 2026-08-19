@@ -84,7 +84,7 @@
 
   /* NO PROSE MEASURE, and this is a measured decision rather than an
      oversight. A 72ch cap was tried, then the two references this workshop
-     is modelled on were measured at 1512px:
+     is modeled on were measured at 1512px:
 
        disaster-recovery.workshop.aws   1020px prose, median 105 chars, 67% vw
        codelabs.developers.google.com    856px prose, median  96 chars, 57% vw
@@ -303,7 +303,7 @@ main:focus-visible {
    do if not: one object, hairline-divided, attached to the command above it.
    It used to be three separately-rounded bands with gaps between them, which
    read as three unrelated alerts that happened to be adjacent. Each row keeps
-   its own colour, because the loudness is deliberate: stalling is what kills
+   its own color, because the loudness is deliberate: stalling is what kills
    a workshop, so this stays the most visually distinct thing on the page. */
 .diag {
   margin: 10px 0 18px; overflow: hidden;
@@ -352,7 +352,7 @@ figure img {
 figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
 /* ---- do/learn strip: the chapter's orientation, first thing on the page.
-       Two labelled rows, hairline box, no tint: informative, not loud. ---- */
+       Two labeled rows, hairline box, no tint: informative, not loud. ---- */
 .dolearn {
   border: 1px solid var(--line); border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
@@ -602,7 +602,7 @@ main { padding: 0 40px 64px; }
 
 @media (min-width: 881px) {
   main { margin-left: var(--sidebar-w); }
-  /* The column is CENTRED in the space beside the sidebar rather than
+  /* The column is CENTERED in the space beside the sidebar rather than
      pinned to it: 400px of empty space all on one side reads as a layout
      fault, while balanced margins read as a measure, which is what it is.
      Confirmed as the common approach in GitBook, Vercel and Confluence;
@@ -654,9 +654,9 @@ main { padding: 0 40px 64px; }
    nothing offline. ---- */
 /* ONE GRADIENT, TWO ELEMENTS, ONE ORIGIN.
    The aura used to be a full-bleed pseudo-element on the page: width 100vw,
-   left 50%, translateX(-50%). That trick centres on the CONTAINING BLOCK,
-   and the containing block is the centred page column, which the 300px
-   sidebar pushes 150px off viewport centre. So the hero sampled a slice of
+   left 50%, translateX(-50%). That trick centers on the CONTAINING BLOCK,
+   and the containing block is the centered page column, which the 300px
+   sidebar pushes 150px off viewport center. So the hero sampled a slice of
    the gradient 150px away from the slice the topbar sampled, and the two
    disagreed across the seam.
 
@@ -946,7 +946,7 @@ A   400 days ago    ●●●●●●  VALIDATED     RPO 9600.0h     HOLD</pre>
 <details class="aside aside-fold"><summary>? Why this matters</summary><div><p>The gate promotes exactly one point, and it is the one squarely inside the incident window. That is not a bug. It is a policy written for OUTAGES answering a question about COMPROMISE.</p>
 <p>A recovery point objective (RPO) target assumes the only cost of an older point is LOST DATA. Under compromise, the freshest point is the most DANGEROUS one.</p>
 <p>And look at A. The only point anyone can be certain about costs 400 days of orders, and it is only certain because NOTHING WAS VERIFIED between it and last week. That gap is not bad luck. It is the drill nobody scheduled.</p></div></details>
-<details class="aside aside-fold"><summary>? The number this produces</summary><div><p>The clock starts when a human authorises a clean recovery and stops when a human signs the service back off. Everything between is automatable and measurable.</p>
+<details class="aside aside-fold"><summary>? The number this produces</summary><div><p>The clock starts when a human authorizes a clean recovery and stops when a human signs the service back off. Everything between is automatable and measurable.</p>
 <p>That is Mean Time to Clean Recovery. Not time to recovery. Time to CLEAN recovery. The word "clean" is the entire argument.</p></div></details></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just decided</p><p>Recovery under compromise is a decision, made by a human, on evidence, against a clock. The tools narrow the choice; they do not make it. MTCR measures how fast your organization can make it well.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/2">← 2. Introducing a Compromise</a><a class="pager-next" href="#/4">4. Gating the Pipeline →</a></nav></section>

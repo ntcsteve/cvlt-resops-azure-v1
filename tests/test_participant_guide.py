@@ -6,6 +6,7 @@ no network, like everything else in this suite.
 """
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -461,12 +462,122 @@ def test_primary_headings_are_title_case_and_subheads_are_not():
         assert sub in text, f"{sub!r} should stay sentence case"
 
 
+# The two editorial rules that reach PRINTED output, so they are guarded over
+# the whole repo rather than over one file. Both read source, never a snapshot.
+#
+# The first version of the spelling guard was a nine-word denylist over
+# WORKSHOP-2H.md alone. It passed while "authorises" and "practise" were live
+# in that very file and shipped into both built guides, because neither word
+# was on the list. A denylist can only catch what its author already thought
+# of, which is the one thing a guard is for. These are patterns instead: the
+# suffix classes that actually separate British from US spelling, plus an
+# explicit allowlist for the ordinary English words those suffixes catch.
+# A false positive costs one line here, with the word visible. A false
+# negative ships.
+
+SOURCE_SUFFIXES = (".md", ".py", ".css", ".yaml", ".yml", ".sh", ".tf",
+                   ".json", ".html", ".example")
+
+BRITISH = (
+    (r"[a-z]+is(?:e|es|ed|ing|ation|ations)", "-ise/-isation -> -ize/-ization"),
+    (r"[a-z]+our",                            "-our -> -or"),
+    (r"[a-z]+(?:tre|bre)(?:s|d)?",            "-re -> -er"),
+    (r"defence|licence|offence|pretence",     "-ence -> -ense"),
+    (r"[a-z]+logue",                          "-logue -> -log"),
+    (r"[a-z]+ys(?:e|es|ed|ing)",              "-yse -> -yze"),
+    (r"(?:cancell|labell|modell|travell|signall|fuell)[a-z]*", "doubled l"),
+    (r"fulfil",                               "fulfil -> fulfill"),
+    (r"practise[a-z]*",                       "practise -> practice"),
+)
+
+# Ordinary English the suffix patterns catch. Every entry is a word that is
+# spelled this way in US English too, so flagging it would be the guard's
+# error, not the author's.
+NOT_BRITISH = {
+    "advise", "advised", "advises", "advising", "arise", "arises", "arising",
+    "bitwise", "clockwise", "comprise", "comprised", "comprises", "compromise",
+    "compromised", "concise", "cruise", "devise", "devised", "disguise",
+    "enterprise", "exercise", "exercised", "exercises", "exercising",
+    "expertise", "franchise", "guise", "improvise", "improvised", "improvises",
+    "improvising", "likewise", "merchandise", "noise", "otherwise", "pairwise",
+    "piecewise", "poise", "praise", "precise", "premise", "premises",
+    "promise", "promised", "promises", "raise", "raised", "raises", "raising",
+    "revise",
+    "revised", "rise", "rises", "rising", "stepwise", "supervise", "surprise",
+    "surprised", "surprises", "surprising", "wise",
+    "are", "before", "core", "explore", "figure", "future", "genre", "here",
+    "ignore", "more", "nature", "restore", "score", "store", "structure",
+    "there", "were", "where",
+    "absence", "cadence", "confidence", "dense", "difference", "evidence",
+    "fence", "hence", "inference", "presence", "reference", "sense",
+    "sentence", "sequence",
+    "contour", "devour", "flour", "four", "hour", "hours", "our", "pour",
+    "sour", "tour", "tours", "your", "yours",
+    "prologue",
+}
+
+
+def repo_sources():
+    """Every file the repo SHIPS and writes prose into.
+
+    Scoped by gitignore rather than by a hand-kept exclusion list, because
+    that is already the line between what the repo publishes and what stays
+    on one laptop: the facilitator script, the handover and the field notes
+    are ignored by design, and a guard that turned them permanently red
+    would be a guard people learn to skip. Anything not ignored is checked,
+    including a file nobody has staged yet.
+
+    Also skips dist/ (generated: rebuilt and byte-compared separately), the
+    walk record and this file, since both QUOTE the words they are about."""
+    candidates = [p for p in sorted(REPO.rglob("*"))
+                  if p.is_file() and p.suffix in SOURCE_SUFFIXES
+                  and ".git/" not in p.relative_to(REPO).as_posix()]
+    proc = subprocess.run(
+        ["git", "check-ignore", "--stdin"], cwd=REPO, text=True,
+        input="\n".join(str(p) for p in candidates), capture_output=True)
+    ignored = {line.strip() for line in proc.stdout.splitlines()}
+    for path in candidates:
+        rel = path.relative_to(REPO).as_posix()
+        if (str(path) in ignored
+                or rel.startswith("dist/")
+                or rel in ("tests/workshop_walk.json",
+                           "tests/test_participant_guide.py")):
+            continue
+        yield rel, path
+
+
 def test_no_british_spellings():
-    """The editorial guide defers to AP Style, which is US English."""
-    text = MD.read_text(encoding="utf-8").lower()
-    for word in ("organisation", "programme", "behaviour", "standardised",
-                 "datacentre", "centre", "colour", "realise", "analyse"):
-        assert word not in text, f"British spelling {word!r} is back"
+    """The editorial guide defers to AP Style, which is US English. This
+    covers the whole repo because the sweep that prompted it found British
+    spellings inside strings the participant reads, not only in prose."""
+    found = []
+    for rel, path in repo_sources():
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for pattern, rule in BRITISH:
+            for m in re.finditer(rf"\b(?:{pattern})\b", text, re.I):
+                word = m.group(0).lower()
+                if word in NOT_BRITISH:
+                    continue
+                line = text[:m.start()].count("\n") + 1
+                found.append(f"{rel}:{line}  {word}  ({rule})")
+    assert not found, ("British spellings are back:\n  "
+                       + "\n  ".join(found[:20]))
+
+
+def test_no_em_dashes():
+    """"Use an en dash with a space on either side"; the em dash is not in
+    the editorial guide at all. Guarded over the repo because the em dashes
+    that mattered were inside printed strings, not comments: a reason line,
+    a gate message, a crosswalk cell. This guard is the one that was claimed
+    to exist in the sweep commit and did not."""
+    found = []
+    for rel, path in repo_sources():
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for m in re.finditer("\u2014", text):
+            line = text[:m.start()].count("\n") + 1
+            found.append(f"{rel}:{line}")
+    assert not found, ("em dashes are back; use a spaced en dash:\n  "
+                       + "\n  ".join(found[:20]))
 
 
 def test_no_ellipses_except_inside_a_quotation():

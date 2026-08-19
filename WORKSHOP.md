@@ -561,7 +561,7 @@ The right column is what a backup product already tells you. The left requires o
 
 ```
  ? WHY THIS MATTERS
-   You just proved the contract generalises rather than being told
+   You just proved the contract generalizes rather than being told
    it does. That comparison IS the evidence.
 ```
 

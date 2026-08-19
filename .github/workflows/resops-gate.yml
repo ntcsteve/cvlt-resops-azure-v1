@@ -12,7 +12,7 @@
 #
 # Setup (two repo secrets):
 #   • WORKSHOP_YAML – the filled config/workshop.yaml (it's gitignored by design,
-#     so CI materialises it from this secret in the step below).
+#     so CI materializes it from this secret in the step below).
 #   • CV_ACCESS_TOKEN / CV_REFRESH_TOKEN – for unattended CI prefer a long-lived
 #     service-account token (a user token can expire between runs; see the README).
 name: ResOps recoverability gate

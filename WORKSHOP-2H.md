@@ -765,7 +765,7 @@ already abnormal. It may have started three days ago. Or nine.
 
 ```
  ? THE NUMBER THIS PRODUCES
-   The clock starts when a human authorises a clean recovery and stops
+   The clock starts when a human authorizes a clean recovery and stops
    when a human signs the service back off. Everything between is
    automatable and measurable.
 
@@ -1014,7 +1014,7 @@ Everything you built is real, and it bills until it is gone: a VM, a disk,
 a storage account, a virtual network, and a protected workload on a backup
 platform.
 
-This is also the last time today you get to practise the only habit that
+This is also the last time today you get to practice the only habit that
 has mattered all workshop. Something is about to report
 success. You are not going to believe it until you have opened the
 environment and read it yourself.

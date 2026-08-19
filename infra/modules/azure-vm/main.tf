@@ -47,7 +47,7 @@ resource "random_string" "sa" {
 
 locals {
   # Storage-account names are 3–24 chars, lowercase letters+digits only, and
-  # globally unique. Sanitise the workload name, cap it, append a random tail.
+  # globally unique. Sanitize the workload name, cap it, append a random tail.
   sa_name = substr("${replace(lower(var.name), "/[^a-z0-9]/", "")}rst${random_string.sa.result}", 0, 24)
 }
 
