@@ -1,5 +1,5 @@
 """
-Config loader — one home for the workshop config. `config/workshop.yaml` is the
+Config loader – one home for the workshop config. `config/workshop.yaml` is the
 single file you fill (workload + platform + gate); this reads the `platform:`
 block (live ids) and fails LOUD on a missing file or key, so a typo surfaces HERE
 (with the fix), not three API calls deep.
@@ -19,7 +19,7 @@ TIERS_PATH = REPO / "config" / "tiers.yaml"
 
 # Keys the PYTHON operator needs from platform:. Terraform-only fields
 # (storage_pool_name, commvault_sp_object_id) are validated by Terraform at
-# plan time — adding them here would force them on read-only `resops` runs
+# plan time – adding them here would force them on read-only `resops` runs
 # that never touch infra. hypervisor must carry id+name+instance_id.
 _REQUIRED = ("web_service_url", "subscription_id", "hypervisor", "plan_id")
 _HYP_REQUIRED = ("id", "name", "instance_id")
@@ -31,7 +31,7 @@ def _platform(path: Path) -> dict:
 
 def platform_url(path: Path | None = None) -> str | None:
     """Just the API URL from workshop.yaml's platform block. The read-only lane
-    needs only this — not the full write-lane identity — so a plain `resops gate`
+    needs only this – not the full write-lane identity – so a plain `resops gate`
     doesn't demand the hypervisor/plan ids it never uses. None if file/key absent.
     """
     p = Path(path) if path else DEFAULT
@@ -44,7 +44,7 @@ def load_platform(path: Path | None = None) -> dict:
     """Load + validate the platform block. Raises SystemExit with the fix on any gap."""
     p = Path(path) if path else DEFAULT
     if not p.exists():
-        raise SystemExit(f"missing {p.name} — copy config/workshop.yaml.example and fill it in")
+        raise SystemExit(f"missing {p.name} – copy config/workshop.yaml.example and fill it in")
     cfg = _platform(p)
     missing = [k for k in _REQUIRED if k not in cfg]
     if missing:
@@ -56,7 +56,7 @@ def load_platform(path: Path | None = None) -> dict:
 
 
 def load_tiers(path: Path | None = None) -> dict:
-    """Load tiers.yaml — returns the tiers dict keyed by tier name.
+    """Load tiers.yaml – returns the tiers dict keyed by tier name.
     Returns {} if the file doesn't exist (tiers are optional)."""
     p = Path(path) if path else TIERS_PATH
     if not p.exists():

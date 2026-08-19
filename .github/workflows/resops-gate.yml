@@ -1,4 +1,4 @@
-# ResOps recoverability gate — the second reconciliation loop, as a CI check.
+# ResOps recoverability gate – the second reconciliation loop, as a CI check.
 #
 # `resops gate` HOLDs the job (exit 1) unless the workload reached VALIDATED with
 # fresh proof. Drop it beside your tests and policy checks: a workload doesn't
@@ -6,22 +6,22 @@
 #
 #   build → test → policy → resops gate → promote
 #
-# Scope: this gate READS an already-protected workload's recovery state — it does
+# Scope: this gate READS an already-protected workload's recovery state – it does
 # not provision or climb. The workload must already exist and be protected in your
 # tenant; the daily run keeps its recovery proof fresh.
 #
 # Setup (two repo secrets):
-#   • WORKSHOP_YAML — the filled config/workshop.yaml (it's gitignored by design,
+#   • WORKSHOP_YAML – the filled config/workshop.yaml (it's gitignored by design,
 #     so CI materialises it from this secret in the step below).
-#   • CV_ACCESS_TOKEN / CV_REFRESH_TOKEN — for unattended CI prefer a long-lived
+#   • CV_ACCESS_TOKEN / CV_REFRESH_TOKEN – for unattended CI prefer a long-lived
 #     service-account token (a user token can expire between runs; see the README).
 name: ResOps recoverability gate
 
 on:
-  pull_request:             # a required check on the workload PR — no merge if not recoverable
+  pull_request:             # a required check on the workload PR – no merge if not recoverable
   workflow_dispatch:        # run on demand
   schedule:
-    - cron: "0 6 * * *"     # daily 06:00 UTC — builds the audit trail / freshness
+    - cron: "0 6 * * *"     # daily 06:00 UTC – builds the audit trail / freshness
 
 jobs:
   gate:

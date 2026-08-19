@@ -1,4 +1,4 @@
-"""render_vmgroups — the `resops list` table. Pure, no tenant."""
+"""render_vmgroups – the `resops list` table. Pure, no tenant."""
 import re
 
 from resops.render import render_vmgroups

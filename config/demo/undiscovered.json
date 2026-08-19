@@ -1,5 +1,5 @@
 {
-  "_comment": "Canned reads — the workload is not in any protection group. The group exists and covers other VMs, so this is the honest 'nobody onboarded it' case, not a read error. Blocks at Discover, state UNDISCOVERED.",
+  "_comment": "Canned reads – the workload is not in any protection group. The group exists and covers other VMs, so this is the honest 'nobody onboarded it' case, not a read error. Blocks at Discover, state UNDISCOVERED.",
   "vm_name": "legacy-batch-vm01",
   "vmgroup": {
     "name": "estate-shared-vg",

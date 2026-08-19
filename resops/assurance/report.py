@@ -3,7 +3,7 @@ Rendered report (Tier 1, item T1-3).
 
 Auditors read reports, not bundle.json. This turns a Bundle dict into a human
 `report.md` with per-finding RISK RATINGS and the controls each finding
-evidences — the requirement->control->evidence chain in readable form.
+evidences – the requirement->control->evidence chain in readable form.
 
 Risk ratings are a judgement call and an over-statement is a credibility cost,
 so the scale is deliberately conservative and documented inline.
@@ -29,7 +29,7 @@ def risk_rating(function: str, outcome: str) -> str:
 
 
 def _control_ids(entry: dict) -> str:
-    return ", ".join(c.get("id", "") for c in entry.get("controls", [])) or "—"
+    return ", ".join(c.get("id", "") for c in entry.get("controls", [])) or "–"
 
 
 def render_markdown(bundle: dict) -> str:
@@ -71,16 +71,16 @@ def render_markdown(bundle: dict) -> str:
     gate = bundle.get("gate")
     if gate:
         reasons = "; ".join(gate.get("reasons", []) or ["recoverability proven"])
-        lines += ["", f"**Promotion gate — Continuous Service:** {gate['decision']} — {reasons}"]
+        lines += ["", f"**Promotion gate – Continuous Service:** {gate['decision']} – {reasons}"]
         if gate.get("acknowledged_risk"):
             lines.append(f"**Acknowledged risk:** {gate['acknowledged_risk']}")
-        # An auditor has to see what the programme chose not to enforce yet, and
+        # An auditor has to see what the program chose not to enforce yet, and
         # that the verdict above was NOT softened to accommodate it.
         tolerance = gate.get("tolerance")
         if tolerance:
             when = tolerance.get("enforce_from", "?")
             state = (f"declared, active until {when}" if tolerance.get("active")
-                     else f"EXPIRED {when} — now enforced")
+                     else f"EXPIRED {when} – now enforced")
             why = f" Reason: {tolerance['reason']}." if tolerance.get("reason") else ""
             lines.append(f"**Enforcement tolerance:** {state}.{why} The verdict above is "
                          f"unchanged; a tolerance only defers whether it blocks promotion.")
@@ -95,7 +95,7 @@ def render_markdown(bundle: dict) -> str:
                   "|---|" + "---|" * len(fw_ids)]
         for cap_id, row in crosswalk.items():
             refs = row.get("references", {})
-            cells = " | ".join(refs.get(fid, "—") for fid in fw_ids)
+            cells = " | ".join(refs.get(fid, "–") for fid in fw_ids)
             lines.append(f"| {cap_id} | {cells} |")
     if compliance.get("disclaimer"):
         lines += ["", "---", f"_{compliance['disclaimer']}_"]

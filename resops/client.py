@@ -1,9 +1,9 @@
 """
-How we talk to Commvault — all the auth/HTTP noise lives here so the read layer
+How we talk to Commvault – all the auth/HTTP noise lives here so the read layer
 and the ladder stay readable.
 
 Read-only by design, and precisely: the client reads tenant state with GET and
-nothing else. It makes exactly ONE non-GET call in the whole module — `_renew()`
+nothing else. It makes exactly ONE non-GET call in the whole module – `_renew()`
 POSTs to `V4/AccessToken/Renew` to trade a refresh token for a fresh access token.
 That is an auth call against our own session; it creates, changes and deletes
 nothing in the customer's environment.
@@ -16,7 +16,7 @@ cannot mutate MY environment", and that is true.
 `tests/test_read_only.py` enforces it: the read-only star may not import
 subprocess, may not import the write lane, and may not gain a second mutating HTTP
 call. Add one and the suite fails. Mutating lanes (the restore drill) are a
-separate, opt-in surface — never this client.
+separate, opt-in surface – never this client.
 """
 from __future__ import annotations
 
@@ -28,10 +28,10 @@ import requests
 
 TIMEOUT_SECONDS = 30
 
-# Browser-like UA is REQUIRED — the Metallic WAF 403s the default requests UA.
+# Browser-like UA is REQUIRED – the Metallic WAF 403s the default requests UA.
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) cvlt-resops/1.0"
 
-MAINTENANCE_MSG = ("the tenant is serving an HTML page, not the API — almost always a "
+MAINTENANCE_MSG = ("the tenant is serving an HTML page, not the API – almost always a "
                    "maintenance window. This is not a token, config or code problem")
 
 
@@ -47,8 +47,8 @@ def is_html_response(resp) -> bool:
     raw traceback. Observed live 2026-08-12.
 
     Lives here, in the HTTP layer, because it is a transport question and not a
-    question about any workload. Does no I/O — it only reads two attributes off a
-    response already in hand — so it is testable with a fake. Callers decide what
+    question about any workload. Does no I/O – it only reads two attributes off a
+    response already in hand – so it is testable with a fake. Callers decide what
     to do about the answer; they just stop guessing.
     """
     if "html" in (resp.headers.get("content-type", "") or "").lower():
@@ -97,7 +97,7 @@ class Client:
 
     @property
     def access_token(self) -> str:
-        """The current bearer token — kept fresh in place by renewals."""
+        """The current bearer token – kept fresh in place by renewals."""
         return self._creds.access_token
 
     def get(self, path: str) -> requests.Response:
@@ -120,13 +120,13 @@ class Client:
 
     def ensure_fresh_token(self) -> None:
         """Make one benign read so an expired token is renewed (and saved) now.
-        Call this before a non-GET request made elsewhere — those won't auto-renew.
+        Call this before a non-GET request made elsewhere – those won't auto-renew.
         The response is irrelevant; the point is to trip renew-on-401."""
         self.get(self.PROBE_PATH)
 
     def _request(self, url: str) -> requests.Response:
         """One GET, retried once on a transient network error or gateway error (502/503/504).
-        Metallic SaaS WAF returns 503 on cold starts — a single retry is enough."""
+        Metallic SaaS WAF returns 503 on cold starts – a single retry is enough."""
         try:
             resp = self._session.get(url, timeout=TIMEOUT_SECONDS)
         except requests.RequestException:
@@ -170,7 +170,7 @@ def _json_or_empty(resp: requests.Response) -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# .env helpers — small, boring, no external dep
+# .env helpers – small, boring, no external dep
 # --------------------------------------------------------------------------- #
 def _load_env_file(path: Path) -> dict:
     values: dict = {}

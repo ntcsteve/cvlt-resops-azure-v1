@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tear down a restored Azure VM and the disk / NIC / public-IP it created — so a
+Tear down a restored Azure VM and the disk / NIC / public-IP it created – so a
 recovery drill never leaves infra (or cost) behind.
 
 Captures the VM's attached resources first, then deletes VM → NIC → public-IP →
@@ -25,7 +25,7 @@ def teardown_vm(resource_group: str, vm_name: str) -> bool:
     # could not make is not an absence, so it raises instead.
     vm = az_json_checked("vm", "show", "-g", resource_group, "-n", vm_name)
     if not vm:
-        print(f"VM {vm_name} not found in {resource_group} — nothing to tear down.")
+        print(f"VM {vm_name} not found in {resource_group} – nothing to tear down.")
         return True
 
     os_disk = vm["storageProfile"]["osDisk"]["managedDisk"]["id"]

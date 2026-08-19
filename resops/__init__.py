@@ -1,1 +1,1 @@
-"""cvlt-resops — a read-only ResOps readiness ladder for Commvault."""
+"""cvlt-resops – a read-only ResOps readiness ladder for Commvault."""

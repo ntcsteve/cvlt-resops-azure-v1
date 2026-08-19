@@ -1,10 +1,10 @@
-# tiers.yaml — THE policy. One declarative service level a workload picks
+# tiers.yaml – THE policy. One declarative service level a workload picks
 # (config/workshop.yaml); infra/platform turns each tier into a Commvault plan,
 # and the resops gate enforces the tier's RPO/RTO bars on every run.
 
 tiers:
   tier1:
-    description: "Mission-critical — tightest RPO/RTO, isolated recovery."
+    description: "Mission-critical – tightest RPO/RTO, isolated recovery."
     rpo_hours: 8          # max data loss  -> plan backup frequency + gate enforcement
     rto_minutes: 240      # max recovery time (4h) -> gate enforcement
     attestation_max_age_days: 30   # how recently something must have OPENED a
@@ -14,7 +14,7 @@ tiers:
     isolated_recovery: true
 
   tier2:
-    description: "Standard production — relaxed RPO/RTO, no isolated recovery."
+    description: "Standard production – relaxed RPO/RTO, no isolated recovery."
     rpo_hours: 24
     rto_minutes: 480      # 8h
     attestation_max_age_days: 90
@@ -22,11 +22,11 @@ tiers:
     secondary_copy: true
     isolated_recovery: false
 
-# NOTE on attestation_max_age_days — the honest bit of this file.
+# NOTE on attestation_max_age_days – the honest bit of this file.
 # Nobody restore-verifies every workload every day; it is too slow and too
 # expensive. So the policy is not "everything is verified", it is "for THIS tier,
 # something must have opened a recovery point and read it within N days". A tier
-# that declares no value is never checked for freshness — which is a legitimate
+# that declares no value is never checked for freshness – which is a legitimate
 # choice, made explicitly, with the age still recorded in the evidence bundle.
 
 # Promotion-gate freshness default. Consumed by _resolve_policy() as the base

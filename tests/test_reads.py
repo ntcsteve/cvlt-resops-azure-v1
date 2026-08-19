@@ -1,4 +1,4 @@
-"""The read layer — gather() over a fake client. No live tenant.
+"""The read layer – gather() over a fake client. No live tenant.
 
 classify()'s truth table (test_state.py) assumes well-formed Reads; these tests
 cover the I/O path that BUILDS a Reads: the right GETs, parsing the VM out of the
@@ -104,7 +104,7 @@ def test_vm_absent_from_list_is_none_without_error():
 
 
 # --------------------------------------------------------------------------- #
-# _recovery_proof — the Validate rung's evidence.
+# _recovery_proof – the Validate rung's evidence.
 #
 # THE BUG THESE EXIST TO PREVENT, observed live 2026-08-12. This used to ask for
 # the last ten restore jobs and take the newest whose detail JSON mentioned the VM
@@ -125,7 +125,7 @@ def test_a_file_download_is_not_proof_of_recovery():
     routes = _routes(**{
         "Job/8162077": (200, {"jobs": [{"jobSummary": {"jobId": 8162077,
                                                        "status": "Completed"}}]}),
-        # present, newer, and irrelevant — a lookup never sees it
+        # present, newer, and irrelevant – a lookup never sees it
         "Job/8162459": (200, {"jobs": [{"jobSummary": {"jobId": 8162459,
                                                        "status": "Completed"}}]}),
         # the vendor list the old code consumed, with the download newest. Its
@@ -175,7 +175,7 @@ def test_list_vmgroups_returns_the_array():
 
 
 def test_list_vmgroups_uses_lowercase_plural_path():
-    # The singular V4/VMGroup 404s for the list — the endpoint must be v4/vmgroups.
+    # The singular V4/VMGroup 404s for the list – the endpoint must be v4/vmgroups.
     groups, err = list_vmgroups(FakeClient({"V4/VMGroup": (200, {"vmGroups": [1]})}))
     assert groups == [] and err == "HTTP 404"
 
@@ -185,11 +185,11 @@ def test_list_vmgroups_propagates_error():
     assert groups == [] and err == "HTTP 403"
 
 # --------------------------------------------------------------------------- #
-# is_html_response — the guard that exists because STATUS CODE IS NOT ENOUGH.
+# is_html_response – the guard that exists because STATUS CODE IS NOT ENOUGH.
 #
 # It lives in client.py because it is a transport question, not a workload one.
 # It is tested here, next to the read path that depends on it, so the unit answer
-# and the rung-level consequence stay in one place — and so FakeResponse is not
+# and the rung-level consequence stay in one place – and so FakeResponse is not
 # duplicated into a second file for four assertions.
 #
 # On 2026-08-12 the tenant went into maintenance mid-session and answered GETs

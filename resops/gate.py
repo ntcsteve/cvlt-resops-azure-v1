@@ -1,10 +1,10 @@
 """
-Continuous Service — the promotion gate (the 5th ResOps function).
+Continuous Service – the promotion gate (the 5th ResOps function).
 
 The ladder *establishes* the workload's state; this is the *decision* that
 consumes it at the prod boundary. It mutates nothing.
 
-One question: is it safe to promote? With the ladder it's almost trivial —
+One question: is it safe to promote? With the ladder it's almost trivial –
 
     PROMOTE only if the workload reached VALIDATED, and the proof is fresh.
 
@@ -17,7 +17,7 @@ consciously override (--allow-stale), recorded as acknowledged risk.
 Pure: it reads a Ladder plus already-measured numbers (age/rpo/rto, computed at
 the I/O edge where the clock lives) and returns a verdict. No network, no clock.
 
-`tolerated()` at the bottom is the ratchet — the ONE thing here that softens a
+`tolerated()` at the bottom is the ratchet – the ONE thing here that softens a
 verdict, and it deliberately softens the aggregate only, never the workload.
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ from datetime import date
 from .state import Ladder, State
 
 # Default freshness SLA if config doesn't declare one. RPO has NO default
-# threshold on purpose — we lean on Commvault's own SLA verdict (reaching
+# threshold on purpose – we lean on Commvault's own SLA verdict (reaching
 # RECOVERABLE) and only add a numeric bar if the user declares `rpo_target_hours`.
 DEFAULT_PROOF_MAX_AGE_DAYS = 7
 
@@ -63,7 +63,7 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
     """Judge a workload's ladder for promotion. Pure.
 
     The measured numbers (proof_age_days, rpo_hours, rto_minutes) are supplied by
-    the caller — classify() stays clock-free, so freshness is decided here.
+    the caller – classify() stays clock-free, so freshness is decided here.
     `regressed` comes from the Improve trend (did the state drop since last run).
     """
     policy = policy or {}
@@ -78,7 +78,7 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
     # At VALIDATED: apply promotion-grade policy on top of proven recoverability.
     hard: list[str] = []
     # A stale attestation is a HARD block, not an overridable one. "We verified
-    # this a year ago" says nothing about the point you would restore TODAY —
+    # this a year ago" says nothing about the point you would restore TODAY –
     # unlike aged recovery proof, which at least proved the mechanism works. The
     # bar is declared per tier (tiers.yaml attestation_max_age_days); undeclared
     # means unenforced, and the age is recorded in evidence either way.
@@ -86,19 +86,19 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
     if (attest_max_age is not None and attestation_age_days is not None
             and attestation_age_days > attest_max_age):
         hard.append(f"attestation stale ({attestation_age_days}d > {attest_max_age}d) "
-                    f"— nothing has verified this recovery point recently")
+                    f"– nothing has verified this recovery point recently")
     if rpo_target is not None and rpo_hours is not None and rpo_hours > rpo_target:
         hard.append(f"rpo {rpo_hours}h > target {rpo_target}h")
     # NOTHING CAN JUDGE RECENCY HERE, so refuse rather than promote an age nobody
     # checked. The Recover rung used to block on an unevaluated vendor SLA; it no
-    # longer does, because that verdict is a cached batch result — absent for ~30
+    # longer does, because that verdict is a cached batch result – absent for ~30
     # minutes on every new workload, and stale-"Protected" on VMs deleted from
     # Azure. With it gone, the numeric bar is the only recency control left, and a
     # workload that declares no tier has neither. Say so, and name the fix.
     # `None` means the caller did not supply the fact, which is not the same as
     # False, so it does not block.
     if rpo_target is None and sla_evaluated is False:
-        hard.append("recency cannot be judged — no rpo_target_hours declared and the "
+        hard.append("recency cannot be judged – no rpo_target_hours declared and the "
                     "vendor has not evaluated SLA. Fix: declare a tier in config/tiers.yaml")
     if rto_target is not None and rto_minutes is not None and rto_minutes > rto_target:
         hard.append(f"rto {rto_minutes}m > target {rto_target}m")
@@ -123,7 +123,7 @@ def gate(ladder: Ladder, policy: dict | None = None, *,
 
 
 # --------------------------------------------------------------------------- #
-# The ratchet — declared, expiring enforcement tolerance.
+# The ratchet – declared, expiring enforcement tolerance.
 # --------------------------------------------------------------------------- #
 def tolerated(enforce_from: str, today: str) -> bool:
     """Is this workload inside a declared, unexpired enforcement tolerance?
@@ -136,7 +136,7 @@ def tolerated(enforce_from: str, today: str) -> bool:
 
     WHY THIS IS NOT A BYPASS. A bypass hides a gap. This hides nothing:
 
-        the workload's own verdict   UNCHANGED — a HOLD is still a HOLD, on
+        the workload's own verdict   UNCHANGED – a HOLD is still a HOLD, on
                                      screen, in the bundle, in the report
         the aggregate exit code      excludes it, because that is the only thing
                                      that blocks a pipeline

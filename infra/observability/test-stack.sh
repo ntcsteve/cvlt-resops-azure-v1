@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Prove the observability stack WORKS, without spending a cent on Azure.
 #
-# Nothing in the stack is Azure-specific — it is three containers and four config
+# Nothing in the stack is Azure-specific – it is three containers and four config
 # files. Azure only supplies a VM to run Docker on. So the part that can actually
 # break is testable on a laptop, in about a minute, repeatably and free.
 #
-# It runs THE REAL FILES from ./stack/ — the same ones cloud-init embeds. A test
+# It runs THE REAL FILES from ./stack/ – the same ones cloud-init embeds. A test
 # against a copy would prove nothing about what deploys.
 #
 #   ./test-stack.sh          run it
@@ -35,7 +35,7 @@ step() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
 cleanup() {
   if [ "${KEEP:-0}" = "1" ]; then
-    printf '\nKEEP=1 — stack left up. grafana %s (admin / %s)\n' "$GRAFANA" "$GRAFANA_PASSWORD"
+    printf '\nKEEP=1 – stack left up. grafana %s (admin / %s)\n' "$GRAFANA" "$GRAFANA_PASSWORD"
     printf 'tear down with: docker compose -f %s/docker-compose.yml down\n' "$PWD/stack"
   else
     docker compose -f stack/docker-compose.yml down -v >/dev/null 2>&1
@@ -43,7 +43,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-command -v docker >/dev/null || { echo "docker not found — this test needs it"; exit 1; }
+command -v docker >/dev/null || { echo "docker not found – this test needs it"; exit 1; }
 
 step "Starting the real stack (infra/observability/stack/)"
 docker compose -f stack/docker-compose.yml up -d >/dev/null 2>&1 || {
@@ -76,7 +76,7 @@ step "2. publish a real run"
 # Pipe STRAIGHT through, exactly as `terraform output publish_command` prints it.
 # Do NOT capture into a variable first: command substitution strips trailing
 # newlines, the exposition format requires one, and pushgateway answers 400. That
-# bug was in this script until the test caught it — a test that reshapes the
+# bug was in this script until the test caught it – a test that reshapes the
 # payload is testing itself, not the thing it claims to.
 code=$( cd "$REPO" && python3 -m resops metrics config/estate.yaml 2>/dev/null \
         | curl -s -o /dev/null -w '%{http_code}' --data-binary @- "$PUSH/metrics/job/resops" )
@@ -108,7 +108,7 @@ panels=$(curl -sf -u "admin:$GRAFANA_PASSWORD" \
          "$GRAFANA/api/dashboards/uid/resops-recoverability" \
          | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["dashboard"]["panels"]))' 2>/dev/null)
 [ "${panels:-0}" -gt 0 ] && ok "grafana loaded the dashboard ($panels panels)" \
-                         || bad "grafana did NOT load the dashboard — provisioning errors are silent"
+                         || bad "grafana did NOT load the dashboard – provisioning errors are silent"
 
 # --- 6. every panel query returns data -------------------------------------- #
 # The check that matters. Static validation cannot catch a query that parses but
@@ -125,7 +125,7 @@ for panel in dash["panels"]:
         url = f"{prom}/api/v1/query?query={urllib.parse.quote(expr)}"
         try:
             n = len(json.load(urllib.request.urlopen(url, timeout=10))["data"]["result"])
-        except Exception as err:                    # noqa: BLE001 — report, never raise
+        except Exception as err:                    # noqa: BLE001 – report, never raise
             print(f"  \033[31mFAIL\033[0m  {panel['title'][:44]:44} query errored: {err}")
             red += 1
             continue

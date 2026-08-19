@@ -1,11 +1,11 @@
-"""Token renewal — the one property the whole write lane leans on.
+"""Token renewal – the one property the whole write lane leans on.
 
 `op` calls ensure_fresh_token() before every mutating command, and `write()`
 calls it again on a 401 before retrying. Both assume it can actually trip
 renew-on-401. It could not: the probe used to be /CommServ, which this tenant's
 WAF answers 403 to regardless of the token. 403 is not 401, so the renewal never
 fired, writes could not self-renew, and tokens aged out until the refresh window
-closed — twice.
+closed – twice.
 
 This pins the probe to an endpoint that really does 401. The bug was invisible
 until credentials died weeks later, which is exactly the kind that needs a test.

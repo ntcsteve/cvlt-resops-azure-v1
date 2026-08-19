@@ -1,4 +1,4 @@
-"""Tier 1 tests — tamper-evident history (T1-1) + scaffold smoke (T1-2/T1-3)."""
+"""Tier 1 tests – tamper-evident history (T1-1) + scaffold smoke (T1-2/T1-3)."""
 import json
 
 from resops.assurance.capabilities import CAPABILITIES
@@ -77,7 +77,7 @@ def test_framework_packs_only_reference_real_capabilities():
     """The guardrail: a pack may only reference capabilities that exist in code.
 
     An orphan reference (a typo, or drift after a capability is renamed) silently
-    fails to render — inventing no false coverage — but it's still a bug: the pack
+    fails to render – inventing no false coverage – but it's still a bug: the pack
     claims a mapping the code can't back. Fail loud here so packs stay honest."""
     valid = {cap["id"] for caps in CAPABILITIES.values() for cap in caps}
     packs = sorted(FRAMEWORKS_DIR.glob("*.yaml"))
@@ -118,7 +118,7 @@ def test_repeated_to_dict_does_not_accumulate_gate_controls():
     b = Bundle("h", "now", [FunctionResult("recover", Outcome.PASS, "ok")],
                gate={"decision": "PROMOTE", "reasons": []}, controls=CONTROLS)
     assert len(b.to_dict()["gate"]["controls"]) == 1
-    assert len(b.to_dict()["gate"]["controls"]) == 1   # not 2 — shared dict untouched
+    assert len(b.to_dict()["gate"]["controls"]) == 1   # not 2 – shared dict untouched
     assert "controls" not in b.gate                    # original verdict dict unmutated
 
 

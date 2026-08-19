@@ -1,5 +1,5 @@
 """
-preflight — the read-only gate. Refuses to let a lane act until the world is
+preflight – the read-only gate. Refuses to let a lane act until the world is
 sane. Each check returns (ok, message); a failure carries its own FIX. Any FAIL
 stops the run (exit 1). This is where the surprises that used to bite mid-run
 (expired token, quota 4/4, skipped discovery) get caught up front, cheaply.
@@ -17,7 +17,7 @@ from ._common import CFG, HYP, client, contract, discovered
 
 
 # --------------------------------------------------------------------------- #
-# checks — each returns (ok: bool, message: str). message ends with the fix on FAIL.
+# checks – each returns (ok: bool, message: str). message ends with the fix on FAIL.
 # --------------------------------------------------------------------------- #
 def check_az() -> tuple:
     acct = az_json("account", "show")
@@ -76,8 +76,8 @@ def run(run_dir: str) -> None:
         print(f"  {'PASS' if ok else 'FAIL'}  {msg}")
         all_ok = all_ok and ok
     if not all_ok:
-        sys.exit("preflight FAILED — fix the above, then retry")
-    print("preflight PASS — safe to climb")
+        sys.exit("preflight FAILED – fix the above, then retry")
+    print("preflight PASS – safe to climb")
 
 
 if __name__ == "__main__":

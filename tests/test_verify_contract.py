@@ -1,6 +1,6 @@
 """The verify.sh output contract (VERIFY.md), pinned.
 
-Every rule here fails SILENTLY when broken — a truncated detail, or worse, an
+Every rule here fails SILENTLY when broken – a truncated detail, or worse, an
 unattested point reading as clean. Those are the two ways an attester lies, and
 this project already learned what a lying attester costs. If a change makes one
 of these tests fail, the change is wrong until VERIFY.md says otherwise.
@@ -42,7 +42,7 @@ def test_a_missing_script_says_so_plainly():
 
 def test_only_the_first_line_is_read():
     """WHY THIS IS PINNED: parsing stops at the first match, so a verdict message
-    wrapped over two lines loses its tail — silently, into the attestation, the
+    wrapped over two lines loses its tail – silently, into the attestation, the
     gate reason and the evidence bundle. That is a real bug this repo shipped.
     The contract is one line per message; this test is what makes that true
     rather than merely documented."""

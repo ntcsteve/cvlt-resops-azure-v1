@@ -1,9 +1,9 @@
 """
-The evidence contract — the stable shape a platform team builds on.
+The evidence contract – the stable shape a platform team builds on.
 
 A run produces one Bundle: a versioned, machine-readable record of how each
 ResOps function judged the environment. CI gates and dashboards depend on this
-schema, so it changes deliberately (bump SCHEMA_VERSION) — never casually.
+schema, so it changes deliberately (bump SCHEMA_VERSION) – never casually.
 """
 from __future__ import annotations
 
@@ -19,21 +19,21 @@ SCHEMA_VERSION = "4"  # v2: gate section; v3: framework crosswalk in `compliance
 # Each ResOps function spoken in the dialect a cloud-native engineer already
 # knows. Surfaced at runtime and in the bundle so the tool teaches as it runs.
 DEVOPS_LENS = {
-    "discover": "like service discovery — is the workload onboarded?",
-    "protect": "like GitOps drift — declared vs actual coverage",
-    "detect": "like observability — health checks & alerting",
-    "recover": "like rollback readiness — RPO & SLA",
-    "scan": "like scanning an artifact before deploy — is the thing you'd roll back to clean?",
-    "validate": "like a chaos drill — prove recovery in isolation",
-    "improve": "like a regression gate — trend & audit trail",
-    "continuous_business": "Continuous Service — a promotion gate: safe to ship to prod?",
+    "discover": "like service discovery – is the workload onboarded?",
+    "protect": "like GitOps drift – declared vs actual coverage",
+    "detect": "like observability – health checks & alerting",
+    "recover": "like rollback readiness – RPO & SLA",
+    "scan": "like scanning an artifact before deploy – is the thing you'd roll back to clean?",
+    "validate": "like a chaos drill – prove recovery in isolation",
+    "improve": "like a regression gate – trend & audit trail",
+    "continuous_business": "Continuous Service – a promotion gate: safe to ship to prod?",
 }
 
 
 class Outcome(enum.Enum):
     """One verdict per function. Four states, never ambiguous."""
     PASS = ("PASS", "32")   # proven, with evidence
-    GAP = ("GAP", "33")     # works, but intent isn't met — a finding, not a crash
+    GAP = ("GAP", "33")     # works, but intent isn't met – a finding, not a crash
     FAIL = ("FAIL", "31")   # broken: network, auth, or unexpected response
     SKIP = ("SKIP", "90")   # not run (gated out, or feature disabled)
 
@@ -71,7 +71,7 @@ class Bundle:
     run_at: str                      # caller stamps this (scripts can't read the clock)
     results: list[FunctionResult]
     gate: dict | None = None         # the promotion verdict, set only in gate mode
-    controls: dict | None = None     # loaded controls.yaml — tags evidence with controls
+    controls: dict | None = None     # loaded controls.yaml – tags evidence with controls
     findings: list | None = None     # finding lifecycle (open/remediated/verified)
 
     def summary_counts(self) -> dict:
@@ -101,7 +101,7 @@ class Bundle:
             "functions": functions,
         }
         if self.gate is not None:
-            gate = dict(self.gate)            # copy — don't mutate the shared verdict dict
+            gate = dict(self.gate)            # copy – don't mutate the shared verdict dict
             tags = control_map.get("continuous_business", [])
             if tags:
                 gate["controls"] = tags
@@ -123,7 +123,7 @@ class Bundle:
 
 
 # --------------------------------------------------------------------------- #
-# Audit trail — append-only history of runs (the compliance evidence seed)
+# Audit trail – append-only history of runs (the compliance evidence seed)
 # --------------------------------------------------------------------------- #
 def load_history(path: Path) -> list:
     """Read the append-only run history (JSON-lines). [] if none yet."""
@@ -139,7 +139,7 @@ def _entry_hash(prev_hash: str, core: dict) -> str:
     """sha256 over (prev_hash + the entry's own fields). Canonical = sort_keys.
 
     The hash binds each record to the one before it, so editing any past entry
-    breaks every hash after it — a cheap, dependency-free tamper-evidence seal.
+    breaks every hash after it – a cheap, dependency-free tamper-evidence seal.
     """
     payload = json.dumps({"prev_hash": prev_hash, **core}, sort_keys=True)
     return hashlib.sha256(payload.encode()).hexdigest()
@@ -165,7 +165,7 @@ def verify_history(path: Path) -> tuple[bool, int | None]:
     history = load_history(path)
     prev_hash = GENESIS_HASH
     for i, sealed in enumerate(history):
-        if "entry_hash" not in sealed:      # pre-chain legacy record — skip, don't fail
+        if "entry_hash" not in sealed:      # pre-chain legacy record – skip, don't fail
             continue
         core = {k: v for k, v in sealed.items() if k not in ("prev_hash", "entry_hash")}
         if sealed.get("prev_hash") != prev_hash:
@@ -179,7 +179,7 @@ def verify_history(path: Path) -> tuple[bool, int | None]:
 def history_entry(run_at: str, target: str, results: list,
                   state: str | None = None) -> dict:
     """Compact, append-only record of one run: outcomes, key metrics, and (since
-    the readiness ladder) the run's State — the seed the Improve trend compares
+    the readiness ladder) the run's State – the seed the Improve trend compares
     against next run. `state` is optional so legacy callers keep working; entries
     without it are simply not comparable as a trend (treated as baseline)."""
     metrics = {}
@@ -189,7 +189,7 @@ def history_entry(run_at: str, target: str, results: list,
                 metrics[key] = result.evidence[key]
     # WHY, not just WHICH. The chain used to record that a stage was a GAP and
     # never what was found, so six months later it could prove "scan was a GAP at
-    # 04:17 on 12 Aug" and nothing about WHAT blocked it. The finding did exist —
+    # 04:17 on 12 Aug" and nothing about WHAT blocked it. The finding did exist –
     # in report.md, which is not sealed. So the reason lived in the file anyone
     # could edit and was missing from the one that proves it was not edited.
     #

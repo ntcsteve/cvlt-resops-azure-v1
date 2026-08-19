@@ -26,9 +26,9 @@
 #
 # Step 1 is `remediate`, and it is not decoration. The loop's third step takes a
 # backup it labels CLEAN, and that label has to be TRUE or every downstream
-# verdict is theatre. A workload left dirty by a previous session — which is the
+# verdict is theatre. A workload left dirty by a previous session – which is the
 # normal state to find one in, and exactly how aug12-narwhal was found on
-# 2026-08-12 — would be backed up and called clean.
+# 2026-08-12 – would be backed up and called clean.
 #
 # remediate is safe on an already-clean workload: it is `rm -f` of things that
 # may not exist plus a `cp` back from the stash, and it ends by running

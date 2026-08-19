@@ -1,5 +1,5 @@
 """
-The ResOps runner — five modes over the same read-only readiness ladder:
+The ResOps runner – five modes over the same read-only readiness ladder:
 
   python -m resops [config.yaml]          climb the ladder; exit = number of read FAILs
   python -m resops gate [config.yaml]     the promotion gate; exit 0 PROMOTE / 1 HOLD
@@ -7,11 +7,11 @@ The ResOps runner — five modes over the same read-only readiness ladder:
   python -m resops verify [config.yaml]   audit the hash-chained trail; exit 0 intact
   python -m resops metrics [config.yaml]  publish the last run as Prometheus text
 
-`verify` and `metrics` read what a previous run wrote — no tenant, no network.
+`verify` and `metrics` read what a previous run wrote – no tenant, no network.
 
-Each workload is placed on ONE rung of the readiness ladder —
+Each workload is placed on ONE rung of the readiness ladder –
 UNDISCOVERED → DISCOVERED → PROTECTED → MONITORED → RECOVERABLE → TRUSTED →
-VALIDATED —
+VALIDATED –
 by classify() (resops/state.py). The runner gathers the reads, prints the rung,
 the stage it's blocked on, and the trend since last run, then writes the evidence
 bundle + audit trail. `gate` is Continuous Service: promote only if the workload
@@ -19,12 +19,12 @@ reached VALIDATED and the proof is fresh. Add --allow-stale to ship on aged-but-
 clean proof (logged as acknowledged risk). Add --detail for the per-stage rows.
 Nothing here mutates your environment.
 
-Config declares one `workload:` or a `workloads:` list (a resilience programme
+Config declares one `workload:` or a `workloads:` list (a resilience program
 across critical functions). Each workload keeps its own evidence subdir + hash
 chain; a top-level summary.json rolls them up. The gate HOLDs if ANY workload
-isn't VALIDATED — criticality is recorded as evidence, never a way to ship past it.
+isn't VALIDATED – criticality is recorded as evidence, never a way to ship past it.
 
-The one exception is `enforce_from:` — a declared, dated enforcement tolerance
+The one exception is `enforce_from:` – a declared, dated enforcement tolerance
 (see gate.tolerated). It never changes a workload's own verdict, only whether
 that verdict blocks the aggregate exit code, and it expires by itself.
 """
@@ -70,7 +70,7 @@ def _resolve_ages(node, now: float):
     Fixtures otherwise carry FIXED epochs, so a demo's displayed RPO and
     attestation age grow every week until they read as nonsense. Verdicts never
     rotted (config/estate.yaml pins its bars wide open on purpose) but the numbers
-    did — and config/incident.yaml cannot work that way at all, because its whole
+    did – and config/incident.yaml cannot work that way at all, because its whole
     exercise turns on "6 days ago" still meaning six days when you run it.
 
     Only a dict whose keys are EXACTLY one of these converts, so a real API payload
@@ -86,7 +86,7 @@ def _resolve_ages(node, now: float):
 
 
 def reads_from_fixture(rel_path: str) -> Reads:
-    """Build Reads from a committed JSON fixture — the no-cloud demo path. This is
+    """Build Reads from a committed JSON fixture – the no-cloud demo path. This is
     the same Reads that gather() folds live API GETs into, so the demo drives the
     real ladder, gate, and crosswalk with zero network, token, or tenant. Unknown
     keys (e.g. a leading `_comment`) are ignored so fixtures can self-document.
@@ -102,7 +102,7 @@ CONFIG_ERROR = 2  # exit code for bad config/auth, distinct from read FAILs / HO
 # Subcommands that take over from the default ladder climb.
 SUBCOMMANDS = ("gate", "verify", "list", "metrics")
 
-USAGE = """resops — read-only resilience readiness ladder + promotion gate
+USAGE = """resops – read-only resilience readiness ladder + promotion gate
 
 Usage:
   python -m resops [config] [--detail]         climb the ladder (exit = number of read FAILs)
@@ -131,7 +131,7 @@ def die(message: str) -> int:
 
 
 def _display(path: Path) -> str:
-    """Path relative to the repo root for tidy output — or absolute if it lives
+    """Path relative to the repo root for tidy output – or absolute if it lives
     outside the repo (e.g. a CI artifacts dir, where relative_to would crash)."""
     try:
         return str(path.relative_to(ROOT))
@@ -140,7 +140,7 @@ def _display(path: Path) -> str:
 
 
 def _looks_like_command(arg: str) -> bool:
-    """A bare first word that isn't a config file — likely a mistyped subcommand."""
+    """A bare first word that isn't a config file – likely a mistyped subcommand."""
     return not arg.endswith((".yaml", ".yml")) and not Path(arg).exists()
 
 
@@ -171,13 +171,13 @@ def main(argv: list[str] | None = None) -> int:
     base_dir = ROOT / config.get("evidence_dir", "evidence")
     workloads, flat = _workloads(config)
 
-    # Validate declared tiers early — fail with the fix before any API call.
+    # Validate declared tiers early – fail with the fix before any API call.
     known_tiers = load_tiers()
     for w in workloads:
         t = w.get("tier")
         if t and t not in known_tiers:
             return die(f"workload '{w['name']}': tier '{t}' not in config/tiers.yaml"
-                       f" — defined: {', '.join(known_tiers) or 'none'}")
+                       f" – defined: {', '.join(known_tiers) or 'none'}")
 
     # Resolve each declared enforcement tolerance into a plain bool, here at the
     # I/O edge where the clock lives, so everything downstream (gate, aggregate,
@@ -188,35 +188,35 @@ def main(argv: list[str] | None = None) -> int:
         if err:
             return die(err)
 
-    # `verify` and `metrics` both read what a previous run wrote — no tenant needed.
+    # `verify` and `metrics` both read what a previous run wrote – no tenant needed.
     if subcommand == "verify":
         return _verify(base_dir, workloads)
     if subcommand == "metrics":
         return _metrics(base_dir, workloads)
 
     # Offline demo: when every workload reads from a committed `fixture:`, no
-    # tenant, token, or network is needed — the no-cloud "see it first" path. The
+    # tenant, token, or network is needed – the no-cloud "see it first" path. The
     # same classify → gate → crosswalk runs; only the reads are canned.
     offline = bool(workloads) and all(w.get("fixture") for w in workloads)
 
     if offline:
-        target, client = "offline fixture — no cloud", None
+        target, client = "offline fixture – no cloud", None
     else:
-        # The API URL has ONE live home: workshop.yaml's platform.web_service_url —
+        # The API URL has ONE live home: workshop.yaml's platform.web_service_url –
         # the single source both the read (resops) and write (op) lanes read, so
         # they can't drift onto different tenants.
         target = str(config.get("target") or platform_url() or "").rstrip("/")
         if not target.startswith(("http://", "https://")):
-            return die(f"no API URL — set platform.web_service_url in config/workshop.yaml; got '{target}'")
+            return die(f"no API URL – set platform.web_service_url in config/workshop.yaml; got '{target}'")
         creds = load_credentials(ENV_PATH)
         if not creds.access_token:
-            return die("CV_ACCESS_TOKEN not set — copy .env.example to .env")
+            return die("CV_ACCESS_TOKEN not set – copy .env.example to .env")
         client = Client(target, creds, ENV_PATH)
 
-    # `list` is the onboarding lookup — needs a live tenant.
+    # `list` is the onboarding lookup – needs a live tenant.
     if subcommand == "list":
         if offline:
-            return die("`list` needs a live tenant — this config is an offline fixture")
+            return die("`list` needs a live tenant – this config is an offline fixture")
         return _list(client)
 
     if not workloads:
@@ -243,18 +243,18 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# Workload resolution — a single `workload:` or a `workloads:` programme.
+# Workload resolution – a single `workload:` or a `workloads:` program.
 # --------------------------------------------------------------------------- #
 def _resolve_policy(workload: dict, config: dict) -> dict:
     """Assemble the promotion gate policy.
 
     Priority (high → low):
-      1. workload.promote_policy  — per-workload explicit override
-      2. config.gate / config.promote_policy  — programme-level default
-      3. tier bars from tiers.yaml  — auto-injected for any key NOT already declared
+      1. workload.promote_policy  – per-workload explicit override
+      2. config.gate / config.promote_policy  – program-level default
+      3. tier bars from tiers.yaml  – auto-injected for any key NOT already declared
 
     Tier bars fill gaps; they never overwrite explicit declarations. Unknown tier
-    names warn and continue — no tiers.yaml means no RPO/RTO bars (still enforces
+    names warn and continue – no tiers.yaml means no RPO/RTO bars (still enforces
     freshness and VALIDATED state).
     """
     base = dict(workload.get("promote_policy")
@@ -269,7 +269,7 @@ def _resolve_policy(workload: dict, config: dict) -> dict:
             # tiers early and die()s before reaching here, so this path is only
             # reachable when _resolve_policy is called outside the main flow.
             print(color(f"  warning: tier '{tier_name}' not found in tiers.yaml"
-                        " — no RPO/RTO bars applied", YELLOW))
+                        " – no RPO/RTO bars applied", YELLOW))
         else:
             if "rpo_target_hours" not in base and "rpo_hours" in tier:
                 base["rpo_target_hours"] = tier["rpo_hours"]
@@ -295,7 +295,7 @@ def _resolve_tolerance(workload: dict, today: str) -> str:
         workload["tolerated"] = tolerated(str(declared), today)
     except (ValueError, TypeError):
         return (f"workload '{workload['name']}': enforce_from '{declared}' is not a date"
-                f" — expected YYYY-MM-DD, e.g. enforce_from: 2026-10-01")
+                f" – expected YYYY-MM-DD, e.g. enforce_from: 2026-10-01")
     return ""
 
 
@@ -326,13 +326,13 @@ def _metrics(base_dir: Path, workloads: list) -> int:
     """Print the LAST run's evidence as Prometheus text. No tenant, no network.
 
     Deliberately does not re-judge: the gate already did that and wrote the
-    answer down. Judge once, publish many — so a scheduled `resops gate` in CI
+    answer down. Judge once, publish many – so a scheduled `resops gate` in CI
     can pipe this straight to a pushgateway without paying for a second pass, and
     so a dashboard can never disagree with the evidence bundle beside it."""
     summary_path = base_dir / "summary.json"
     if not summary_path.exists():
         return die(f"no run to publish: {_display(summary_path)} not found"
-                   f" — run `resops gate` first")
+                   f" – run `resops gate` first")
     summary = json.loads(summary_path.read_text())
 
     bundles = []
@@ -353,15 +353,15 @@ def _verify(base_dir: Path, workloads: list) -> int:
         if not ok:
             broken.append((p, where))
     if not broken:
-        print(color("  audit trail intact — hash chain verified", GREEN))
+        print(color("  audit trail intact – hash chain verified", GREEN))
         return 0
     for path, where in broken:
-        print(color(f"  TAMPERED — {_display(path)} breaks at entry {where}", RED))
+        print(color(f"  TAMPERED – {_display(path)} breaks at entry {where}", RED))
     return 1
 
 
 def _list(client) -> int:
-    """The onboarding lookup — print every VM group + id to confirm a workload's group
+    """The onboarding lookup – print every VM group + id to confirm a workload's group
     exists (resops resolves it by name; the id is only for the optional override).
     Read-only; needs target + token but no workload."""
     try:
@@ -387,7 +387,7 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
              gate_mode, allow_stale, detail, multi) -> dict:
     history = load_history(w_dir / "history.jsonl")
 
-    # Read once, classify to a state, compare to history — the whole ladder.
+    # Read once, classify to a state, compare to history – the whole ladder.
     # A canned `fixture:` (the offline demo) stands in for the live API reads.
     reads = (reads_from_fixture(workload["fixture"]) if workload.get("fixture")
              else gather(client, workload))
@@ -417,7 +417,7 @@ def _run_one(client, config, workload, controls, w_dir, run_at, target,
 
     # A declared tolerance rides along in the evidence, never in the verdict.
     # An auditor must be able to see both what the gate decided and what the
-    # programme chose not to enforce yet.
+    # program chose not to enforce yet.
     gate_dict = verdict.to_dict() if verdict else None
     if gate_dict is not None and workload.get("enforce_from"):
         gate_dict["tolerance"] = {
@@ -489,25 +489,25 @@ def _print_verdict(verdict, bundle_path, enforce_from: str = "",
     if verdict.acknowledged_risk:
         print(color(f"  ↳ {_display(bundle_path)}: acknowledged_risk logged", DIM))
     # The verdict above is the verdict. This line only says whether it currently
-    # blocks the pipeline — printed loudly so a tolerance can never be quiet.
+    # blocks the pipeline – printed loudly so a tolerance can never be quiet.
     if enforce_from and verdict.decision == "HOLD":
         if is_tolerated:
-            print(color(f"  ↳ TOLERATED until {enforce_from} — still a HOLD, excluded "
+            print(color(f"  ↳ TOLERATED until {enforce_from} – still a HOLD, excluded "
                         f"from the aggregate until that date", YELLOW))
         else:
-            print(color(f"  ↳ tolerance EXPIRED {enforce_from} — enforced from now on", RED))
+            print(color(f"  ↳ tolerance EXPIRED {enforce_from} – enforced from now on", RED))
     elif enforce_from and is_tolerated:
-        print(color(f"  ↳ tolerance until {enforce_from} is no longer needed — "
+        print(color(f"  ↳ tolerance until {enforce_from} is no longer needed – "
                     f"this workload passes; remove enforce_from", DIM))
 
 
 # --------------------------------------------------------------------------- #
-# Roll the workloads up into one programme verdict + summary.json.
+# Roll the workloads up into one program verdict + summary.json.
 # --------------------------------------------------------------------------- #
 def _aggregate(summaries, base_dir, run_at, target, gate_mode, flat) -> int:
     totals = {k: sum(s["counts"][k] for s in summaries) for k in ("pass", "gap", "fail", "skip")}
     opens = sum(s["open_findings"] for s in summaries)
-    # THE RATCHET, and the only place it acts. A tolerated workload still holds —
+    # THE RATCHET, and the only place it acts. A tolerated workload still holds –
     # it just doesn't block the pipeline yet. Both lists are published so the gap
     # is counted, never dropped.
     all_holds = [s for s in summaries if s["gate"] == "HOLD"]
@@ -529,21 +529,21 @@ def _aggregate(summaries, base_dir, run_at, target, gate_mode, flat) -> int:
     base_dir.mkdir(parents=True, exist_ok=True)
     (base_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
-    if not flat:   # only roll up when it's a multi-workload programme
+    if not flat:   # only roll up when it's a multi-workload program
         n = len(summaries)
         tol = f" · {len(tolerated_holds)} TOLERATED ({', '.join(tolerated_holds)})" \
             if tolerated_holds else ""
         if gate_mode and decision == "HOLD":
-            print(color(f"AGGREGATE  HOLD — {', '.join(holds)}{tol} · exit {exit_code}", RED))
+            print(color(f"AGGREGATE  HOLD – {', '.join(holds)}{tol} · exit {exit_code}", RED))
         elif gate_mode:
             extra = f" ({len(overridden)} overridden)" if overridden else ""
             if tolerated_holds:
                 # Not green. Nothing blocks the pipeline, but the estate is not clear
                 # and the headline must not imply that it is.
-                print(color(f"AGGREGATE  PROMOTE — {n - len(tolerated_holds)}/{n} enforced "
+                print(color(f"AGGREGATE  PROMOTE – {n - len(tolerated_holds)}/{n} enforced "
                             f"and clear{extra}{tol} · exit 0", YELLOW))
             else:
-                print(color(f"AGGREGATE  PROMOTE — {n} workload(s) clear{extra} · exit 0", GREEN))
+                print(color(f"AGGREGATE  PROMOTE – {n} workload(s) clear{extra} · exit 0", GREEN))
         else:
             states = ", ".join(f"{s['name']}={s['state']}" for s in summaries)
             print(f"AGGREGATE  {n} workload(s) · {states} · {opens} open · exit {exit_code}")

@@ -1,5 +1,5 @@
 """
-Commvault job polling — the ONE poll loop, shared by the operator backup and the
+Commvault job polling – the ONE poll loop, shared by the operator backup and the
 restore drill so the terminal states and cadence can't drift between lanes.
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ def job_summary(client, job_id) -> dict:
 def poll_job(client, job_id, timeout: int = 600, every: int = 20) -> str:
     """Poll a Commvault job to a terminal state. Prints progress each tick; returns
     the final status string (or "TIMEOUT"). `client` is the read-only resops Client
-    (a GET-only poll — the mutating trigger already happened)."""
+    (a GET-only poll – the mutating trigger already happened)."""
     print(f"polling job {job_id} (terminal = {'/'.join(TERMINAL)})…")
     waited = 0
     first_wait = True
@@ -56,7 +56,7 @@ def poll_job(client, job_id, timeout: int = 600, every: int = 20) -> str:
             # media agent failover. Only 8 of 17 were under 90 seconds. Wall clock
             # for `op backup` end to end, from loop.sh's own step stamps: 88s to
             # 149s across 6 runs.
-            print("         (waiting for a media agent slot — measured here: about 2 min, "
+            print("         (waiting for a media agent slot – measured here: about 2 min, "
                   "77-149s across 23 runs, and one media agent failover took 27 min. "
                   "Do not kill it.)",
                   flush=True)
@@ -73,7 +73,7 @@ def succeeded(status: str) -> bool:
 
     THIS EXISTS BECAUSE "TIMEOUT" IS NOT A JOB STATUS. poll_job returns it when
     it stopped waiting, which means the job may still be running and we never saw
-    an outcome. We cannot claim a result we did not observe, so it is a failure —
+    an outcome. We cannot claim a result we did not observe, so it is a failure –
     and it lives in the same return channel as real statuses, so every reader had
     to remember to special-case it by hand. One reader did (the restore drill,
     with a three-way string match) and one did not (backup, which returned it and

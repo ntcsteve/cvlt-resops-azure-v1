@@ -1,32 +1,32 @@
-# config/workshop.yaml — the ONE file you fill for the workshop.
+# config/workshop.yaml – the ONE file you fill for the workshop.
 # Copy to config/workshop.yaml (gitignored) and fill it in.
 # Terraform, resops, and op all read this file. Secrets (tokens) live in .env, never here.
 #
 # BEFORE YOU FILL THIS IN:
 #   1. Run the Metallic wizard: Protect > Virtual Machines > Add Hypervisor > Microsoft Azure
-#      It creates the service principal and hypervisor — most IDs below don't exist until then.
-#   2. Assign roles to the SP (requires Owner on the subscription — Contributor is not enough):
+#      It creates the service principal and hypervisor – most IDs below don't exist until then.
+#   2. Assign roles to the SP (requires Owner on the subscription – Contributor is not enough):
 #        az role assignment create --assignee <sp-object-id> --role "Contributor" \
 #          --scope /subscriptions/<subscription-id>
 #        az role assignment create --assignee <sp-object-id> --role "Storage Blob Data Contributor" \
 #          --scope /subscriptions/<subscription-id>
-#   3. Verify the token works: `resops list` — should return your VM groups, not a 403.
+#   3. Verify the token works: `resops list` – should return your VM groups, not a 403.
 
-# ── Your workload — change this per run ──────────────────────────────
+# ── Your workload – change this per run ──────────────────────────────
 workload:
-  name: payments-api            # codename — flows to the VM name, CV group (resops-<name>-vg), and tags
-  tier: tier2                   # tier1 (RPO 8h / RTO 4h) or tier2 (RPO 24h / RTO 8h) — see config/tiers.yaml
-  env: prod                     # prod / staging / dev — tag on all Azure resources
-  owner: platform-team          # owning team — for portal filtering and cost attribution
-  vm_size: Standard_F1als_v7    # optional — cheapest in eastus2 (1 vCPU / 2 GB)
+  name: payments-api            # codename – flows to the VM name, CV group (resops-<name>-vg), and tags
+  tier: tier2                   # tier1 (RPO 8h / RTO 4h) or tier2 (RPO 24h / RTO 8h) – see config/tiers.yaml
+  env: prod                     # prod / staging / dev – tag on all Azure resources
+  owner: platform-team          # owning team – for portal filtering and cost attribution
+  vm_size: Standard_F1als_v7    # optional – cheapest in eastus2 (1 vCPU / 2 GB)
   location: eastus2             # optional
-  # vm_group_id: 12345          # optional — only needed to gate a group with a non-standard name
+  # vm_group_id: 12345          # optional – only needed to gate a group with a non-standard name
 
-  # NOT YET ENFORCED — the adoption ratchet. Declare a DATE and this workload's
+  # NOT YET ENFORCED – the adoption ratchet. Declare a DATE and this workload's
   # HOLD stops blocking the aggregate exit code until that date arrives. It does
   # NOT change the workload's own verdict: a HOLD still prints as a HOLD, still
   # lands in the bundle, still shows in the report, and is counted in
-  # `resops_tolerated`. It is a date and not a flag on purpose — a flag is
+  # `resops_tolerated`. It is a date and not a flag on purpose – a flag is
   # permanent the moment someone forgets it, a date expires by itself.
   # Use it to switch the gate on across a real estate without everything going
   # red on day one. Do not use it to ship past a gap you have no plan to close.
@@ -40,20 +40,20 @@ workload:
   # nobody has actually checked.
   #
   # Why a script and not a backup-product scan: in our tenant the threat scan
-  # analysed zero files on every run, and dedupe ratio has 40+ points of natural
+  # analyzed zero files on every run, and dedupe ratio has 40+ points of natural
   # variance. Both were blind. Opening the recovery point and reading it is not.
   # attestation_file: evidence/attestations/payments-api.json
 
-# ── Your platform — set once ─────────────────────────────────────────
+# ── Your platform – set once ─────────────────────────────────────────
 platform:
   # Your Metallic tenant URL + /commandcenter/api. No trailing slash.
-  # Wrong URL gives a 403 or non-JSON error on `resops list` — fix this first.
+  # Wrong URL gives a 403 or non-JSON error on `resops list` – fix this first.
   #
   # GOTCHA: Error 72:106 ("Access forbidden to fetch discovery criteria") has TWO causes:
   #   1. SP has no IAM roles → assign Contributor + Storage Blob Data Contributor (see above)
   #   2. Wrong tenant in the Metallic credential → the Application ID + Tenant ID in
   #      Protect > Hypervisors > Edit must match the tenant where your subscription lives.
-  #      Confirm: az account show --query tenantId -o tsv — must match the credential's Tenant ID.
+  #      Confirm: az account show --query tenantId -o tsv – must match the credential's Tenant ID.
   #   Fix 1 first. If 72:106 persists after roles are assigned, it's cause 2.
   web_service_url: https://<tenant>.metallic.io/commandcenter/api
 
@@ -61,10 +61,10 @@ platform:
   # Run `az account show` first to confirm you're on the right subscription.
   subscription_id: <azure-subscription-guid>
 
-  # The SP Object ID from Entra ID — NOT the Application (client) ID, they are different GUIDs.
+  # The SP Object ID from Entra ID – NOT the Application (client) ID, they are different GUIDs.
   # After the wizard runs: az ad sp show --id <appId> --query id -o tsv
   #
-  # GOTCHA: Metallic creates its OWN app registration during the wizard — check which
+  # GOTCHA: Metallic creates its OWN app registration during the wizard – check which
   # Application ID it actually saved in Protect > Hypervisors > Edit, then get the
   # Object ID for THAT app. Don't assume it's the one you created manually.
   #
@@ -78,12 +78,12 @@ platform:
     id: <hypervisor-client-id>
     # Display name on the same page
     name: <hypervisor-name>
-    # Protect > Hypervisors > Properties tab — different integer from `id` above
+    # Protect > Hypervisors > Properties tab – different integer from `id` above
     instance_id: <instance-id>
 
   # Protect > Plans > click your plan > integer in the URL
   # Or after running infra/platform/: terraform -chdir=infra/platform output plan_ids
-  #   → {"tier1": 42, "tier2": 99} — use the id for your workload's tier
+  #   → {"tier1": 42, "tier2": 99} – use the id for your workload's tier
   plan_id: <plan-id>
 
   # The THREAT SCAN plan, from Secure > Threat scan > Plans. A DIFFERENT
@@ -102,13 +102,13 @@ platform:
   # NOT universal, and a wrong value fails in the nastiest way available: the
   # restore request is ACCEPTED, browses the wrong CommCell, and comes back
   # looking like an empty backup rather than like an error.
-  # Check yours before the first live restore — any job's commCellId in the
+  # Check yours before the first live restore – any job's commCellId in the
   # API will tell you.
   # commcell_id: 2
 
-# ── Gate policy — optional; defaults apply if omitted ────────────────
+# ── Gate policy – optional; defaults apply if omitted ────────────────
 gate:
   frameworks: [dora, nist-800-53, apra-cps230]   # compliance crosswalk packs
   recovery_proof_max_age_days: 7                  # proof older than this HOLDs the gate
-  # rpo_target_hours: 6        # optional — tighter than the tier's default
-  # rto_target_minutes: 60     # optional — tighter than the tier's default
+  # rpo_target_hours: 6        # optional – tighter than the tier's default
+  # rto_target_minutes: 60     # optional – tighter than the tier's default

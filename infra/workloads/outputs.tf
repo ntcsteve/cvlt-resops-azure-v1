@@ -1,4 +1,4 @@
-# The contract — every fact the operator/ write lane + restore drill need, in one
+# The contract – every fact the operator/ write lane + restore drill need, in one
 # output. `op` reads `terraform -chdir=workloads output -json workload` and assumes
 # nothing: no reconstructed names, no hardcoded sizes.
 output "workload" {

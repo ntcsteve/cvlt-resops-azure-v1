@@ -1,4 +1,4 @@
-"""The ratchet — declared, expiring enforcement tolerance.
+"""The ratchet – declared, expiring enforcement tolerance.
 
 These tests exist to pin the ONE property that separates a ratchet from a
 bypass: a tolerated workload's own verdict must never change. If someone later

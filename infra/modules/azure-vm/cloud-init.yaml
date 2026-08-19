@@ -3,11 +3,11 @@
 #
 # A bare OS image cannot be trust-mapped and gives a threat scan nothing to find.
 # The workshop's first exercise asks participants to mark each part of a service
-# as trusted, untrusted or unknown — so the VM ships with exactly four things to
+# as trusted, untrusted or unknown – so the VM ships with exactly four things to
 # mark, each a different trust question:
 #
 #   /opt/app/         the code        did this come from the pipeline?
-#   /var/lib/app/     the state       it changed after the deploy — is that expected?
+#   /var/lib/app/     the state       it changed after the deploy – is that expected?
 #   /etc/app/config.yml  the config   who can write this?
 #   /etc/app/creds.env   the secret   this is the blast radius
 #
@@ -30,7 +30,7 @@ write_files:
     permissions: "0600"
     content: |
       # NOT A REAL CREDENTIAL. Placeholder so the trust-map exercise has a secret
-      # to reason about — the scenario is a credential with broad access being
+      # to reason about – the scenario is a credential with broad access being
       # misused, and this is the thing participants point at when asked "what is
       # the blast radius?". Never put a live secret here.
       APP_STORAGE_KEY=demo-not-a-real-key-0000000000000000
@@ -59,9 +59,9 @@ write_files:
       # WHAT "GOOD" LOOKS LIKE, declared by the workload that owns it.
       #
       # The drill restores a recovery point into isolation and runs this INSIDE the
-      # restored copy. The OK:/FAIL: line it prints is the attestation — a
+      # restored copy. The OK:/FAIL: line it prints is the attestation – a
       # human-readable set of checks that actually ran on the actual data. Nothing
-      # infers, nothing samples, nothing guesses from metadata — it opens the box
+      # infers, nothing samples, nothing guesses from metadata – it opens the box
       # and looks. (The drill parses that line, not the exit code; keep the two in
       # agreement and keep every message on ONE line. Contract: VERIFY.md.)
       #
@@ -81,17 +81,17 @@ write_files:
       [ -x /opt/app/serve.sh ] || fail "/opt/app/serve.sh missing or not executable"
       [ -s /opt/app/VERSION ]  || fail "/opt/app/VERSION missing"
 
-      # 2. the known-good marker survived — "what did we still trust?"
+      # 2. the known-good marker survived – "what did we still trust?"
       # Keep every fail message on ONE line: the drill reads the first FAIL: line
       # as the attestation detail, so a wrapped message is silently truncated.
-      [ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing — no known-good state in this recovery point"
+      [ -s "$DATA/BASELINE" ] || fail "BASELINE marker missing – no known-good state in this recovery point"
 
       # 3. the records are actually readable, not just present
-      [ -s "$DATA/customers.csv" ] || fail "customers.csv missing — records lost"
+      [ -s "$DATA/customers.csv" ] || fail "customers.csv missing – records lost"
       rows=$(($(wc -l < "$DATA/customers.csv") - 1))
       [ "$rows" -ge 1 ] || fail "customers.csv has no data rows"
       head -1 "$DATA/customers.csv" | grep -q '^customer,' \
-        || fail "customers.csv header is corrupt — not the schema we expect"
+        || fail "customers.csv header is corrupt – not the schema we expect"
 
       # 4. nothing that signals an encryption event
       locked=$(find "$DATA" -name '*.locked' | wc -l)
@@ -100,7 +100,7 @@ write_files:
 
       # 5. can this recovery point ACCEPT and RETURN data, or only hold it?
       # Checks 1-4 all ask "is the right data here?". None of them asks "does the
-      # store still WORK?" — and a read-only mount, a full disk or a half-restored
+      # store still WORK?" – and a read-only mount, a full disk or a half-restored
       # filesystem passes every check above, then fails a real service on its very
       # first write. So: write a record, read it back, compare it, remove it. A
       # synthetic transaction, executed INSIDE the recovery point.
@@ -117,12 +117,12 @@ write_files:
       # "Permission denied" printed above the FAIL: line is precisely the noise
       # this script exists not to produce.
       { echo "$token" > "$probe"; } 2>/dev/null \
-        || fail "data store not writable — the recovery point cannot accept a transaction"
+        || fail "data store not writable – the recovery point cannot accept a transaction"
       readback=$(cat "$probe" 2>/dev/null) \
-        || { rm -f "$probe"; fail "data store not readable — wrote a record, could not read it back"; }
+        || { rm -f "$probe"; fail "data store not readable – wrote a record, could not read it back"; }
       rm -f "$probe"
       [ "$readback" = "$token" ] \
-        || fail "write/read mismatch in the data store — it returned different bytes"
+        || fail "write/read mismatch in the data store – it returned different bytes"
 
       echo "OK: code intact, baseline present, $rows customer records, no encryption markers, write/read verified"
       exit 0

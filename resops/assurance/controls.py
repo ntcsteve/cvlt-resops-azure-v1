@@ -1,5 +1,5 @@
 """
-Control crosswalk resolver — joins our capabilities to selected framework packs.
+Control crosswalk resolver – joins our capabilities to selected framework packs.
 
 The join is the whole design: CAPABILITIES (code) x framework packs (data) ->
 a resolved control map the bundle carries. Pick regimes in config:
@@ -7,7 +7,7 @@ a resolved control map the bundle carries. Pick regimes in config:
     frameworks: [dora, nist-800-53, apra-cps230]
 
 Adding a regime is a YAML file in config/frameworks/ + its id here. No code change.
-Indicative mapping only — it supports a resilience programme, never an attestation.
+Indicative mapping only – it supports a resilience program, never an attestation.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def load_framework(framework_id: str) -> dict:
     path = FRAMEWORKS_DIR / f"{framework_id}.yaml"
     if not path.exists():
         raise FileNotFoundError(
-            f"unknown framework '{framework_id}' — expected {path.relative_to(ROOT)}")
+            f"unknown framework '{framework_id}' – expected {path.relative_to(ROOT)}")
     return yaml.safe_load(path.read_text()) or {}
 
 
@@ -50,8 +50,8 @@ def resolve_controls(framework_ids: list) -> dict | None:
     frameworks = [{"id": p["id"], "name": p["name"], "disclaimer": p.get("disclaimer", "")}
                   for p in packs]
     names = ", ".join(p["name"] for p in packs)
-    disclaimer = (f"Indicative mapping across {names} — supports an internal "
-                  "resilience programme, not a compliance attestation.")
+    disclaimer = (f"Indicative mapping across {names} – supports an internal "
+                  "resilience program, not a compliance attestation.")
     return {"frameworks": frameworks, "disclaimer": disclaimer,
             "controls": controls, "crosswalk": crosswalk}
 

@@ -1,4 +1,4 @@
-"""Tier 2 (T2-5) — workload resolution + slug. Pure helpers, no tenant."""
+"""Tier 2 (T2-5) – workload resolution + slug. Pure helpers, no tenant."""
 from pathlib import Path
 
 from resops.__main__ import ROOT, _display, _looks_like_command, _slug, _workloads, main

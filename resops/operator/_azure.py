@@ -1,5 +1,5 @@
 """
-Azure CLI helpers — the ONE place a subprocess `az` call lives. Shared by the
+Azure CLI helpers – the ONE place a subprocess `az` call lives. Shared by the
 operator preflight, the restore drill, and teardown so the wrappers (and the
 vCPU math that bit us on a 4/4 quota) don't drift between lanes.
 """
@@ -25,7 +25,7 @@ def az_json_checked(*args: str, timeout: int = AZ_TIMEOUT):
     """Like az_json, but tells "it is not there" apart from "I could not ask".
 
     az_json() returns None for BOTH, and every caller reads None as absence. That
-    is how `op teardown` announced "VM not found — nothing to tear down" about a
+    is how `op teardown` announced "VM not found – nothing to tear down" about a
     VM that was running, returned success, and left an orphan billing quietly
     (observed live 2026-08-13). When the answer decides whether to destroy
     something or to claim a clean sweep, the two must not look alike.
@@ -34,7 +34,7 @@ def az_json_checked(*args: str, timeout: int = AZ_TIMEOUT):
     Raises when az itself failed, because an unanswered question is not a no.
 
     `az` exits non-zero for a missing resource too, so the reason is read from
-    stderr rather than the exit code — that string is the only signal it gives.
+    stderr rather than the exit code – that string is the only signal it gives.
     """
     r = subprocess.run(["az", *args, "-o", "json"], capture_output=True, text=True, timeout=timeout)
     if r.returncode == 0:
@@ -57,7 +57,7 @@ def az_ok(*args: str) -> bool:
 
 
 def vm_size_cores(location: str, size: str) -> int | None:
-    """vCPU count for an Azure VM size — read from Azure, never hardcoded."""
+    """vCPU count for an Azure VM size – read from Azure, never hardcoded."""
     for s in az_json("vm", "list-sizes", "-l", location) or []:
         if s.get("name") == size:
             return s.get("numberOfCores")

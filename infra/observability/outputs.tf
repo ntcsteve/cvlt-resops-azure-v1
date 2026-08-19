@@ -17,7 +17,7 @@ output "pushgateway_url" {
 }
 
 # The whole integration, in one line. No agent, no scrape config, no service
-# discovery — the metrics come from evidence a run already wrote.
+# discovery – the metrics come from evidence a run already wrote.
 output "publish_command" {
   value = join(" ", [
     "python3 -m resops metrics config/estate.yaml |",

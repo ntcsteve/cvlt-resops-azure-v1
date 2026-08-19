@@ -1,12 +1,12 @@
 # THE stack. This exact file is what runs on the VM and what test-stack.sh runs
-# locally — not a copy of it. A test against a copy proves nothing about what
+# locally – not a copy of it. A test against a copy proves nothing about what
 # deploys, so cloud-init embeds this file rather than restating it.
 #
 # Paths are relative so the same file works from /opt/obs on the VM and from
 # infra/observability/stack on a laptop. GRAFANA_PASSWORD comes from a .env file
 # beside this one: Terraform writes it on the VM, test-stack.sh writes it locally.
 #
-# NO VOLUMES. The stack is cattle — every number it shows is derived from evidence
+# NO VOLUMES. The stack is cattle – every number it shows is derived from evidence
 # that lives in the repo, so there is nothing here worth persisting.
 services:
   pushgateway:

@@ -281,7 +281,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "### Indicative mapping\n\nThis crosswalk **supports a resilience programme. It is not a compliance attestation.**\n\nIt maps our own capabilities to framework references by topic area, not by paragraph. Treat it as a way to find gaps, never as evidence of compliance.\n\n---\n\n### Why it is mostly red\n\nMost compliance dashboards are green because they measure whether a **policy exists**.\n\nThis one measures whether **recovery was proven** \u2014 a real restore, opened and read.\n\nIf it ever goes green without work, something is wrong with it.\n\n---\n\n### No row is worse than a big number\n\nA workload missing from *Attestation age* has **never** been verified. Absence is not zero."
+        "content": "### Indicative mapping\n\nThis crosswalk **supports a resilience program. It is not a compliance attestation.**\n\nIt maps our own capabilities to framework references by topic area, not by paragraph. Treat it as a way to find gaps, never as evidence of compliance.\n\n---\n\n### Why it is mostly red\n\nMost compliance dashboards are green because they measure whether a **policy exists**.\n\nThis one measures whether **recovery was proven** \u2014 a real restore, opened and read.\n\nIf it ever goes green without work, something is wrong with it.\n\n---\n\n### No row is worse than a big number\n\nA workload missing from *Attestation age* has **never** been verified. Absence is not zero."
       }
     },
     {

@@ -1,11 +1,11 @@
 """
-Present the readiness ladder for humans — and bridge it to the evidence model.
+Present the readiness ladder for humans – and bridge it to the evidence model.
 
 Two presentation jobs, no decisions:
 
   ladder_to_results()  folds a Ladder + Trend into the list[FunctionResult] the
                        assurance layer (findings, crosswalk, junit, report,
-                       history) already speaks — so none of that had to change
+                       history) already speaks – so none of that had to change
                        when the core became a state machine. The rung→outcome
                        map: cleared→PASS, blocked→GAP (or FAIL if a read error),
                        not-reached→SKIP. Improve rides along from the trend.
@@ -52,7 +52,7 @@ def ladder_to_results(ladder: Ladder, trend: Trend, metrics: dict | None = None)
                 summary = f"{rung.summary} ({age}d ago)"
         if fn == "recover" and rung.passed and metrics.get("rpo_hours") is not None:
             evidence["rpo_hours"] = metrics["rpo_hours"]
-            summary = f"recoverable — RPO {metrics['rpo_hours']}h, SLA Protected"
+            summary = f"recoverable – RPO {metrics['rpo_hours']}h, SLA Protected"
         if fn == "validate" and rung.passed:
             age, rto = metrics.get("proof_age_days"), metrics.get("rto_minutes")
             if age is not None:
@@ -74,7 +74,7 @@ def ladder_to_results(ladder: Ladder, trend: Trend, metrics: dict | None = None)
 
 
 # --------------------------------------------------------------------------- #
-# Rendering — the headline ladder line and the detail rows.
+# Rendering – the headline ladder line and the detail rows.
 # --------------------------------------------------------------------------- #
 _TREND_TAG = {"climbed": ("↑", GREEN), "held": ("=", DIM),
               "regressed": ("↓", RED), "baseline": ("★", DIM)}
@@ -102,7 +102,7 @@ def render_headline(name: str, criticality: str, ladder: Ladder,
                     trend: Trend, multi: bool, rpo_hours: float | None = None,
                     env: str = "", owner: str = "") -> list:
     """The verdict in three lines (plus a workload header when multi). RPO age
-    rides on the state line when known — the at-a-glance freshness number the
+    rides on the state line when known – the at-a-glance freshness number the
     old recover row used to show (full evidence is in --detail)."""
     lines = []
     if multi:
@@ -136,12 +136,12 @@ def render_detail(results: list) -> list:
 
 
 def render_vmgroups(vmgroups: list) -> list:
-    """The `resops list` table — id, name, coverage — so a new user can read their
+    """The `resops list` table – id, name, coverage – so a new user can read their
     vm_group_id straight off the CLI. Pure: takes the raw vmGroups[]. (No plan
-    column: the list endpoint reports coverage but not the attached plan — that
+    column: the list endpoint reports coverage but not the attached plan – that
     only shows on the single-group read, surfaced as the Protect rung.)"""
     if not vmgroups:
-        return [color("  no VM groups found — check the token's permissions", YELLOW)]
+        return [color("  no VM groups found – check the token's permissions", YELLOW)]
     rows = []
     for item in vmgroups:
         g = item.get("vmGroup", {})

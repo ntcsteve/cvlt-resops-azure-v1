@@ -13,11 +13,11 @@ def _ladder(state, *, reason="", blocked=None):
     return Ladder(state, blocked, reason or str(state), False, [])
 
 
-VALIDATED = _ladder(State.VALIDATED, reason="recovery proven — job 7540314")
+VALIDATED = _ladder(State.VALIDATED, reason="recovery proven – job 7540314")
 
 
 # --------------------------------------------------------------------------- #
-# _resolve_policy — tier bar injection
+# _resolve_policy – tier bar injection
 # --------------------------------------------------------------------------- #
 
 def test_no_tier_returns_base_policy():
@@ -70,7 +70,7 @@ def test_unknown_tier_does_not_crash(capsys):
 
 
 # --------------------------------------------------------------------------- #
-# End-to-end gate behaviour with tier bars
+# End-to-end gate behavior with tier bars
 # --------------------------------------------------------------------------- #
 
 def test_tier1_rpo_breach_holds_gate():

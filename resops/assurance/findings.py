@@ -1,8 +1,8 @@
 """
 Finding lifecycle (Tier 2, item T2-4).
 
-A *finding* is a non-PASS outcome on a ResOps function. DORA's testing programme
-(Art. 24) wants findings logged, then fixed, then the fix VERIFIED — with progress
+A *finding* is a non-PASS outcome on a ResOps function. DORA's testing program
+(Art. 24) wants findings logged, then fixed, then the fix VERIFIED – with progress
 retained. We DERIVE that lifecycle from the hash-chained history each run, so it's
 evidence we recompute, not mutable state we have to trust ourselves to maintain.
 
@@ -13,7 +13,7 @@ Status is an explicit, irrefutable state machine over the recent outcomes:
   VERIFIED    PASS now and last run, was non-PASS before (fix has held a cycle)
   (stable PASS produces no finding)
 
-A finding's id is stable across runs (scope + function) — scope is the workload
+A finding's id is stable across runs (scope + function) – scope is the workload
 name, so ids are per-workload-stable and don't collide across workloads. The same
 issue keeps the same id whether it's open, remediated, or it later reopens.
 """
@@ -28,7 +28,7 @@ NONPASS = ("GAP", "FAIL")
 
 
 def _fid(scope: str, function: str) -> str:
-    """Stable finding id — survives summary changes, reopens with the same id."""
+    """Stable finding id – survives summary changes, reopens with the same id."""
     return hashlib.sha256(f"{scope}:{function}".encode()).hexdigest()[:12]
 
 
@@ -52,7 +52,7 @@ def track_findings(scope: str, run_at: str, results: list, history: list) -> lis
     """Derive the finding lifecycle for this run from the audit trail.
 
     `scope` namespaces finding ids (the workload name) so they're stable per
-    workload and never collide across workloads in a multi-workload programme.
+    workload and never collide across workloads in a multi-workload program.
     """
     findings = []
     for r in results:

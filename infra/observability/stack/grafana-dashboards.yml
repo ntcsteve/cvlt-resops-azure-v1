@@ -3,6 +3,6 @@ providers:
   - name: resops
     folder: ResOps
     type: file
-    allowUiUpdates: false # dashboards are code — edit the JSON and redeploy
+    allowUiUpdates: false # dashboards are code – edit the JSON and redeploy
     options:
       path: /var/lib/grafana/dashboards

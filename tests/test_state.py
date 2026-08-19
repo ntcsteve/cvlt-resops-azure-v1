@@ -1,6 +1,6 @@
-"""P1 — the readiness ladder truth table. Pure classify(), no tenant, no clock.
+"""P1 – the readiness ladder truth table. Pure classify(), no tenant, no clock.
 
-Each test pins one rung: the reads that clear it, and the two ways it can block —
+Each test pins one rung: the reads that clear it, and the two ways it can block –
 a real gap (intent unmet) and a read error (we couldn't verify). A read error
 must NEVER produce a state above the rung below it.
 """
@@ -10,7 +10,7 @@ VM = "vm01"
 
 
 # --------------------------------------------------------------------------- #
-# Builders — a fully-VALIDATED set of reads, then knock out one rung at a time.
+# Builders – a fully-VALIDATED set of reads, then knock out one rung at a time.
 # --------------------------------------------------------------------------- #
 def _group(*, in_group=True, plan="Gold-Plan", backup_status="COMPLETED", failure=""):
     vms = [{"name": VM}] if in_group else [{"name": "someone-else"}]
@@ -39,7 +39,7 @@ def _scan(*, clean=True, source="threatscan", detail="", at=1_700_000_060, **ext
     the only order reality produces: the drill restores a recovery point and then
     verifies it, so a genuine attestation is always newer than the point it
     describes. Omitting `at`, or setting it earlier than the newest point, blocks
-    at Scan — see the coverage tests below.
+    at Scan – see the coverage tests below.
 
     Note on `source`: threat_attestation() never returns clean=True (it reports
     negatives or nothing), so a clean fixture stands in for restore-verify.
@@ -54,7 +54,7 @@ def _full_reads(**overrides) -> Reads:
 
 
 # --------------------------------------------------------------------------- #
-# The happy path — every rung cleared.
+# The happy path – every rung cleared.
 # --------------------------------------------------------------------------- #
 def test_full_climb_reaches_validated():
     ladder = classify(_full_reads())
@@ -66,7 +66,7 @@ def test_full_climb_reaches_validated():
 
 
 # --------------------------------------------------------------------------- #
-# Discover — onboarded into a VM group at all?
+# Discover – onboarded into a VM group at all?
 # --------------------------------------------------------------------------- #
 def test_not_in_group_stays_undiscovered():
     ladder = classify(_full_reads(vmgroup=_group(in_group=False)))
@@ -90,7 +90,7 @@ def test_missing_vm_name_is_a_config_error():
 
 
 # --------------------------------------------------------------------------- #
-# Protect — is a plan attached?
+# Protect – is a plan attached?
 # --------------------------------------------------------------------------- #
 def test_no_plan_stays_discovered():
     ladder = classify(_full_reads(vmgroup=_group(plan="")))
@@ -100,7 +100,7 @@ def test_no_plan_stays_discovered():
 
 
 # --------------------------------------------------------------------------- #
-# Detect — did the last backup complete cleanly?
+# Detect – did the last backup complete cleanly?
 # --------------------------------------------------------------------------- #
 def test_no_backup_yet_stays_protected():
     ladder = classify(_full_reads(vmgroup=_group(backup_status="")))
@@ -119,13 +119,13 @@ def test_long_failure_reason_clips_at_a_word_boundary():
     long = "Virtual machine [MetallicPOCWalkThrough] was not found. Please verify that the configuration"
     ladder = classify(_full_reads(vmgroup=_group(backup_status="FAILED", failure=long)))
     assert ladder.reason.endswith(" …")             # ellipsis with a space, not mid-word
-    shown = ladder.reason.split("— ", 1)[1][:-2].rstrip()   # the clipped failure, minus " …"
-    assert long.startswith(shown)                   # a clean prefix — no chopped word
+    shown = ladder.reason.split("– ", 1)[1][:-2].rstrip()   # the clipped failure, minus " …"
+    assert long.startswith(shown)                   # a clean prefix – no chopped word
     assert len(shown) < len(long)                   # it actually clipped
 
 
 # --------------------------------------------------------------------------- #
-# Recover — recent, recoverable, SLA-Protected point?
+# Recover – recent, recoverable, SLA-Protected point?
 # --------------------------------------------------------------------------- #
 def test_vm_not_among_protected_stays_monitored():
     ladder = classify(_full_reads(vm=None))
@@ -155,13 +155,13 @@ def test_SLA_NOT_YET_EVALUATED_DOES_NOT_BLOCK():
     verified clean, while three VMs DELETED from Azure still read "Protected" in
     the same tenant. Unreliable in both directions.
 
-    Wrong on the layering: this rung asks a CAPABILITY question — is there a
-    restorable point — and lastSuccessfulBackupTime plus isRestoreActivityEnabled
+    Wrong on the layering: this rung asks a CAPABILITY question – is there a
+    restorable point – and lastSuccessfulBackupTime plus isRestoreActivityEnabled
     answer it. RECENCY is policy, it needs a clock, and classify() has none by
     design. The gate owns it, and M5.4's A-400-days-ago already proves the split:
     it reaches VALIDATED at RPO 9600h and the GATE stops it.
 
-    Cost of the old behaviour: every new workload dead for half an hour, looking
+    Cost of the old behavior: every new workload dead for half an hour, looking
     exactly like a broken checkout. On workshop day, the whole room at once.
     """
     for sla in ("N/A", ""):
@@ -172,7 +172,7 @@ def test_SLA_NOT_YET_EVALUATED_DOES_NOT_BLOCK():
 
 def test_an_sla_verdict_that_was_made_and_says_missed_still_blocks():
     """Absence attests nothing. A verdict that EXISTS and says "not met" is real
-    information, and it still blocks — exactly as the Scan rung treats a recorded
+    information, and it still blocks – exactly as the Scan rung treats a recorded
     anomaly versus a missing one."""
     ladder = classify(_full_reads(vm=_vm(sla="Missed SLA")))
     assert ladder.state is State.MONITORED
@@ -204,10 +204,10 @@ def test_no_successful_backup_stays_monitored():
 
 
 # --------------------------------------------------------------------------- #
-# Scan — has ANYONE attested the point we'd restore from?
+# Scan – has ANYONE attested the point we'd restore from?
 #
 # The rung the workshop turns on, and the rung that taught us the hardest lesson.
-# It used to clear whenever no anomaly was recorded — which sounds reasonable and
+# It used to clear whenever no anomaly was recorded – which sounds reasonable and
 # is wrong, because a scan that never ran records no anomaly either. An
 # unattested recovery point is now a BLOCK.
 #
@@ -234,7 +234,7 @@ def test_a_positive_attestation_clears_the_rung():
 
 
 # --------------------------------------------------------------------------- #
-# COVERAGE — does the attestation describe the point we would actually restore?
+# COVERAGE – does the attestation describe the point we would actually restore?
 #
 # THE BUG THESE GUARD, and it was ours, live, on 2026-08-12. The gate returned
 # ●●●●●● VALIDATED · PROMOTE · exit 0 for a workload whose newest recovery point
@@ -322,7 +322,7 @@ def test_attestation_read_error_stays_recoverable_as_error():
 
 
 # --------------------------------------------------------------------------- #
-# Validate — has a real restore proven recovery?
+# Validate – has a real restore proven recovery?
 # --------------------------------------------------------------------------- #
 def test_no_proof_stays_recoverable():
     ladder = classify(_full_reads(proof=None))
@@ -344,7 +344,7 @@ def test_failed_restore_stays_recoverable():
 
 
 # --------------------------------------------------------------------------- #
-# Invariants — properties that must hold for every reachable ladder.
+# Invariants – properties that must hold for every reachable ladder.
 # --------------------------------------------------------------------------- #
 def test_blocked_marks_exactly_one_stage_and_truncates_the_rest():
     ladder = classify(_full_reads(vmgroup=_group(backup_status="")))  # blocked at Detect
@@ -368,7 +368,7 @@ def test_only_validated_is_promotable():
 
 
 # --------------------------------------------------------------------------- #
-# Improve trend — the cross-cutting signal over history. Pure, no clock.
+# Improve trend – the cross-cutting signal over history. Pure, no clock.
 # --------------------------------------------------------------------------- #
 def _hist(*states):
     return [{"state": s} for s in states]
@@ -414,7 +414,7 @@ def test_legacy_entries_without_state_are_not_comparable():
 
 
 def test_trend_uses_most_recent_comparable_state():
-    # legacy entry then a ladder entry — compare against the ladder one.
+    # legacy entry then a ladder entry – compare against the ladder one.
     mixed = [{"outcomes": {}}, {"state": "VALIDATED"}]
     t = trend(State.PROTECTED, mixed)
     assert t.direction == "regressed"

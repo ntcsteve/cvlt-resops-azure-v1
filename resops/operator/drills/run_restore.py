@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Headless VM restore DRILL — submit, poll, validate in Azure, optionally clean up.
+Headless VM restore DRILL – submit, poll, validate in Azure, optionally clean up.
 
 NOT part of the read-only resops loop. Creates a REAL Azure VM. Full cycle:
   1. pre-flight Azure vCPU quota (the first attempt failed VM-create on a 409)
@@ -40,10 +40,10 @@ def cores_ok(t: dict) -> bool:
     need = vm_size_cores(t["location"], t["vm_size"])
     free = regional_cores_free(t["location"])
     if need is None or free is None:
-        print("  (capacity pre-flight skipped — az unavailable) — proceeding"); return True
+        print("  (capacity pre-flight skipped – az unavailable) – proceeding"); return True
     print(f"  Azure vCPUs: {free} free in {t['location']}, {t['vm_size']} needs {need}")
     if free < need:
-        print("  ✗ insufficient cores — free a VM or raise quota."); return False
+        print("  ✗ insufficient cores – free a VM or raise quota."); return False
     return True
 
 
@@ -77,7 +77,7 @@ def parse_verdict(stdout: str) -> tuple[bool | None, str]:
     Pinned here (and by tests) because every rule below fails SILENTLY when broken,
     which is the worst possible failure mode for an attester:
 
-      • the FIRST matching line wins and parsing stops — so a verdict message
+      • the FIRST matching line wins and parsing stops – so a verdict message
         wrapped over two lines is truncated mid-sentence into the attestation,
         the gate reason and the evidence bundle. It has happened once already.
       • no recognisable line means UNATTESTED (None), never clean. A script that
@@ -93,7 +93,7 @@ def parse_verdict(stdout: str) -> tuple[bool | None, str]:
     if line.startswith("FAIL:"):
         return False, line[5:].strip()
     if line.startswith("NO VERIFY"):
-        return None, (f"no verify script at {VERIFY_SCRIPT} — this workload declares "
+        return None, (f"no verify script at {VERIFY_SCRIPT} – this workload declares "
                       f"no attester (see VERIFY.md)")
     return None, "verify script produced no verdict line"
 
@@ -101,7 +101,7 @@ def parse_verdict(stdout: str) -> tuple[bool | None, str]:
 def verify_recovered(t: dict) -> tuple[bool | None, str]:
     """Run the workload's own verify script INSIDE the restored copy.
 
-    This is the attestation. Not a metadata proxy, not a vendor verdict — the
+    This is the attestation. Not a metadata proxy, not a vendor verdict – the
     recovery point is opened in isolation and its data is read, by a script a
     participant can read in ten seconds.
 
@@ -109,7 +109,7 @@ def verify_recovered(t: dict) -> tuple[bool | None, str]:
     stdout line starting with OK:/FAIL:, because a shell script has many ways to
     exit non-zero that say nothing about the data (a missing binary, a set -e
     trip). A script that exits without printing a verdict is UNATTESTED, which
-    blocks — never a pass. The contract is documented in VERIFY.md.
+    blocks – never a pass. The contract is documented in VERIFY.md.
 
     Returns (clean, detail). clean is None when we could not run the check at
     all, which is NOT the same as passing: no result blocks the Scan rung."""
@@ -119,7 +119,7 @@ def verify_recovered(t: dict) -> tuple[bool | None, str]:
                      "--command-id", "RunShellScript",
                      # if/else, NOT `[ -x … ] && script || { … }`. With && / || a
                      # script that RUNS and exits non-zero falls into the || branch,
-                     # so a FAIL: verdict printed "NO VERIFY SCRIPT" and exited 127 —
+                     # so a FAIL: verdict printed "NO VERIFY SCRIPT" and exited 127 –
                      # claiming the attester was missing at the exact moment it had
                      # just done its job. Live on aug12-narwhal 2026-08-12. Invisible
                      # for a month because only a DIRTY run exits non-zero.
@@ -144,7 +144,7 @@ def verdict_code(healthy: bool, clean: bool | None) -> int:
         3  restored and healthy, but NOT clean
 
     THREE verdicts feed this, not two. `clean` is True / False / None, and None
-    means the attester never reached a verdict — a guest agent that did not
+    means the attester never reached a verdict – a guest agent that did not
     answer, a script that died before printing. That is NOT the same fact as
     "it looked and the copy is dirty", and the two carry opposite instructions:
     1 says fix the environment and retry, 3 says this recovery point is poison,
@@ -167,7 +167,7 @@ def write_attestation(vm_name: str, clean: bool | None, detail: str, job_id: str
 
     The write lane produces this; `resops` consumes it only when a workload's
     config points at it (workload.attestation_file). Explicit, opt-in, and
-    absent by default — so a workload with no attester blocks at Scan rather
+    absent by default – so a workload with no attester blocks at Scan rather
     than quietly passing."""
     ATTESTATIONS.mkdir(parents=True, exist_ok=True)
     path = ATTESTATIONS / f"{vm_name}.json"
@@ -177,7 +177,7 @@ def write_attestation(vm_name: str, clean: bool | None, detail: str, job_id: str
         "detail": detail,
         # WHEN matters as much as WHETHER. An attestation from a year ago and one
         # from ten minutes ago are not the same claim, and without this they look
-        # identical to the ladder — the same false-clean trap in different clothes.
+        # identical to the ladder – the same false-clean trap in different clothes.
         # The gate enforces the age bar (tiers.yaml attestation_max_age_days).
         "at": int(time.time()),
         "restore_job": job_id,
@@ -188,7 +188,7 @@ def write_attestation(vm_name: str, clean: bool | None, detail: str, job_id: str
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    host = (platform_url() or "").rstrip("/")          # the API URL — single source (config/workshop.yaml)
+    host = (platform_url() or "").rstrip("/")          # the API URL – single source (config/workshop.yaml)
     payload = load_restore_payload(PAYLOAD_PATH)
     t = restore_target(payload)
 
@@ -207,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     # SANITISE BEFORE PRINTING. This tenant returns JSON containing bare carriage
     # returns: {\r"taskId":809089,"jobIds":[\r"8163492"\r]\r}. Printed raw, every
     # \r rewinds the cursor to column 0 and the line overwrites itself, rendering
-    # as `}8163492"809089,"jobIds":[0: {` — which reads exactly like a crash, on
+    # as `}8163492"809089,"jobIds":[0: {` – which reads exactly like a crash, on
     # every single restore, including in front of a workshop room. Nothing was
     # ever wrong; the terminal was faithfully drawing a line that kept rewinding.
     body = resp.text[:200].replace("\r", "").replace("\n", " ")
@@ -216,12 +216,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     job_id = (resp.json().get("jobIds") or [None])[0]
     if not job_id:
-        print("  no job id in response — nothing to poll"); return 1
+        print("  no job id in response – nothing to poll"); return 1
 
     # 900s, matching `op threatscan`, and NOT the 540s this used to be. Both wait on
     # the same scarce thing: a media agent slot. poll_job's own progress message says
     # that wait is "typically 5-15 min", so 540s gave up inside the window it tells
-    # you to expect — the lowest timeout in the codebase sitting on the operation
+    # you to expect – the lowest timeout in the codebase sitting on the operation
     # that waits longest. Now that a TIMEOUT correctly fails the drill instead of
     # passing silently, too-short means a false failure, which is how a team learns
     # to re-run things until they go green. See RESTORE_POLL_TIMEOUT in
@@ -231,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
     # One shared question instead of a hand-written list of statuses: TIMEOUT was
     # matched here by name, and any status added later would have been missed.
     if not succeeded(status):
-        print("Commvault reported a problem — events:")
+        print("Commvault reported a problem – events:")
         dump_events(client, job_id)
 
     healthy = validate_azure(t)
@@ -240,17 +240,17 @@ def main(argv: list[str] | None = None) -> int:
         dump_events(client, job_id)
 
     # A running VM is not a verified one. Open the recovery point and read it.
-    clean, detail = (None, "not attempted — VM never came up healthy")
+    clean, detail = (None, "not attempted – VM never came up healthy")
     if healthy:
         clean, detail = verify_recovered(t)
     path = write_attestation(t["source"], clean, detail, str(job_id))
 
-    verdict = {True: "PASS — attested clean",
-               False: "FAIL — attestation failed",
-               None: "UNATTESTED — could not verify"}[clean]
+    verdict = {True: "PASS – attested clean",
+               False: "FAIL – attestation failed",
+               None: "UNATTESTED – could not verify"}[clean]
     print("\n=== DRILL VERDICT ===")
     print(f"  job status : {status}")
-    print(f"  azure VM   : {'PASS — exists & running' if healthy else 'FAIL — not healthy'}")
+    print(f"  azure VM   : {'PASS – exists & running' if healthy else 'FAIL – not healthy'}")
     print(f"  attestation: {verdict}")
     print(f"               {detail}")
     print(f"               → {path.relative_to(REPO)}")
@@ -258,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
     # Opt-in self-teardown so a repeatable drill never leaves infra behind.
     if "--cleanup" in argv and healthy:
         # Workshop UX: in an interactive terminal, let the user SEE the recovered
-        # VM (connect, check the data) before it's torn down — the "aha" moment.
+        # VM (connect, check the data) before it's torn down – the "aha" moment.
         # Headless/CI (no tty) skips the pause so automation stays unattended.
         if sys.stdin.isatty() and "--no-pause" not in argv:
             # "Go look / connect" invited something the architecture forbids: this
@@ -266,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
             # WORKSHOP.md M4.1 teaches exactly that, in the same session. Offer
             # what is actually possible.
             print(f"\n  ✓ RECOVERED: {t['new_vm']} is running in Azure (RG {t['resource_group']}).")
-            print("    Inspect it in the portal or with `az vm show` — it has no public IP,")
+            print("    Inspect it in the portal or with `az vm show` – it has no public IP,")
             print("    so there is nothing to connect to, by design.")
             input("    Press Enter to tear it down… ")
         print("\n--cleanup: tearing down the restored VM…")

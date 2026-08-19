@@ -1,4 +1,4 @@
-"""Unit tests for the evidence contract — no live tenant needed."""
+"""Unit tests for the evidence contract – no live tenant needed."""
 
 from resops.evidence import (
     SCHEMA_VERSION, Bundle, FunctionResult, Outcome,
@@ -34,7 +34,7 @@ def test_bundle_dict_has_stable_shape():
     assert fn == {
         "function": "protect",
         "outcome": "GAP",
-        "devops_lens": "like GitOps drift — declared vs actual coverage",
+        "devops_lens": "like GitOps drift – declared vs actual coverage",
         "summary": "protect summary",
         "evidence": {"n": 1},
     }

@@ -1,5 +1,5 @@
 """
-The readiness ladder — one state per workload, the irrefutable verdict.
+The readiness ladder – one state per workload, the irrefutable verdict.
 
 A workload sits on exactly ONE rung. You climb by clearing ResOps stages, each
 gated by evidence; you stop at the first stage that doesn't clear, and that rung
@@ -16,10 +16,10 @@ recovery from a point you never checked.
 
 State = capability (what's TRUE now). It never carries a parallel "FAIL" track:
 a read error doesn't invent a failure state, it just leaves you on the rung below
-with the HTTP reason — so the only states are the six rungs. Policy lives
+with the HTTP reason – so the only states are the six rungs. Policy lives
 elsewhere (the gate decides PROMOTE/HOLD; Improve reads the trend).
 
-`classify()` is PURE — it takes already-fetched reads and returns a Ladder. No
+`classify()` is PURE – it takes already-fetched reads and returns a Ladder. No
 network, no clock. That's what makes the truth table trivially testable. The one
 I/O boundary is `gather()`: it does the reads (read-only GETs) and hands a Reads
 to classify(). Keep network out of everything else.
@@ -66,7 +66,7 @@ class State(enum.Enum):
 # lower-cased stage name, and is rendered in --detail.)
 STAGES = ("Discover", "Protect", "Detect", "Recover", "Scan", "Validate")
 
-ROOT = Path(__file__).resolve().parent.parent   # repo root — resolves relative
+ROOT = Path(__file__).resolve().parent.parent   # repo root – resolves relative
                                                 # attestation_file paths in config
 
 
@@ -74,14 +74,14 @@ ROOT = Path(__file__).resolve().parent.parent   # repo root — resolves relativ
 class Reads:
     """The raw reads classify() folds into a state. Built by the runner (P2);
     hand-built in tests. Keeping it a plain bag of already-fetched values is what
-    lets classify() stay pure — no client, no clock."""
+    lets classify() stay pure – no client, no clock."""
     vm_name: str
     vmgroup: dict = field(default_factory=dict)   # GET V4/VMGroup/{id}
     vmgroup_error: str = ""
     vm: dict | None = None                        # the matched record from GET /VM
     vm_error: str = ""
     # Who attests this recovery point is trustworthy, and what they found.
-    # None means NOBODY has — which is a gap, never a pass. {"source", "clean", ...}
+    # None means NOBODY has – which is a gap, never a pass. {"source", "clean", ...}
     attestation: dict | None = None
     attestation_error: str = ""
     proof: dict | None = None                     # the drill's OWN restore job, confirmed
@@ -90,7 +90,7 @@ class Reads:
 
 @dataclass(frozen=True)
 class Rung:
-    """One stage's outcome — the per-stage detail row (replaces FunctionResult
+    """One stage's outcome – the per-stage detail row (replaces FunctionResult
     in the --detail view)."""
     stage: str
     state_after: State        # the rung this stage lifts you onto when it clears
@@ -101,21 +101,21 @@ class Rung:
 
 @dataclass(frozen=True)
 class Ladder:
-    """A workload's position on the ladder — the whole verdict of one run."""
+    """A workload's position on the ladder – the whole verdict of one run."""
     state: State
     blocked_stage: str | None     # the ResOps stage that didn't clear (None at VALIDATED)
     reason: str                   # one human line: why blocked, or the proof line
     blocked_by_error: bool        # True if a read error blocked us (not a real gap)
-    rungs: list                   # list[Rung] — every stage, for the detail view
+    rungs: list                   # list[Rung] – every stage, for the detail view
 
     @property
     def promotable(self) -> bool:
-        """Capability-only — the gate adds the freshness policy on top."""
+        """Capability-only – the gate adds the freshness policy on top."""
         return self.state is State.VALIDATED
 
 
 def gather(client: Client, workload: dict) -> Reads:
-    """The I/O boundary: read-only GETs → a Reads for classify(). Never raises —
+    """The I/O boundary: read-only GETs → a Reads for classify(). Never raises –
     a failed read becomes an error string on Reads, which classify() turns into a
     block on the matching rung (never a crash, never a state above it).
 
@@ -133,7 +133,7 @@ def gather(client: Client, workload: dict) -> Reads:
             return Reads(vm_name=vm_name, vmgroup_error=f"could not list VM groups: {gerr}")
         if not group_id:
             return Reads(vm_name=vm_name,
-                         vmgroup_error=f"no VM group {vmgroup_name(vm_name)!r} — run `op protect` "
+                         vmgroup_error=f"no VM group {vmgroup_name(vm_name)!r} – run `op protect` "
                                        "(or set workload.vm_group_id to gate an existing group)")
 
     vmgroup, vmgroup_error = _get(client, f"V4/VMGroup/{group_id}")
@@ -158,7 +158,7 @@ def _attest(client: Client, vm: dict | None,
 
     Order is deliberate. A NEGATIVE always wins: if the threat lane saw something,
     that outranks any local pass. Otherwise we fall back to the restore-verify
-    attestation, which is the only source that can honestly say YES — because it
+    attestation, which is the only source that can honestly say YES – because it
     opened the recovery point and read the data.
 
     restore-verify is opt-in: a workload must point at its file
@@ -168,7 +168,7 @@ def _attest(client: Client, vm: dict | None,
         return None, ""            # Recover already blocks; don't double-report
 
     # The VM's own /VM record carries its CommCell pseudo-client id at
-    # client.clientId — distinct from pseudoClient.clientId, the hypervisor.
+    # client.clientId – distinct from pseudoClient.clientId, the hypervisor.
     client_id = (vm.get("client") or {}).get("clientId")
     if not client_id:
         return None, "VM record carries no CommCell client id"
@@ -186,8 +186,8 @@ def _restore_verify_attestation(path: str | None) -> tuple[dict | None, str]:
     """Read the attestation the restore drill wrote, if this workload declares one.
 
     The write lane produces it (drills/run_restore.py); the read lane consumes it
-    only when told to. That keeps the coupling explicit and opt-in — the same
-    shape as the offline demo's `fixture:` — instead of a hidden convention.
+    only when told to. That keeps the coupling explicit and opt-in – the same
+    shape as the offline demo's `fixture:` – instead of a hidden convention.
     `clean: null` means the drill could not verify, which is not a pass."""
     if not path:
         return None, ""
@@ -195,7 +195,7 @@ def _restore_verify_attestation(path: str | None) -> tuple[dict | None, str]:
     if not p.is_absolute():
         p = ROOT / p
     if not p.exists():
-        return None, ""            # no drill has run yet — unattested, not failed
+        return None, ""            # no drill has run yet – unattested, not failed
     try:
         data = json.loads(p.read_text())
     except (OSError, ValueError) as err:
@@ -209,8 +209,8 @@ def _lag(seconds: float) -> str:
     """A gap, in the unit a tired person can act on.
 
     Rounding a two-minute gap to "0.0h" reads as a bug rather than a fact, and it
-    happened the first time this message fired live. The number matters — two
-    minutes and two days say very different things about a team's cadence — so
+    happened the first time this message fired live. The number matters – two
+    minutes and two days say very different things about a team's cadence – so
     pick the unit rather than dropping it.
     """
     if seconds < 3600:
@@ -221,7 +221,7 @@ def _lag(seconds: float) -> str:
 
 
 def _clip(text: str) -> str:
-    """Trim a long API error to one line — at a word boundary, not mid-word."""
+    """Trim a long API error to one line – at a word boundary, not mid-word."""
     if len(text) <= SUMMARY_CLIP:
         return text
     cut = text[:SUMMARY_CLIP]
@@ -260,7 +260,7 @@ def classify(reads: Reads) -> Ladder:
     if vm_name not in vms:
         return stop(State.UNDISCOVERED, "Discover",
                     f"{vm_name} not found in group {group_name!r}", discover_ev, error=False)
-    cleared("Discover", f"onboarded — in {group_name!r}", discover_ev)
+    cleared("Discover", f"onboarded – in {group_name!r}", discover_ev)
 
     # ── Protect ── is a protection plan attached? ─────────────────────────────
     plan = _plan_name(group)
@@ -286,7 +286,7 @@ def classify(reads: Reads) -> Ladder:
         return stop(State.PROTECTED, "Detect", "no backup has run yet", detect_ev, error=False)
     if failure or status != "COMPLETED":
         return stop(State.PROTECTED, "Detect",
-                    f"last backup not clean — {_clip(failure or f'status {status}')}",
+                    f"last backup not clean – {_clip(failure or f'status {status}')}",
                     detect_ev, error=False)
     cleared("Detect", "last backup completed cleanly", detect_ev)
 
@@ -307,13 +307,13 @@ def classify(reads: Reads) -> Ladder:
                   "last_successful_backup_time": last_success, "vm_guid": vm.get("strGUID")}
     if not last_success:
         return stop(State.MONITORED, "Recover",
-                    "no successful backup — nothing to recover from. Fix: run a backup",
+                    "no successful backup – nothing to recover from. Fix: run a backup",
                     recover_ev, error=False)
     if not restore_enabled:
         return stop(State.MONITORED, "Recover",
                     "restore activity is disabled for this VM", recover_ev, error=False)
-    # AN UNEVALUATED SLA NO LONGER BLOCKS. This rung asks a CAPABILITY question —
-    # is there a restorable point — and the two facts above answer it. Recency is
+    # AN UNEVALUATED SLA NO LONGER BLOCKS. This rung asks a CAPABILITY question –
+    # is there a restorable point – and the two facts above answer it. Recency is
     # POLICY and belongs to the gate, which owns the clock and the tier's bar.
     # The offline demo already says so: M5.4's A-400-days-ago reaches VALIDATED at
     # RPO 9600h and is stopped by the gate, not here.
@@ -323,7 +323,7 @@ def classify(reads: Reads) -> Ladder:
     # it read "N/A" for 29 minutes on a workload we had just restored and verified,
     # and it still reads "Protected" for three VMs deleted from Azure. Blocking on
     # its ABSENCE stopped every new workload dead for half an hour and presented as
-    # a broken checkout — on workshop day that is the whole room at once.
+    # a broken checkout – on workshop day that is the whole room at once.
     #
     # A verdict that HAS been made and says "not met" is still real information, so
     # it still blocks. Absence attests nothing, exactly as the Scan rung treats a
@@ -331,10 +331,10 @@ def classify(reads: Reads) -> Ladder:
     # HOLDs when neither an RPO target nor an SLA verdict exists to judge with.
     if evaluated and sla != "Protected":
         return stop(State.MONITORED, "Recover",
-                    f"SLA not met — {sla}", recover_ev, error=False)
+                    f"SLA not met – {sla}", recover_ev, error=False)
     cleared("Recover",
-            "recoverable — SLA Protected" if evaluated else
-            "recoverable — a successful backup exists (vendor SLA not evaluated yet; "
+            "recoverable – SLA Protected" if evaluated else
+            "recoverable – a successful backup exists (vendor SLA not evaluated yet; "
             "recency is enforced by the gate)",
             recover_ev)
 
@@ -355,7 +355,7 @@ def classify(reads: Reads) -> Ladder:
     attestation = reads.attestation
     if attestation is None:
         return stop(State.RECOVERABLE, "Scan",
-                    "recovery point is UNATTESTED — nothing has verified it is safe "
+                    "recovery point is UNATTESTED – nothing has verified it is safe "
                     "to restore from. Fix: run a restore drill",
                     {"vm_name": vm_name, "attested_by": None},
                     error=False)
@@ -371,17 +371,17 @@ def classify(reads: Reads) -> Ladder:
     # a script that died before printing). That is a DIFFERENT fact from "it looked
     # and found the copy dirty", and it needs a different fix: re-run the drill,
     # rather than go hunting a compromise that was never detected. Both still HOLD
-    # — this rung fails closed either way — but a stage that names the wrong fix is
+    # – this rung fails closed either way – but a stage that names the wrong fix is
     # the defect `7eea421` set out to remove. Observed live 2026-08-13.
     if attestation.get("clean") is None:
         return stop(State.RECOVERABLE, "Scan",
-                    f"recovery point is UNATTESTED — {attestation.get('source')} "
+                    f"recovery point is UNATTESTED – {attestation.get('source')} "
                     f"reached no verdict: {attestation.get('detail', 'no detail')}. "
                     f"Fix: re-run the restore drill",
                     scan_ev, error=False)
     if not attestation.get("clean"):
         return stop(State.RECOVERABLE, "Scan",
-                    f"recovery point failed {attestation.get('source')} — "
+                    f"recovery point failed {attestation.get('source')} – "
                     f"{attestation.get('detail', 'not clean')}",
                     scan_ev, error=False)
 
@@ -408,7 +408,7 @@ def classify(reads: Reads) -> Ladder:
                     scan_ev, error=False)
     if newest_point and attested_at < newest_point:
         return stop(State.RECOVERABLE, "Scan",
-                    f"attestation does not cover the newest recovery point — "
+                    f"attestation does not cover the newest recovery point – "
                     f"verified {_lag(newest_point - attested_at)} before it was taken; "
                     f"re-run the drill", scan_ev, error=False)
     cleared("Scan", f"attested clean by {attestation.get('source')}", scan_ev)
@@ -428,10 +428,10 @@ def classify(reads: Reads) -> Ladder:
     validate_ev = {"last_drill_job": job_id, "status": pstatus}
     if pstatus != "Completed":
         return stop(State.RECOVERABLE, "Validate",
-                    f"last restore not clean — job {job_id} {pstatus}", validate_ev, error=False)
-    cleared("Validate", f"recovery proven — job {job_id}", validate_ev)
+                    f"last restore not clean – job {job_id} {pstatus}", validate_ev, error=False)
+    cleared("Validate", f"recovery proven – job {job_id}", validate_ev)
 
-    return Ladder(State.VALIDATED, None, f"recovery proven — job {job_id}", False, rungs)
+    return Ladder(State.VALIDATED, None, f"recovery proven – job {job_id}", False, rungs)
 
 
 def sla_evaluated(vm: dict | None) -> bool:
@@ -463,11 +463,11 @@ def _state_after(stage: str) -> State:
 
 
 # --------------------------------------------------------------------------- #
-# Improve — the cross-cutting trend: did the rung move since last run? (pure)
+# Improve – the cross-cutting trend: did the rung move since last run? (pure)
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
 class Trend:
-    """How this run's state compares to history. `regressed` feeds the gate —
+    """How this run's state compares to history. `regressed` feeds the gate –
     a workload that dropped a rung must not promote even if still VALIDATED-ish."""
     direction: str                # "climbed" | "held" | "regressed" | "baseline"
     summary: str                  # one human line
@@ -478,13 +478,13 @@ class Trend:
 
 def _state_of(entry: dict) -> State | None:
     """The recorded state of a past run, or None for legacy entries that predate
-    the ladder (they stored per-function outcomes, not a state — not comparable)."""
+    the ladder (they stored per-function outcomes, not a state – not comparable)."""
     name = entry.get("state")
     return State[name] if name in State.__members__ else None
 
 
 def trend(current: State, history: list) -> Trend:
-    """Compare current state to the most recent comparable run. Pure — no clock."""
+    """Compare current state to the most recent comparable run. Pure – no clock."""
     runs = len(history) + 1
     prior = [s for s in (_state_of(e) for e in history) if s is not None]
     if not prior:
@@ -496,7 +496,7 @@ def trend(current: State, history: list) -> Trend:
         return Trend("climbed", f"climbed {previous}→{current}", previous, runs, regressed=False)
     if current.rank < previous.rank:
         return Trend("regressed", f"regressed {previous}→{current}", previous, runs, regressed=True)
-    # Held — count the consecutive trailing runs already at this state.
+    # Held – count the consecutive trailing runs already at this state.
     streak = 1
     for s in reversed(prior):
         if s is current:

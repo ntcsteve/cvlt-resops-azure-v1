@@ -3,7 +3,7 @@ variable "location" {
   default = "eastus2"
 }
 
-# BS family — a different quota pool from the workloads' Falsv7, so the stack can
+# BS family – a different quota pool from the workloads' Falsv7, so the stack can
 # never starve a participant of a VM. 2 vCPU / 4 GB is ample for three containers
 # serving a handful of series.
 variable "vm_size" {

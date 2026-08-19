@@ -1,4 +1,4 @@
-"""config/incident.yaml — the four-recovery-point decision, pinned.
+"""config/incident.yaml – the four-recovery-point decision, pinned.
 
 This is a WORKSHOP ASSET, not just a demo. Its whole teaching turns on the gate
 promoting exactly one point and that point being the one inside the incident
@@ -36,7 +36,7 @@ def test_offsets_resolve_wherever_they_are_nested():
 def test_real_payloads_are_never_mistaken_for_an_offset():
     """Only a dict whose keys are EXACTLY one offset converts. A fixed epoch, a
     null attestation, and any multi-key object all pass through untouched."""
-    payload = {"days_ago": 6, "status": "Completed"}   # two keys — not an offset
+    payload = {"days_ago": 6, "status": "Completed"}   # two keys – not an offset
     assert _resolve_ages(payload, NOW) == payload
     assert _resolve_ages({"at": 1785390783}, NOW) == {"at": 1785390783}
     assert _resolve_ages({"attestation": None}, NOW) == {"attestation": None}
@@ -69,17 +69,17 @@ def test_each_point_is_blocked_for_a_DIFFERENT_reason(tmp_path):
     reason would waste a slot."""
     _, points = _run(tmp_path)
 
-    # C — the backup is fine and nobody ever looked inside it.
+    # C – the backup is fine and nobody ever looked inside it.
     assert points["C-32-hours-ago"]["blocked_stage"] == "Scan"
 
-    # B — attested clean, blocked purely on data loss. The RPO was written for
+    # B – attested clean, blocked purely on data loss. The RPO was written for
     # outages, and the room has to decide whether it governs a compromise.
     b_bundle = json.loads((tmp_path / "evidence" / "b-6-days-ago" / "bundle.json").read_text())
     assert b_bundle["gate"]["decision"] == "HOLD"
     assert any("rpo" in r for r in b_bundle["gate"]["reasons"])
     assert points["B-6-days-ago"]["state"] == "VALIDATED"     # it CLIMBED. it still holds.
 
-    # A — the only point outside any plausible incident window, and its
+    # A – the only point outside any plausible incident window, and its
     # attestation is 400 days old because nobody drilled in between.
     a_bundle = json.loads((tmp_path / "evidence" / "a-400-days-ago" / "bundle.json").read_text())
     assert any("attestation stale" in r for r in a_bundle["gate"]["reasons"])

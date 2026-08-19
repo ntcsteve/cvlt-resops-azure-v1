@@ -1,4 +1,4 @@
-"""Unit tests for the promotion gate (Continuous Service) — no live tenant.
+"""Unit tests for the promotion gate (Continuous Service) – no live tenant.
 
 The gate now reads a Ladder + measured numbers. We build Ladders directly (gate
 only reads .state and .reason) and pass age/rpo/rto/regressed as the caller would.
@@ -8,11 +8,11 @@ from resops.state import Ladder, State
 
 
 def _ladder(state, *, reason="", blocked=None):
-    """A minimal Ladder — the gate only reads .state and .reason."""
+    """A minimal Ladder – the gate only reads .state and .reason."""
     return Ladder(state, blocked, reason or str(state), False, [])
 
 
-VALIDATED = _ladder(State.VALIDATED, reason="recovery proven — job 7540314")
+VALIDATED = _ladder(State.VALIDATED, reason="recovery proven – job 7540314")
 
 
 def test_validated_and_fresh_promotes():
@@ -23,7 +23,7 @@ def test_validated_and_fresh_promotes():
 
 
 def test_below_validated_holds_and_names_the_rung():
-    v = gate(_ladder(State.MONITORED, reason="SLA not met — Missed SLA", blocked="Recover"))
+    v = gate(_ladder(State.MONITORED, reason="SLA not met – Missed SLA", blocked="Recover"))
     assert v.decision == "HOLD"
     assert v.exit_code == 1
     assert "stuck at MONITORED" in v.reasons[0]
@@ -74,7 +74,7 @@ def test_stale_proof_overridable():
 
 
 def test_allow_stale_does_not_excuse_a_real_block():
-    """Override only forgives staleness — a hard block still HOLDs."""
+    """Override only forgives staleness – a hard block still HOLDs."""
     v = gate(VALIDATED, {"recovery_proof_max_age_days": 7},
              allow_stale=True, proof_age_days=12, regressed=True)
     assert v.decision == "HOLD"
@@ -92,11 +92,11 @@ def test_default_freshness_applies_without_policy():
 
 
 # --------------------------------------------------------------------------- #
-# Attestation freshness — "somebody checked, once, a year ago" is not a pass.
+# Attestation freshness – "somebody checked, once, a year ago" is not a pass.
 #
 # The ladder answers WHETHER a recovery point was attested. It cannot answer
 # WHEN, because classify() is clock-free. Without this bar, an attestation from
-# ten minutes ago and one from last year are indistinguishable — which is the
+# ten minutes ago and one from last year are indistinguishable – which is the
 # same false-clean trap we spent 2026-08-01 removing, wearing different clothes.
 # --------------------------------------------------------------------------- #
 def test_stale_attestation_holds():
@@ -140,14 +140,14 @@ def test_stale_attestation_reported_alongside_other_blocks():
 # Recency, after the Recover rung stopped blocking on an unevaluated vendor SLA.
 #
 # The ladder used to refuse to reach VALIDATED until Commvault's periodic SLA job
-# had classified the workload — which cost ~30 minutes on every new one and was
+# had classified the workload – which cost ~30 minutes on every new one and was
 # unreliable in both directions (three DELETED VMs still read "Protected"). That
 # check is gone, so the numeric bar is now the ONLY recency control. These tests
 # pin the consequence: when neither control exists, the gate must refuse.
 # --------------------------------------------------------------------------- #
 def test_a_fresh_point_promotes_even_though_the_vendor_has_not_evaluated_sla():
     """The whole point of the change. A workload backed up minutes ago, well
-    inside its tier's bar, must ship — not wait half an hour for a batch job."""
+    inside its tier's bar, must ship – not wait half an hour for a batch job."""
     v = gate(VALIDATED, {"rpo_target_hours": 8}, proof_age_days=1,
              rpo_hours=0.1, sla_evaluated=False)
     assert v.decision == "PROMOTE"
@@ -181,7 +181,7 @@ def test_an_evaluated_sla_is_enough_on_its_own():
 
 
 def test_an_unsupplied_fact_is_not_a_false_one():
-    """`None` means the caller did not pass it — not that SLA was unevaluated.
+    """`None` means the caller did not pass it – not that SLA was unevaluated.
     Every existing caller and test omits it, and none of them may start HOLDing."""
     v = gate(VALIDATED, {}, proof_age_days=1)
     assert v.decision == "PROMOTE"

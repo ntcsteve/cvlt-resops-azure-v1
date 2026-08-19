@@ -15,7 +15,7 @@ all in the write lane, all producing a confident wrong answer from a missing one
 
   state.Scan   `if not attestation.get("clean")` sent None and False down the same
                branch, so a drill that reached no verdict was reported as a
-               recovery point that FAILED verification. Both HOLD, correctly — but
+               recovery point that FAILED verification. Both HOLD, correctly – but
                one says go hunt a compromise and the other says re-run the drill.
 
 The read lane has always failed closed. These are the write lane not doing so.
@@ -54,7 +54,7 @@ def test_NO_VERDICT_IS_NOT_A_DIRTY_VERDICT():
 
 
 def test_an_unhealthy_copy_outranks_everything():
-    """A copy that did not come back healthy is 2 whatever the attester said —
+    """A copy that did not come back healthy is 2 whatever the attester said –
     including when it said nothing."""
     assert verdict_code(healthy=False, clean=True) == 2
     assert verdict_code(healthy=False, clean=False) == 2
@@ -70,7 +70,7 @@ def test_the_four_codes_are_all_reachable():
 
 
 # --------------------------------------------------------------------------- #
-# 2. az_json_checked — absence and failure must not look alike.
+# 2. az_json_checked – absence and failure must not look alike.
 # --------------------------------------------------------------------------- #
 class _Result:
     def __init__(self, returncode, stdout="", stderr=""):
@@ -94,7 +94,7 @@ def test_a_genuinely_absent_resource_is_none(monkeypatch):
 
 
 def test_A_FAILED_LOOKUP_RAISES_INSTEAD_OF_LOOKING_EMPTY(monkeypatch):
-    """The bug. Throttling, an expired login, a network blip — none of them mean
+    """The bug. Throttling, an expired login, a network blip – none of them mean
     the resource is gone, and the caller that turns None into "nothing to tear
     down" will happily report a clean sweep over a VM that is still billing."""
     _az(monkeypatch, _Result(1, "", "ERROR: AADSTS700082 refresh token expired"))
@@ -110,10 +110,10 @@ def test_an_empty_success_is_still_absence(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
-# 3. The Scan rung — UNATTESTED and FAILED need different fixes.
+# 3. The Scan rung – UNATTESTED and FAILED need different fixes.
 # --------------------------------------------------------------------------- #
 def test_an_attestation_with_no_verdict_says_unattested_not_failed():
-    """The bug. Both HOLD at Scan, which is correct — this rung fails closed
+    """The bug. Both HOLD at Scan, which is correct – this rung fails closed
     either way. What differs is the instruction the operator is handed."""
     ladder = classify(_full_reads(
         attestation=_scan(clean=None, source="restore-verify",

@@ -1,7 +1,7 @@
 """
-Shared operator wiring — auth client, validated platform config, and the
+Shared operator wiring – auth client, validated platform config, and the
 terraform contract reader. Used by op.py and preflight.py (teardown lives in
-op.py) so neither re-declares setup. Small on purpose — it earns its spot.
+op.py) so neither re-declares setup. Small on purpose – it earns its spot.
 """
 from __future__ import annotations
 
@@ -16,19 +16,19 @@ from ..reads import vmgroup_name
 
 REPO = Path(__file__).resolve().parents[2]  # resops/operator/_common.py -> repo root
 
-CFG = load_platform()          # validated — fails loud on a missing id
+CFG = load_platform()          # validated – fails loud on a missing id
 HYP = CFG["hypervisor"]        # {id, name, instance_id}
 HOST = CFG["web_service_url"]
 client = Client(HOST, load_credentials(REPO / ".env"), REPO / ".env")
 
 
 def contract(run_dir: str) -> dict:
-    """The `workload` terraform output — the only handoff from provision to operate.
+    """The `workload` terraform output – the only handoff from provision to operate.
     Fails with the fix if the root wasn't applied or doesn't expose `workload`."""
     proc = subprocess.run(["terraform", f"-chdir={run_dir}", "output", "-json", "workload"],
                           capture_output=True, text=True)
     if proc.returncode != 0 or not proc.stdout.strip():
-        raise SystemExit(f"no `workload` output in {run_dir} — did you `terraform apply`? "
+        raise SystemExit(f"no `workload` output in {run_dir} – did you `terraform apply`? "
                          f'(the root must expose: output "workload" {{ value = {{...}} }})')
     return json.loads(proc.stdout)
 
@@ -63,7 +63,7 @@ def discovered(vm_name: str) -> bool:
     """True if the VM is in the cloud-native inventory (discovery has run). This is
     the RELIABLE signal: /VM (VSA) lags and stays empty until protect creates the
     group, so checking it pre-protect gives a false negative. Asset/Search is the
-    Resources view — a discovered VM appears here right away (AssetType 1 = VM)."""
+    Resources view – a discovered VM appears here right away (AssetType 1 = VM)."""
     body = {"searchParams": [
         {"key": "q", "value": "*:*"}, {"key": "fq", "value": "Provider:1"},
         {"key": "rows", "value": "500"}, {"key": "fl", "value": "AssetName,AssetType"}]}
@@ -82,7 +82,7 @@ def find_vm(vm_name: str) -> dict | None:
 
 def group_id(vm_name: str) -> int | None:
     """The workload's vmgroup id, by name. The vmgroups list reflects a new group
-    immediately — unlike /VM, which lags for a minute after protect."""
+    immediately – unlike /VM, which lags for a minute after protect."""
     name = vmgroup_name(vm_name)
     for g in client.get("v4/vmgroups").json().get("vmGroups", []):
         gg = g.get("vmGroup") or {}

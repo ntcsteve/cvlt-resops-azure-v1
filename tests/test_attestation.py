@@ -1,9 +1,9 @@
-"""The attestation lane — reading it, and dating it.
+"""The attestation lane – reading it, and dating it.
 
 Two small functions with an outsized ability to lie. The reader decides whether
 anyone has vouched for a recovery point; the clock decides whether that vouching
-is still worth anything. Both have branches where the wrong answer is SILENT —
-a pass where there should be a block — which is the failure this project spent
+is still worth anything. Both have branches where the wrong answer is SILENT –
+a pass where there should be a block – which is the failure this project spent
 2026-08-01 removing. So each branch is pinned.
 """
 import json
@@ -14,7 +14,7 @@ from resops.state import _restore_verify_attestation
 
 
 # --------------------------------------------------------------------------- #
-# Reading it — five ways to have no attestation, and none of them is a pass.
+# Reading it – five ways to have no attestation, and none of them is a pass.
 # --------------------------------------------------------------------------- #
 def test_no_declared_file_means_nobody_attested():
     assert _restore_verify_attestation(None) == (None, "")
@@ -23,7 +23,7 @@ def test_no_declared_file_means_nobody_attested():
 
 def test_declared_but_missing_file_is_unattested_not_an_error():
     # A workload configured for restore-verify whose drill has never run. That is
-    # a gap to report, not a read failure to alarm on — the Scan rung blocks
+    # a gap to report, not a read failure to alarm on – the Scan rung blocks
     # either way, but blocked_by_error must stay False so it reads as a real gap.
     attestation, error = _restore_verify_attestation("/nonexistent/never-ran.json")
     assert attestation is None
@@ -41,7 +41,7 @@ def test_a_clean_attestation_is_returned_whole(tmp_path):
 
 
 def test_a_failed_attestation_is_also_returned(tmp_path):
-    # A negative is still an attestation — somebody looked and did not like it.
+    # A negative is still an attestation – somebody looked and did not like it.
     p = tmp_path / "a.json"
     p.write_text(json.dumps({"source": "restore-verify", "clean": False,
                              "detail": "14 encrypted (.locked) files present"}))
@@ -50,7 +50,7 @@ def test_a_failed_attestation_is_also_returned(tmp_path):
 
 
 def test_clean_null_means_the_drill_could_not_verify(tmp_path):
-    # THE subtle one. The drill ran, restored, and could not run verify.sh — no
+    # THE subtle one. The drill ran, restored, and could not run verify.sh – no
     # guest agent, no script, whatever. That is not "clean" and it is not a
     # failure either; it is an absence, and absence must never clear the rung.
     p = tmp_path / "a.json"
@@ -68,7 +68,7 @@ def test_unreadable_file_reports_an_error_rather_than_passing(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# Dating it — an attestation with no date is half a claim.
+# Dating it – an attestation with no date is half a claim.
 # --------------------------------------------------------------------------- #
 def test_no_attestation_has_no_age():
     assert _attestation_age_days(None) is None

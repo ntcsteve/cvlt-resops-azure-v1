@@ -1,4 +1,4 @@
-"""The threat-scan parsers — the write lane's first tests.
+"""The threat-scan parsers – the write lane's first tests.
 
 These cover the three derivations `op threatscan` makes before it can trigger a
 scan: which storage pool, which copy actually holds the backup, and what the
@@ -7,7 +7,7 @@ to get subtly wrong (the snap copy and the pool's own primary copy both look
 plausible and are both wrong), so they're pinned here.
 
 Note what these DON'T import: `resops.operator.op` reads config/workshop.yaml at
-import time, and that file is gitignored — so a test that imported it would pass
+import time, and that file is gitignored – so a test that imported it would pass
 on the author's machine and fail on a fresh clone. The parsers live in the read
 layer precisely so this suite runs anywhere.
 """
@@ -15,7 +15,7 @@ from resops.reads import default_copy_id, storage_pool_id, threat_attestation
 
 
 # --------------------------------------------------------------------------- #
-# storage_pool_id — the id hides under storagePoolEntity, not at the top level.
+# storage_pool_id – the id hides under storagePoolEntity, not at the top level.
 # --------------------------------------------------------------------------- #
 POOLS = {"storagePoolList": [
     {"storagePoolEntity": {"storagePoolName": "Other-Pool", "storagePoolId": 1111}},
@@ -29,7 +29,7 @@ def test_storage_pool_id_resolves_by_name():
 
 
 def test_storage_pool_id_is_none_when_absent():
-    # None, not an exception — the write lane turns it into a SystemExit with the fix.
+    # None, not an exception – the write lane turns it into a SystemExit with the fix.
     assert storage_pool_id(POOLS, "no-such-pool") is None
 
 
@@ -38,7 +38,7 @@ def test_storage_pool_id_survives_an_empty_response():
 
 
 # --------------------------------------------------------------------------- #
-# default_copy_id — the snap copy is a decoy. Scanning it is not scanning the backup.
+# default_copy_id – the snap copy is a decoy. Scanning it is not scanning the backup.
 # --------------------------------------------------------------------------- #
 POLICY = {"copy": [
     {"isDefault": False, "StoragePolicyCopy": {"copyId": 9503, "copyName": "Primary Snap"}},
@@ -56,11 +56,11 @@ def test_default_copy_id_is_none_when_no_copy_is_default():
 
 
 # --------------------------------------------------------------------------- #
-# threat_attestation — the function that exists because we got this wrong.
+# threat_attestation – the function that exists because we got this wrong.
 #
 # Client/Anomaly reports EXCEPTIONS. For a month we read "not in the list" as
 # "scanned and clean". On 2026-08-01 a live run showed every scan in the tenant
-# had analysed ZERO files, so every clean verdict was hollow. This lane can now
+# had analyzed ZERO files, so every clean verdict was hollow. This lane can now
 # only ever report a negative it actually saw; a positive must come from an
 # attester that knows a check really ran.
 # --------------------------------------------------------------------------- #
@@ -92,13 +92,13 @@ def test_fingerprint_anomalies_alone_are_a_real_negative():
     assert threat_attestation(body, 12345)["clean"] is False
 
 
-def test_an_unrecognised_shape_fails_closed():
+def test_an_unrecognized_shape_fails_closed():
     # Flagged by the API in a shape we can't parse. Not clean, and say why.
     body = {"anomalyClients": [{"client": {"clientId": 12345},
                                 "someFutureFieldName": 7}]}
     att = threat_attestation(body, 12345)
     assert att["clean"] is False
-    assert "don't" in att["detail"] or "recognise" in att["detail"]
+    assert "don't" in att["detail"] or "recognize" in att["detail"]
 
 
 # The VSA payload below is VERBATIM from GET Client/Anomaly on 2026-08-12, the first
@@ -121,7 +121,7 @@ def test_vsa_malware_count_is_a_real_negative():
 
 def test_vsa_zero_malware_attests_NOTHING():
     """Listed by the scan with a zero count means it recorded no malware. That is
-    NOT "scanned and clean" — it is the absence this whole module exists to refuse
+    NOT "scanned and clean" – it is the absence this whole module exists to refuse
     to over-read. orders-api and cherry-turtles were both live examples on the day."""
     assert threat_attestation(_vsa(0), 12345) is None
 

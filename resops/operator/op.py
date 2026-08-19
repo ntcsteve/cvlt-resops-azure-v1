@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-operator/ — the headless WRITE lane. Codifies the proven ResOps climb so a
+operator/ – the headless WRITE lane. Codifies the proven ResOps climb so a
 workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
 
     op preflight   <run_dir>  read-only gate: az · token · hypervisor · discovered · vCPU
@@ -11,7 +11,7 @@ workload goes DISCOVERED -> VALIDATED with no UI and no hand-crafted payloads.
     op incident    <run_dir>  plant a detectable compromise in the workload (workshop only)
     op remediate   <run_dir>  undo op incident in place and re-verify
     op climb       <run_dir>  preflight -> protect -> backup -> restore
-    op status      <run_dir>  show the workload's rung on the ladder (via resops) — read-only
+    op status      <run_dir>  show the workload's rung on the ladder (via resops) – read-only
     op gate        <run_dir>  resops gate  -> PROMOTE / HOLD (exit 0 / 1)
     op teardown    <run_dir>  CV group + GXMD sweep + terraform destroy
 
@@ -24,7 +24,7 @@ the gate. status/climb-end/gate all hand the workload to resops.
   • config/workshop.yaml (platform: block)  the set-once ids (hypervisor{id,name,instance_id}, plan)
 Runtime specifics (subclientId, disk, recovery time) are read from the live API.
 
-NOT here: discovery — the one gated step (403 for this token). Trigger it once in
+NOT here: discovery – the one gated step (403 for this token). Trigger it once in
 the UI (or a scheduled job in prod) between provision and protect.
 """
 from __future__ import annotations
@@ -45,11 +45,11 @@ from ._common import CFG, HOST, HYP, REPO, client, contract, find_vm, group_id, 
 from .drills import run_restore
 
 
-_VSA_APP_ID = 106    # Virtual Server Agent application type — fixed across Metallic tenants
+_VSA_APP_ID = 106    # Virtual Server Agent application type – fixed across Metallic tenants
 
 # The CommCell this tenant lives on. TENANT-SPECIFIC, unlike _VSA_APP_ID above.
 # 2 is the common default for a single-CommCell Metallic instance and is what
-# ours reports, but "common" is not "always" — and a wrong value here produces a
+# ours reports, but "common" is not "always" – and a wrong value here produces a
 # restore request that is accepted and then browses the wrong CommCell, which
 # reads as an empty backup rather than as an error. Override in workshop.yaml:
 #
@@ -72,7 +72,7 @@ def require_vm(vm_name: str) -> dict:
     """The VM's /VM record, or stop with the fix if discovery hasn't run."""
     vm = find_vm(vm_name)
     if vm is None:
-        raise SystemExit(f"{vm_name} not in /VM — has discovery run? (the one manual step)")
+        raise SystemExit(f"{vm_name} not in /VM – has discovery run? (the one manual step)")
     return vm
 
 
@@ -110,12 +110,12 @@ def _check_iam(sp: str) -> tuple:
         return False, (f"SP {sp[:8]}… missing roles: {', '.join(sorted(missing))}"
                        f"  → fix: az role assignment create --assignee {sp}"
                        f" --role \"<role>\" --scope /subscriptions/{CFG['subscription_id']}")
-    return True, f"SP {sp[:8]}… — Contributor + Storage Blob Data Contributor assigned"
+    return True, f"SP {sp[:8]}… – Contributor + Storage Blob Data Contributor assigned"
 
 
 def _check_rg_clean(rg: str) -> tuple:
     """Warn if a Recovery Services vault exists in the RG outside Terraform state.
-    RSVs block RG deletion — teardown handles them, but knowing upfront prevents
+    RSVs block RG deletion – teardown handles them, but knowing upfront prevents
     surprises."""
     vaults = az_json("resource", "list", "-g", rg,
                      "--resource-type", "Microsoft.RecoveryServices/vaults",
@@ -123,22 +123,22 @@ def _check_rg_clean(rg: str) -> tuple:
     if vaults:
         return False, (f"RG {rg} has RSV(s): {', '.join(vaults)}"
                        f"  → op teardown will remove them; or delete manually first")
-    return True, f"RG {rg} — no foreign Recovery Services vaults"
+    return True, f"RG {rg} – no foreign Recovery Services vaults"
 
 
 # --------------------------------------------------------------------------- #
-# protect — create the VSA vmgroup, VM added by its Azure vmId (== strGUID)
+# protect – create the VSA vmgroup, VM added by its Azure vmId (== strGUID)
 # --------------------------------------------------------------------------- #
 def protect(run_dir: str) -> int:
     w = contract(run_dir)
-    existing = group_id(w["vm_name"])         # idempotent — re-running never duplicates
+    existing = group_id(w["vm_name"])         # idempotent – re-running never duplicates
     if existing:
-        print(f"protect: group {existing} already exists — reusing")
+        print(f"protect: group {existing} already exists – reusing")
         return existing
     body = {
         "name": f"resops-{w['vm_name']}-vg",
         "plan": {"id": CFG["plan_id"]},
-        "Hypervisor": {"id": HYP["id"]},  # capital H — lowercase 400s
+        "Hypervisor": {"id": HYP["id"]},  # capital H – lowercase 400s
         "content": {"overwrite": True, "virtualMachines": [
             {"name": w["vm_name"], "GUID": w["vm_guid"], "type": "VM"}]},
     }
@@ -151,13 +151,13 @@ def protect(run_dir: str) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# backup — trigger a full backup on the workload's vmgroup, poll to terminal
+# backup – trigger a full backup on the workload's vmgroup, poll to terminal
 # --------------------------------------------------------------------------- #
 def backup(run_dir: str, gid: int | None = None) -> str:
     w = contract(run_dir)
     gid = gid or group_id(w["vm_name"])   # by group, not /VM (which lags after protect)
     if not gid:
-        raise SystemExit(f"no vmgroup for {w['vm_name']} — run protect first")
+        raise SystemExit(f"no vmgroup for {w['vm_name']} – run protect first")
     job = write("POST", f"v4/vmgroup/{gid}/backup", json={"backupLevel": "FULL"}).json()["jobIds"][0]
     print(f"backup job {job} on group {gid}…")
     status = poll_job(client, job)
@@ -165,12 +165,12 @@ def backup(run_dir: str, gid: int | None = None) -> str:
     # STOP, do not return a status nobody checks. This used to hand the caller a
     # string and exit 0, so `climb` carried on to restore an OLDER recovery point
     # and attested THAT. The ladder still caught it at Detect, so it was never a
-    # false promotion — but ten minutes were spent proving something about the
+    # false promotion – but ten minutes were spent proving something about the
     # wrong point, and the output read as though the climb had worked.
     # Every other step in this lane completes or raises. Now this one does too.
     if not succeeded(status):
         raise SystemExit(
-            f"backup job {job} ended {status!r} — NOTHING NEW WAS PROTECTED, so a"
+            f"backup job {job} ended {status!r} – NOTHING NEW WAS PROTECTED, so a"
             f" restore or a gate run now would be about an older recovery point"
             f"\n  → open job {job} in the console for the reason. A 'Waiting' job"
             f" that never starts is usually a media agent slot; 'collect file is"
@@ -179,12 +179,12 @@ def backup(run_dir: str, gid: int | None = None) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# restore — derive the /CreateTask payload token-native, then run the drill
+# restore – derive the /CreateTask payload token-native, then run the drill
 # --------------------------------------------------------------------------- #
 def _restore_payload(w: dict, subclient_id: int, disk_name: str,
                      disk_type: str, to_time: int) -> dict:
     """Build the /CreateTask body. The nested shape is captured verbatim from a
-    proven Command Center restore — keep the structure as-is; only the values
+    proven Command Center restore – keep the structure as-is; only the values
     pulled from w / args vary. applicationId 106 is VSA-Azure and is fixed across
     Metallic; commCellId comes from config because it is NOT (see commcell_id())."""
     name = w["vm_name"]
@@ -217,7 +217,7 @@ def _restore_payload(w: dict, subclient_id: int, disk_name: str,
                         "newName": f"{name}-restore", "esxHost": w["resource_group"],
                         "Datastore": sa, "vmSize": w["vm_size"],
                         "disks": [{"name": disk_name,
-                                   "newName": f"{name}-restore-osdisk",  # UNIQUE — avoids collision
+                                   "newName": f"{name}-restore-osdisk",  # UNIQUE – avoids collision
                                    "Datastore": sa, "type": disk_type}],
                         "nics": [{"networkName": w["vnet_name"], "subnetId": w["subnet_id"]}],
                         "addToFailoverCluster": False, "securityGroups": [{}],
@@ -245,7 +245,7 @@ def _os_disk(vm_guid: str) -> dict:
     """The VM's OS disk, chosen by the API's OWN isOSDisk flag.
 
     NEVER take disks[0]. For an Azure VSA backup the first entry is the VM's
-    config blob — name "<vm>.json", isOSDisk false, type "" — and sending that as
+    config blob – name "<vm>.json", isOSDisk false, type "" – and sending that as
     the restore disk makes Commvault reject the job with "No OS disk found.
     Please check if OS disk was filtered as part of backup", which reads like a
     BACKUP problem and is not one. Proven live on aug12-narwhal 2026-08-12;
@@ -256,7 +256,7 @@ def _os_disk(vm_guid: str) -> dict:
     for d in disks:
         if d.get("isOSDisk"):
             return d
-    raise SystemExit(f"no disk with isOSDisk=true for {vm_guid} — cannot build a restore"
+    raise SystemExit(f"no disk with isOSDisk=true for {vm_guid} – cannot build a restore"
                      f" payload  → disks returned: {[d.get('name') for d in disks]}")
 
 
@@ -278,9 +278,9 @@ def restore(run_dir: str) -> int:
 _DRILL_OK, _DRILL_COULD_NOT_RUN, _DRILL_UNHEALTHY, _DRILL_DIRTY = 0, 1, 2, 3
 
 _DRILL_VERDICT = {
-    _DRILL_COULD_NOT_RUN: "the drill could not run to a verdict — nothing was proven",
-    _DRILL_UNHEALTHY: "the restored copy came back unhealthy — this is a FAILED drill",
-    _DRILL_DIRTY: "the restored copy is not clean — verify.sh said so inside it",
+    _DRILL_COULD_NOT_RUN: "the drill could not run to a verdict – nothing was proven",
+    _DRILL_UNHEALTHY: "the restored copy came back unhealthy – this is a FAILED drill",
+    _DRILL_DIRTY: "the restored copy is not clean – verify.sh said so inside it",
 }
 
 
@@ -290,7 +290,7 @@ def _cli_restore(run_dir: str) -> None:
     THIS WRAPPER EXISTS BECAUSE op.main() DISCARDS RETURN VALUES. run_restore.main
     has a deliberate four-way exit contract (0 clean / 1 could not run / 2 restored
     unhealthy / 3 restored dirty), and `restore` returned it faithfully into a
-    caller that threw it away — so every one of those outcomes exited 0. Run as a
+    caller that threw it away – so every one of those outcomes exited 0. Run as a
     module the drill honours its own codes (`sys.exit(main())`); routed through
     `op` they all vanished. When the drill failed on the OS-disk bug on
     2026-08-12, `op restore` exited 0.
@@ -303,26 +303,26 @@ def _cli_restore(run_dir: str) -> None:
         # message that way collapsed the drill's deliberate four-way contract
         # (0 clean / 1 could not run / 2 unhealthy / 3 dirty) into a single 1, so
         # "fix your environment and retry" and "the backup is poison, do not
-        # retry" — which this command's own messages exist to keep apart — became
+        # retry" – which this command's own messages exist to keep apart – became
         # indistinguishable to anything reading the code. Observed live
         # 2026-08-12: a dirty drill exited 1, not 3.
         # Print, then exit with the number. Same idiom as `gate` and
         # `_cli_threatscan`: when a command's exit code IS the verdict, the
         # verdict is the number, not just the prose.
-        print(f"RESTORE DRILL DID NOT PASS — {_DRILL_VERDICT.get(code, f'exit {code}')}."
+        print(f"RESTORE DRILL DID NOT PASS – {_DRILL_VERDICT.get(code, f'exit {code}')}."
               f"  The attestation was not written clean, so the Scan rung will block.",
               file=sys.stderr)
         sys.exit(code)
 
 
 # --------------------------------------------------------------------------- #
-# threatscan — trigger a ThreatScan job on the workload's backup copy,
+# threatscan – trigger a ThreatScan job on the workload's backup copy,
 # poll to completion, read the verdict. Explicit participant step (rung 3) so
 # the team can see and act on the threat signal before cleanroom recovery.
 # --------------------------------------------------------------------------- #
 def _commcell_client_id(vm_name: str) -> int:
     """CommCell integer client ID for the VM. The plain Client API only lists
-    physical/proxy clients, not VSA pseudo-clients — confirmed live. The VM's own
+    physical/proxy clients, not VSA pseudo-clients – confirmed live. The VM's own
     /VM record carries its pseudo-client id at client.clientId (distinct from
     pseudoClient.clientId, which is the hypervisor)."""
     vm = require_vm(vm_name)
@@ -338,7 +338,7 @@ def _threatscan_verdict(commcell_client_id: int) -> dict | None:
 def threatscan(run_dir: str) -> dict | None:
     """Trigger a threat scan for THIS workload and return what the tenant recorded.
 
-    Two calls, both proven live 2026-08-12 and NEITHER DOCUMENTED by the vendor —
+    Two calls, both proven live 2026-08-12 and NEITHER DOCUMENTED by the vendor –
     absent from a 6,798-URL API reference and from Commvault's own Python SDK. That
     is stated here because it is a maintenance liability, not a footnote. If either
     route changes, this command breaks, the Scan rung reports nothing, and nothing
@@ -349,7 +349,7 @@ def threatscan(run_dir: str) -> dict | None:
 
     THE JOB IS POLLED ONLY TO KNOW THE ATTEMPT FINISHED. It is never the verdict.
     A re-scan of a poisoned recovery point with no new backup data completes with
-    no error code and no findings — observed three times on one workload. Job
+    no error code and no findings – observed three times on one workload. Job
     success and cleanliness are unrelated facts here.
 
     The verdict is the persistent per-client record, and threat_attestation treats
@@ -414,31 +414,31 @@ def _cli_threatscan(run_dir: str) -> None:
 
     The wording matters. A scan that could not run and a scan that ran and found
     threats are opposite situations, and "threatscan FAILED" (what this used to
-    print) reads at 2am as "the scan broke, re-run it" — the precise opposite of
+    print) reads at 2am as "the scan broke, re-run it" – the precise opposite of
     "the scan worked and your recovery point is poisoned". The failed-job path
     above says UNVERIFIED; this one says compromised."""
     if threatscan(run_dir) is not None:
-        sys.exit("THREATS DETECTED — the scan ran and this recovery point is NOT safe "
+        sys.exit("THREATS DETECTED – the scan ran and this recovery point is NOT safe "
                  "to restore from. The scan did its job; the backup is the problem.")
 
 
 # --------------------------------------------------------------------------- #
-# incident — make the workload untrusted ON PURPOSE, so the threat signal is
+# incident – make the workload untrusted ON PURPOSE, so the threat signal is
 # real instead of narrated. A clean climb proves recoverability; it proves
 # nothing about TRUST. This is the step that lets `op threatscan` say no.
 # --------------------------------------------------------------------------- #
 # Assembled from fragments at runtime, never stored whole. EICAR is the industry
-# standard harmless test pattern every scanner is built to detect — but a file
+# standard harmless test pattern every scanner is built to detect – but a file
 # containing it verbatim is exactly what endpoint AV quarantines, and that file
 # would be THIS SOURCE FILE sitting in the repo. Splitting it keeps the checkout
 # scannable. The string is inert: it is not code, it does nothing, it exists only
-# to be recognised.
+# to be recognized.
 _EICAR = ("X5O!P%@AP[4\\PZX54(P^)7CC)7}$"
           "EICAR-STANDARD-ANTIVIRUS-TEST-FILE!"
           "$H+H*")
 
 # The guest paths, declared ONCE. `incident` dirties them and `remediate` cleans
-# and restores them, so the two scripts MUST agree — and they are 70 lines apart in
+# and restores them, so the two scripts MUST agree – and they are 70 lines apart in
 # separate heredocs, where a change to one and not the other is invisible: remediate
 # would tidy a directory incident never touched and report success. That is exactly
 # the class of drift this codebase kept finding on 2026-08-12. cloud-init.yaml also
@@ -450,15 +450,15 @@ _STASH_DIR = "/var/lib/app/.incident-stash"      # where incident parks original
 
 def _guest_paths(script: str) -> str:
     """Fill a guest script's {data_dir}/{stash_dir} placeholders. Same .replace
-    idiom as {eicar} — these scripts are raw strings full of shell ${braces}, so
+    idiom as {eicar} – these scripts are raw strings full of shell ${braces}, so
     .format() is not an option."""
     return script.replace("{data_dir}", _DATA_DIR).replace("{stash_dir}", _STASH_DIR)
 
 
 # Runs inside the guest via the Azure agent. Two distinct signals, because
 # ThreatScan looks for both and we want the demo to survive either one missing:
-#   malware      — the EICAR pattern, matched by signature
-#   file anomaly — a burst of high-entropy files with a changed extension, which
+#   malware      – the EICAR pattern, matched by signature
+#   file anomaly – a burst of high-entropy files with a changed extension, which
 #                  is what mass encryption actually looks like on disk
 _INCIDENT_SCRIPT = r"""
 set -eu
@@ -476,7 +476,7 @@ printf '%s' '{eicar}' > "$DATA/.hidden_payload"
 #    The original is STASHED first, outside $DATA so verify.sh and the drill never
 #    see it, purely so `op remediate` can put back EXACTLY what was taken. The
 #    alternative was to hardcode the known-good rows in a second place and keep
-#    them in step with cloud-init by hand — and verify.sh only checks the header
+#    them in step with cloud-init by hand – and verify.sh only checks the header
 #    and a row count, so that drift would have been invisible. Stashing makes the
 #    inverse exact instead of approximate.
 mkdir -p "$STASH"
@@ -517,21 +517,21 @@ def incident(run_dir: str) -> None:
     w = contract(run_dir)
     vm_name, rg = w["vm_name"], w["resource_group"]
     print(f"incident: planting a detectable compromise in {vm_name} ({rg})")
-    print("  EICAR test pattern + high-entropy .locked files — inert, no real encryption")
+    print("  EICAR test pattern + high-entropy .locked files – inert, no real encryption")
     result = az_json("vm", "run-command", "invoke",
                      "-g", rg, "-n", vm_name,
                      "--command-id", "RunShellScript",
                      "--scripts", _guest_paths(_INCIDENT_SCRIPT).replace("{eicar}", _EICAR),
                      timeout=300)
     if not result:
-        raise SystemExit(f"incident failed — could not run the command on {vm_name}"
+        raise SystemExit(f"incident failed – could not run the command on {vm_name}"
                          f"  → fix: is the VM running? az vm get-instance-view -g {rg} -n {vm_name}")
     for msg in result.get("value", []):
         print(msg.get("message", "").strip())
     # ADVISE ONLY AS FAR AS EVERY CALLER AGREES. This used to end "then op
     # threatscan", which is right for loop.sh and WRONG for the workshop, whose
     # M5 never runs a scan: a participant who followed it would get a HOLD reading
-    # "failed threatscan" instead of the "failed restore-verify — 14 encrypted
+    # "failed threatscan" instead of the "failed restore-verify – 14 encrypted
     # (.locked) files present" their guide promises, at the sharpest moment of the
     # day. Sequencing belongs to the caller, which knows its own path; this command
     # cannot. Both paths agree on `op backup`, so the advice stops there.
@@ -539,7 +539,7 @@ def incident(run_dir: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# remediate — the exact inverse of incident, so the lab is a LOOP and not a
+# remediate – the exact inverse of incident, so the lab is a LOOP and not a
 # one-way trip. Until this existed the dirty->clean transition was done by hand,
 # four times in one session, differently each time.
 # --------------------------------------------------------------------------- #
@@ -576,13 +576,13 @@ def remediate(run_dir: str) -> None:
     """Undo `op incident` and prove the workload is good again.
 
     Not a restore. This repairs the LIVE workload in place so the next backup
-    produces a clean recovery point — which is what closes the loop
+    produces a clean recovery point – which is what closes the loop
     incident -> backup -> scan -> HOLD -> remediate -> backup -> scan -> PROMOTE.
     Recovering from a backup instead is `op restore`, and it answers a different
     question.
 
     Targeted the same way as `op incident`: the VM comes from the terraform
-    contract for this run_dir, so it cannot reach anything else. Idempotent — safe
+    contract for this run_dir, so it cannot reach anything else. Idempotent – safe
     on a workload that is already clean.
 
     RAISES if verify.sh does not report OK afterwards, because a remediation that
@@ -597,7 +597,7 @@ def remediate(run_dir: str) -> None:
                      "--command-id", "RunShellScript",
                      "--scripts", _guest_paths(_REMEDIATE_SCRIPT), timeout=300)
     if not result:
-        raise SystemExit(f"remediate failed — could not run the command on {vm_name}"
+        raise SystemExit(f"remediate failed – could not run the command on {vm_name}"
                          f"  → fix: is the VM running? "
                          f"az vm get-instance-view -g {rg} -n {vm_name}")
     output = "\n".join(m.get("message", "") for m in result.get("value", []))
@@ -622,11 +622,11 @@ def remediate(run_dir: str) -> None:
 
 
 def climb(run_dir: str) -> None:
-    preflight.run(run_dir)        # gate first — never act on a shaky environment
+    preflight.run(run_dir)        # gate first – never act on a shaky environment
     gid = protect(run_dir)        # thread the group id → backup needn't wait on /VM
     backup(run_dir, gid)
     # NO threatscan here, deliberately. It used to sit between backup and restore,
-    # and every exit from it is a SystemExit three frames down — so one bad
+    # and every exit from it is a SystemExit three frames down – so one bad
     # response from a lane we do not own took the whole climb with it and
     # `restore` never ran. A climb must not be that fragile.
     #
@@ -639,18 +639,18 @@ def climb(run_dir: str) -> None:
     # the climb rather than let `status` render a ladder built on nothing.
     code = restore(run_dir)
     if code != _DRILL_OK:
-        raise SystemExit(f"climb stops at the restore drill — "
+        raise SystemExit(f"climb stops at the restore drill – "
                          f"{_DRILL_VERDICT.get(code, f'exit {code}')}")
     print()
-    status(run_dir)               # hand to resops — watch the rung land at VALIDATED
+    status(run_dir)               # hand to resops – watch the rung land at VALIDATED
 
 
 # --------------------------------------------------------------------------- #
-# verify bridge — op DRIVES the climb, then hands the workload to `resops` (the
+# verify bridge – op DRIVES the climb, then hands the workload to `resops` (the
 # read-only star) to render the ladder / run the gate. resops SHOWS + decides.
 # --------------------------------------------------------------------------- #
 def _gate_config_path(run_dir: str) -> str:
-    """A resops config for THIS workload — inherits config/workshop.yaml's `gate`
+    """A resops config for THIS workload – inherits config/workshop.yaml's `gate`
     block (frameworks + freshness) and injects the live workload name from the
     terraform contract. resops resolves the vm group by name (resops-<name>-vg),
     so there's no hand-copied id to drift. (JSON is valid YAML, so resops reads it.)"""
@@ -660,7 +660,7 @@ def _gate_config_path(run_dir: str) -> str:
     wcfg_workload = wcfg.get("workload") or {}
     # Carry through every declared key the read lane understands. Listing them
     # explicitly (rather than copying the whole block) keeps the live workload
-    # name from the terraform contract authoritative — but a key omitted here is
+    # name from the terraform contract authoritative – but a key omitted here is
     # a key silently dropped, which cost us a confusing UNATTESTED verdict when
     # attestation_file was added and this wasn't.
     passthrough = ("tier", "criticality", "env", "owner",
@@ -683,12 +683,12 @@ def _resops(*args: str) -> int:
 
 
 def status(run_dir: str) -> None:
-    """Show the workload's rung on the ladder + the DevOps lens — anytime, read-only."""
+    """Show the workload's rung on the ladder + the DevOps lens – anytime, read-only."""
     _resops("--detail", _gate_config_path(run_dir))
 
 
 def gate(run_dir: str) -> None:
-    """The promotion gate — PROMOTE/HOLD + the compliance crosswalk. exit 0/1."""
+    """The promotion gate – PROMOTE/HOLD + the compliance crosswalk. exit 0/1."""
     sys.exit(_resops("gate", _gate_config_path(run_dir)))
 
 
@@ -697,7 +697,7 @@ def gate(run_dir: str) -> None:
 # --------------------------------------------------------------------------- #
 def _sweep_recovery_vaults(rg: str) -> None:
     """Remove any Recovery Services vaults from the RG before terraform destroy.
-    Azure blocks RG deletion when an RSV exists — even after everything else is gone.
+    Azure blocks RG deletion when an RSV exists – even after everything else is gone.
     Vaults outside Terraform state (e.g. created manually) cause `terraform destroy`
     to stall for 10+ minutes. This sweeps them first, cleanly."""
     vaults = az_json("resource", "list", "-g", rg,
@@ -706,7 +706,7 @@ def _sweep_recovery_vaults(rg: str) -> None:
     if not vaults:
         return
     for name in vaults:
-        print(f"  RSV {name!r} not in Terraform state — clearing before destroy")
+        print(f"  RSV {name!r} not in Terraform state – clearing before destroy")
         az_ok("backup", "vault", "backup-properties", "set",
               "-g", rg, "--vault-name", name, "--soft-delete-state", "Disable")
         containers = az_json("backup", "container", "list",
@@ -727,7 +727,7 @@ def _sweep_recovery_vaults(rg: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# teardown — retire the workload cleanly: CV group + GXMD sweep + terraform destroy
+# teardown – retire the workload cleanly: CV group + GXMD sweep + terraform destroy
 # --------------------------------------------------------------------------- #
 def teardown(run_dir: str) -> None:
     w = contract(run_dir)
@@ -736,7 +736,7 @@ def teardown(run_dir: str) -> None:
         r = write("DELETE", f"v4/VMGroup/{gid}")
         note = " (pending admin approval)" if r.status_code == 202 else ""
         print(f"CV group {gid} delete → HTTP {r.status_code}{note}")
-    # Sweep Commvault GXMD snapshots — even streaming backups leave one, and it
+    # Sweep Commvault GXMD snapshots – even streaming backups leave one, and it
     # blocks the RG delete (it's a snapshot, so `az disk list` won't show it).
     for res in (az_json("resource", "list", "-g", w["resource_group"],
                         "--query", "[?contains(name,'GXMD')]") or []):
@@ -745,7 +745,7 @@ def teardown(run_dir: str) -> None:
     _sweep_recovery_vaults(w["resource_group"])
     subprocess.run(["terraform", f"-chdir={run_dir}", "destroy", "-auto-approve"])
     # Azure auto-creates a region-level NetworkWatcher (in NetworkWatcherRG) the first
-    # time a VNet is made in a region — it's not in our Terraform, so destroy leaves it.
+    # time a VNet is made in a region – it's not in our Terraform, so destroy leaves it.
     # Remove just this region's watcher so the workshop leaves zero residue. Best-effort,
     # and surgical: we never touch NetworkWatcherRG itself (it's shared across regions).
     # It's free and Azure recreates it on the next climb, so this only matters for the
@@ -757,7 +757,7 @@ def teardown(run_dir: str) -> None:
 
 
 def validate(run_dir: str) -> None:
-    """Extended preflight — config completeness + IAM roles + all preflight checks
+    """Extended preflight – config completeness + IAM roles + all preflight checks
     + RG cleanliness. Run before climbing (catches config and auth blockers) and
     before teardown (confirms the RG is safe to destroy)."""
     base = REPO / "config" / "workshop.yaml"
@@ -768,7 +768,7 @@ def validate(run_dir: str) -> None:
     checks: list = [
         ((False, f"config has unfilled placeholders: {', '.join(placeholders[:3])}"
                  f"  → fix: fill config/workshop.yaml")
-         if placeholders else (True, "config/workshop.yaml — no placeholder values")),
+         if placeholders else (True, "config/workshop.yaml – no placeholder values")),
         _check_iam(sp),
         preflight.check_az(), preflight.check_token(), preflight.check_hypervisor(),
     ]
@@ -781,15 +781,15 @@ def validate(run_dir: str) -> None:
             _check_rg_clean(w["resource_group"]),
         ]
     except SystemExit:
-        checks.append((True, f"terraform not yet applied in {run_dir} — workload checks skipped"))
+        checks.append((True, f"terraform not yet applied in {run_dir} – workload checks skipped"))
 
     all_ok = True
     for ok, msg in checks:
         print(f"  {'PASS' if ok else 'FAIL'}  {msg}")
         all_ok = all_ok and ok
     if not all_ok:
-        sys.exit("validate FAILED — fix the above before climbing")
-    print("validate PASS — safe to climb and teardown")
+        sys.exit("validate FAILED – fix the above before climbing")
+    print("validate PASS – safe to climb and teardown")
 
 
 CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
@@ -797,7 +797,7 @@ CMDS = {"validate": validate, "preflight": preflight.run, "protect": protect,
         "incident": incident, "remediate": remediate, "climb": climb, "status": status,
         "gate": gate, "teardown": teardown}
 
-_USAGE = """op — the ResOps write lane
+_USAGE = """op – the ResOps write lane
 
   op validate    <run_dir>   config + IAM + preflight + RG cleanliness (run first, and before teardown)
   op preflight   <run_dir>   read-only gate: az · token · hypervisor · discovered · vCPU
@@ -813,7 +813,7 @@ _USAGE = """op — the ResOps write lane
   op teardown    <run_dir>   CV group delete + GXMD sweep + RSV sweep + terraform destroy
 
 <run_dir> is the terraform root (normally infra/workloads).
-Always run `op validate` first — it catches config, IAM, and environment blockers up front.
+Always run `op validate` first – it catches config, IAM, and environment blockers up front.
 
 The workshop's trusted-recovery story, once the workload is VALIDATED:
   op incident → op backup → op restore → op gate
@@ -821,7 +821,7 @@ The workshop's trusted-recovery story, once the workload is VALIDATED:
 
 
 # Commands that never call Commvault, so they must not demand a live token.
-# validate/preflight are diagnostics — they have to work on a cold session, which
+# validate/preflight are diagnostics – they have to work on a cold session, which
 # is exactly when you reach for them. incident is pure Azure (terraform contract +
 # az run-command); making it fail on a stale token would block the one command whose
 # whole job is to break things locally.

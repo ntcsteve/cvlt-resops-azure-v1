@@ -5,7 +5,7 @@ terraform {
   }
 }
 
-# A minimal Azure Linux VM, discoverable by the Commvault hypervisor (API-level —
+# A minimal Azure Linux VM, discoverable by the Commvault hypervisor (API-level –
 # no public IP / NSG needed; discovery enumerates the subscription, not the network).
 resource "random_password" "admin" {
   length  = 24
@@ -20,10 +20,10 @@ resource "azurerm_resource_group" "this" {
 
 # ── Commvault IAM ────────────────────────────────────────────────────────────
 # Backup and restore need DIFFERENT Azure permissions. Grant BOTH, or a workload
-# that backs up fine will silently fail the restore drill — the gap that cost us
+# that backs up fine will silently fail the restore drill – the gap that cost us
 # four failed restores. Each role is scoped as tightly as its job allows.
 
-# (1) CONTROL PLANE — backup snapshots the VM's disk; restore creates the new VM
+# (1) CONTROL PLANE – backup snapshots the VM's disk; restore creates the new VM
 #     and disk. Contributor on THIS RG covers both. Without it backup fails with
 #     "Unable to create a virtual machine snapshot".
 resource "azurerm_role_assignment" "commvault" {
@@ -36,7 +36,7 @@ resource "azurerm_role_assignment" "commvault" {
 # Restore stages the recovered VHD as a BLOB into this storage account, then
 # converts it to a managed disk. No staging account = restore fails at the VM-
 # create step with "No OS disk found ... datastore []". One per workload, torn
-# down with the RG — self-contained, no shared platform state.
+# down with the RG – self-contained, no shared platform state.
 resource "random_string" "sa" {
   length  = 8
   lower   = true
@@ -60,10 +60,10 @@ resource "azurerm_storage_account" "restore" {
   tags                     = var.tags
 }
 
-# (2) DATA PLANE — restore WRITES the VHD blob using the SP's Azure AD identity.
+# (2) DATA PLANE – restore WRITES the VHD blob using the SP's Azure AD identity.
 #     Contributor cannot do this; without this role the restore fails with
 #     "AuthorizationPermissionMismatch ... Unable to write data to the disk".
-#     Scoped to the staging account only — least privilege.
+#     Scoped to the staging account only – least privilege.
 resource "azurerm_role_assignment" "commvault_blob" {
   count                = var.commvault_sp_object_id == "" ? 0 : 1
   scope                = azurerm_storage_account.restore.id
@@ -110,7 +110,7 @@ resource "azurerm_linux_virtual_machine" "this" {
   tags                            = var.tags
 
   # NB: os_disk.name is intentionally left unset (Azure auto-names it). Setting it
-  # forces VM REPLACEMENT on any existing workload — a module update must never nuke
+  # forces VM REPLACEMENT on any existing workload – a module update must never nuke
   # a running VM. The restore drill controls its own (unique) target disk name, so a
   # predictable source name buys nothing. Boring + non-destructive wins.
   os_disk {
@@ -125,7 +125,7 @@ resource "azurerm_linux_virtual_machine" "this" {
     version   = "latest"
   }
 
-  # Lay down a small service so the workload has code, state, config and a secret —
+  # Lay down a small service so the workload has code, state, config and a secret –
   # the four things the trust-map exercise asks participants to classify, and the
   # files `op incident` later targets. A bare OS gives a threat scan nothing to find.
   #

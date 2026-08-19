@@ -1,7 +1,7 @@
 """The read/write boundary as a CHECK, not a convention.
 
 `resops` (the top-level modules + assurance/) is the read-only star: it reads the
-ladder, judges the gate, and writes evidence files — but it must never shell out
+ladder, judges the gate, and writes evidence files – but it must never shell out
 (az/terraform) or depend on the write lane (resops.operator). That guarantee is
 what makes resops safe to drop in CI. Here we enforce it by scanning imports, so a
 stray `import subprocess` or `from .operator …` in the read path fails the suite
@@ -11,7 +11,7 @@ from pathlib import Path
 
 RESOPS = Path(__file__).resolve().parent.parent / "resops"
 
-# The read-only star = resops/*.py + resops/assurance/*.py. NOT resops/operator/ —
+# The read-only star = resops/*.py + resops/assurance/*.py. NOT resops/operator/ –
 # that's the write lane, where shelling out and mutation rightly live.
 READ_ONLY = sorted(RESOPS.glob("*.py")) + sorted((RESOPS / "assurance").glob("*.py"))
 
@@ -22,7 +22,7 @@ def _import_lines(path: Path) -> str:
 
 
 def test_read_only_star_never_shells_out():
-    # subprocess = az / terraform — the write lane's tools, never the star's.
+    # subprocess = az / terraform – the write lane's tools, never the star's.
     offenders = [p.name for p in READ_ONLY if "subprocess" in _import_lines(p)]
     assert not offenders, f"read-only resops must not import subprocess: {offenders}"
 
@@ -48,7 +48,7 @@ MUTATING = (".post(", ".put(", ".delete(", ".patch(")
 
 # file -> the one sanctioned mutating call, and why it does not touch the tenant.
 SANCTIONED = {
-    "client.py": "_renew() POSTs V4/AccessToken/Renew — trades a refresh token "
+    "client.py": "_renew() POSTs V4/AccessToken/Renew – trades a refresh token "
                  "for a fresh access token. An auth call against our own session; "
                  "it creates, changes and deletes nothing in the environment.",
 }

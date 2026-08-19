@@ -1,11 +1,11 @@
 """
-JUnit XML emitter — findings where engineers already look.
+JUnit XML emitter – findings where engineers already look.
 
 Every CI (GitHub, GitLab, Jenkins, Circle) renders JUnit natively, so this is
 the portable way to surface a run as pass/fail test cases. The mapping is the
 natural one: a workload is a test SUITE, each ResOps function a test CASE, a
 GAP/FAIL a failure, a SKIP skipped. The gate verdict rides along as one decisive
-case that fails on HOLD — so a blocked promotion shows up red in the test report.
+case that fails on HOLD – so a blocked promotion shows up red in the test report.
 """
 from __future__ import annotations
 

@@ -1,10 +1,10 @@
 #cloud-config
-# Stands up the stack defined in ./stack/ — this file EMBEDS those artifacts
+# Stands up the stack defined in ./stack/ – this file EMBEDS those artifacts
 # rather than restating them, so `test-stack.sh` running the same compose file
 # locally proves something about what actually deploys.
 #
 #   pushgateway :9091   `resops metrics` POSTs here. A batch job publishing its
-#                       result is what pushgateway is FOR — not the "don't use
+#                       result is what pushgateway is FOR – not the "don't use
 #                       it for scraping" anti-pattern.
 #   prometheus  :9090   scrapes localhost only. no service discovery, no cloud
 #                       credentials, no network path to a protected workload.
@@ -19,7 +19,7 @@ packages:
   - docker-compose-v2
 
 write_files:
-  # Compose reads GRAFANA_PASSWORD from a .env beside it — the same mechanism
+  # Compose reads GRAFANA_PASSWORD from a .env beside it – the same mechanism
   # test-stack.sh uses locally, so the compose file needs no VM-only variant.
   - path: /opt/obs/.env
     permissions: "0600"

@@ -1,5 +1,5 @@
 """
-Shared toolkit for the MUTATING drill lane — Azure CLI, Commvault auth, and
+Shared toolkit for the MUTATING drill lane – Azure CLI, Commvault auth, and
 restore-payload parsing. Kept apart from the read-only `resops` package on
 purpose: nothing here belongs in the safe loop.
 """
@@ -24,7 +24,7 @@ def load_restore_payload(path: Path) -> dict:
     if not path.exists():
         raise SystemExit(
             f"Missing {path.name}. `op restore` derives this payload and writes it here "
-            f"before running the drill — run `op restore <run_dir>`. See the README."
+            f"before running the drill – run `op restore <run_dir>`. See the README."
         )
     return json.loads(path.read_text())
 
@@ -59,7 +59,7 @@ def bearer_session(token: str) -> requests.Session:
 
 
 def authed_client(host: str, env_path: Path) -> Client:
-    """A read-only Client with a freshly-renewed token — used to poll the job
+    """A read-only Client with a freshly-renewed token – used to poll the job
     and to mint a current bearer token for the POST."""
     client = Client(host, load_credentials(env_path), env_path)
     client.ensure_fresh_token()

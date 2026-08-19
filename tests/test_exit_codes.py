@@ -18,7 +18,7 @@ reason anyone noticed was a human reading the printed verdict.
 
 Same shape as TIMEOUT-as-a-status (see test_job_status.py): a meaningful value
 handed to somebody who does not look at it. The fix is the idiom `gate` and
-`_cli_threatscan` already use — when a command's exit code IS the verdict, the
+`_cli_threatscan` already use – when a command's exit code IS the verdict, the
 command exits.
 
 These tests never touch Azure or Commvault. They replace `restore` with a stub
@@ -30,14 +30,14 @@ import pytest
 
 # The write lane loads config/workshop.yaml AT IMPORT TIME, and that file is
 # gitignored because it holds live ids. Without this guard a fresh clone dies with
-# INTERNALERROR during collection and NO test runs at all — not even the 200-odd
+# INTERNALERROR during collection and NO test runs at all – not even the 200-odd
 # read-lane tests that need nothing but a checkout. Found 2026-08-13 by actually
 # cloning the public repo and running the README's own first instruction.
 #
 # Skip loudly rather than crash. The message names the file and the fix, because a
 # new engineer's very first command should not fail with a stack trace.
 if not (Path(__file__).resolve().parent.parent / "config" / "workshop.yaml").exists():
-    pytest.skip("needs config/workshop.yaml (gitignored — copy "
+    pytest.skip("needs config/workshop.yaml (gitignored – copy "
                 "config/workshop.yaml.example and fill it in). The write lane "
                 "cannot be imported without it.", allow_module_level=True)
 
@@ -79,7 +79,7 @@ def test_the_exit_code_is_the_drill_s_own_verdict(code, monkeypatch):
     unconditionally. So the drill's deliberate four-way contract collapsed: all
     three failures reported 1, and "fix your environment and retry" became
     indistinguishable from "the backup is poison, do not retry" to anything
-    reading the code. Observed live 2026-08-12 — a dirty drill exited 1, not 3.
+    reading the code. Observed live 2026-08-12 – a dirty drill exited 1, not 3.
 
     `gate` and `_cli_threatscan` both exit with the number. This one now does
     too, so the idiom has no silent exception."""
@@ -113,7 +113,7 @@ def test_the_three_failure_messages_are_distinct():
 
 def test_climb_stops_when_the_drill_does_not_pass(monkeypatch):
     """`climb` calls `restore` directly, not through the CLI wrapper, so it needs
-    its own check — and this is where the original bug did the real damage: the
+    its own check – and this is where the original bug did the real damage: the
     climb carried on to `status` and rendered a ladder built on a drill that
     never reached a verdict."""
     monkeypatch.setattr(op.preflight, "run", lambda run_dir: None)
@@ -121,7 +121,7 @@ def test_climb_stops_when_the_drill_does_not_pass(monkeypatch):
     monkeypatch.setattr(op, "backup", lambda run_dir, gid=None: "Completed")
     monkeypatch.setattr(op, "restore", lambda run_dir: op._DRILL_DIRTY)
     monkeypatch.setattr(op, "status", lambda run_dir: pytest.fail(
-        "climb reached status after a failed drill — the bug is back"))
+        "climb reached status after a failed drill – the bug is back"))
     with pytest.raises(SystemExit):
         op.climb("infra/workloads")
 
@@ -144,7 +144,7 @@ def test_the_guest_paths_the_two_scripts_use_are_the_same_paths():
 # Now that a TIMEOUT hard-fails the drill, the timeout VALUE became load-bearing.
 # It used to be harmless: poll_job gave up at 540s, returned "TIMEOUT", and the
 # drill sailed on and exited 0. With that hole closed, a too-short timeout no
-# longer hides — it manufactures a failure, and a team that sees green-on-retry
+# longer hides – it manufactures a failure, and a team that sees green-on-retry
 # learns to re-run things until they pass. That is worse than the original bug.
 #
 # These pin the RELATIONSHIP, not the number. Tuning 900 up is fine; making the
@@ -154,7 +154,7 @@ def test_the_restore_drill_waits_at_least_as_long_as_a_backup():
     """A restore queues behind a media agent slot exactly like a backup does. If
     it gives up sooner, the drill fails on a wait the backup lane would have sat
     through, and the failure is ours, not the tenant's. It was 540s against the
-    backup lane's 600s — the LOWEST timeout in the codebase, on the operation that
+    backup lane's 600s – the LOWEST timeout in the codebase, on the operation that
     waits longest."""
     import inspect
 
@@ -169,7 +169,7 @@ def test_the_restore_drill_waits_at_least_as_long_as_a_backup():
 
 
 def test_the_restore_drill_waits_out_the_delay_it_warns_you_about():
-    """poll_job prints "waiting for a media agent slot — typically 5-15 min" on the
+    """poll_job prints "waiting for a media agent slot – typically 5-15 min" on the
     first Waiting tick. A timeout inside the window we tell the operator to expect
     is the tool contradicting its own advice, which at 2am costs more than the
     wait would have."""

@@ -1,5 +1,5 @@
 """
-Prometheus exposition — the ladder as metrics, so a fleet fits on one wall.
+Prometheus exposition – the ladder as metrics, so a fleet fits on one wall.
 
 The question a platform team cannot answer today is not "is payments-api up";
 they have that. It is:
@@ -9,11 +9,11 @@ they have that. It is:
     which controls do I actually have evidence for?
 
 All three are already computed on every run. This module does no judging and no
-I/O — it takes the summary + bundles a run already wrote and formats them. Judge
+I/O – it takes the summary + bundles a run already wrote and formats them. Judge
 once, publish many.
 
 CARDINALITY IS A DESIGN DECISION. Control coverage is a COUNT keyed by
-(framework, control, capability, outcome) — bounded by frameworks x capabilities,
+(framework, control, capability, outcome) – bounded by frameworks x capabilities,
 so it stays ~60 series whether you protect 6 workloads or 600. Per-workload
 detail lives in resops_workload_info, which is one series per workload. Nothing
 here multiplies workloads by capabilities.
@@ -42,7 +42,7 @@ def _metric(name: str, labels: dict, value) -> str:
 
 def _rank(state_name: str) -> int | None:
     """The rung as a number, so Grafana can chart it. None for anything the
-    ladder doesn't recognise — better a missing series than a wrong one."""
+    ladder doesn't recognize – better a missing series than a wrong one."""
     member = State.__members__.get(state_name)
     return member.rank if member else None
 
@@ -50,7 +50,7 @@ def _rank(state_name: str) -> int | None:
 def control_coverage(bundles: list) -> dict:
     """Count workloads per (framework, control, capability, outcome).
 
-    The crosswalk join already happened during the run — every function in a
+    The crosswalk join already happened during the run – every function in a
     bundle carries its capability and that capability's framework references.
     This only tallies them.
 
@@ -70,7 +70,7 @@ def control_coverage(bundles: list) -> dict:
 
 
 def render_metrics(summary: dict, bundles: list) -> str:
-    """The whole exposition, as text. Pure — no clock, no files, no network."""
+    """The whole exposition, as text. Pure – no clock, no files, no network."""
     lines: list[str] = []
     workloads = summary.get("workloads", [])
 
@@ -131,7 +131,7 @@ def render_metrics(summary: dict, bundles: list) -> str:
             "workload": w.get("name"), "state": w.get("state"),
             "blocked_stage": w.get("blocked_stage"), "gate": w.get("gate"),
             "env": w.get("env"), "owner": w.get("owner"),
-            # Absent unless declared — _labels() drops empties, so an estate with
+            # Absent unless declared – _labels() drops empties, so an estate with
             # no tolerances carries no extra label and no extra cardinality.
             "enforce_from": w.get("enforce_from"),
         }, 1))
@@ -140,7 +140,7 @@ def render_metrics(summary: dict, bundles: list) -> str:
     lines += [
         "",
         f"# HELP {PREFIX}_control_coverage Workloads per control per outcome. "
-        f"INDICATIVE mapping — supports a resilience programme, not an attestation.",
+        f"INDICATIVE mapping – supports a resilience program, not an attestation.",
         f"# TYPE {PREFIX}_control_coverage gauge",
     ]
     for (framework, control, capability, outcome), count in sorted(tally.items()):

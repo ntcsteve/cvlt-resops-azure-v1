@@ -1,4 +1,4 @@
-# config/workshop.yaml is the ONE source — Terraform provisions from `workload` +
+# config/workshop.yaml is the ONE source – Terraform provisions from `workload` +
 # `platform`; the operator lane and the gate read the same file. Nothing hardcoded.
 locals {
   workshop = yamldecode(file("${path.module}/../../config/workshop.yaml"))
@@ -23,7 +23,7 @@ resource "terraform_data" "tier_check" {
 }
 
 # One workload, declared in config/workshop.yaml's `workload` block. Protect/backup/
-# restore are the operator lane's job (token-native) — this root only provisions +
+# restore are the operator lane's job (token-native) – this root only provisions +
 # grants IAM and publishes the `workload` contract (outputs.tf). vm_size/location are
 # optional in the yaml; the eastus2 workshop defaults live here (the module has none).
 module "vm" {

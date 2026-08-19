@@ -1,6 +1,6 @@
 # secrets
 .env
-# live tenant ids — fill config/workshop.yaml locally from the .example
+# live tenant ids – fill config/workshop.yaml locally from the .example
 config/workshop.yaml
 *.tfvars
 !*.tfvars.example
@@ -27,16 +27,16 @@ resops/operator/drills/restore_headless.json.*
 tfplan
 *.tfplan
 
-# private working journal — keep local, not for the public repo
+# private working journal – keep local, not for the public repo
 NOTES.md
 
-# cold-start briefing — names live subscription/tenant ids, same secrecy as
+# cold-start briefing – names live subscription/tenant ids, same secrecy as
 # HANDOVER. This is the file a fresh session reads FIRST.
 START-HERE.md
 
-# session handover/log — accumulate live tenant/subscription ids each session
+# session handover/log – accumulate live tenant/subscription ids each session
 HANDOVER.md
-# rotated by /wrap-up — same live ids, same secrecy. NOTE: gitignore has
+# rotated by /wrap-up – same live ids, same secrecy. NOTE: gitignore has
 # no trailing comments; a pattern with one on the same line matches NOTHING.
 # FIELD-NOTES.md was HANDOVER.prev.md until 2026-08-13. Holds live ids.
 FIELD-NOTES.md
@@ -49,11 +49,11 @@ dist/*
 !dist/preview.html
 !dist/preview-room.html
 
-# observability stack state (cattle — deploy before a workshop, destroy after)
+# observability stack state (cattle – deploy before a workshop, destroy after)
 infra/observability/.terraform/
 infra/observability/*.tfstate*
 
-# facilitator runbook — carries delivery coaching, the "what you must not
+# facilitator runbook – carries delivery coaching, the "what you must not
 # claim" list, and tenant-specific investigation detail. Useful to whoever
 # delivers the day, not something to publish under a vendor-positioned
 # workshop. Shared directly with facilitators, like HANDOVER and NOTES.

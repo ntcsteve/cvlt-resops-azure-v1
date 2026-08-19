@@ -1,8 +1,8 @@
-"""Prometheus exposition — the fleet view, as data.
+"""Prometheus exposition – the fleet view, as data.
 
 These pin the two things that would quietly rot: the rung→number mapping (a
 dashboard charting the wrong scale is worse than no dashboard) and the control
-coverage cardinality (bounded by frameworks x capabilities, NOT by workloads —
+coverage cardinality (bounded by frameworks x capabilities, NOT by workloads –
 that is the design decision that keeps this usable at 600 workloads).
 """
 from resops.assurance.metrics import control_coverage, render_metrics
@@ -54,7 +54,7 @@ def test_promotable_is_binary_and_override_counts_as_shippable():
 
 
 # --------------------------------------------------------------------------- #
-# Absent data must stay absent — never rendered as zero or "".
+# Absent data must stay absent – never rendered as zero or "".
 # --------------------------------------------------------------------------- #
 def test_missing_attestation_age_emits_no_series():
     # legacy-batch has never been attested. Zero days would read as "verified
@@ -71,7 +71,7 @@ def test_empty_labels_are_dropped_not_rendered_blank():
 
 
 # --------------------------------------------------------------------------- #
-# Control coverage — a count, and its cardinality must not track workloads.
+# Control coverage – a count, and its cardinality must not track workloads.
 # --------------------------------------------------------------------------- #
 def test_control_coverage_counts_workloads_per_outcome():
     bundles = [
@@ -105,7 +105,7 @@ def test_the_indicative_disclaimer_rides_with_the_metric():
 
 
 # --------------------------------------------------------------------------- #
-# Exposition format — label values must survive the awkward characters.
+# Exposition format – label values must survive the awkward characters.
 # --------------------------------------------------------------------------- #
 def test_quotes_and_backslashes_in_labels_are_escaped():
     bundles = [_bundle(("validate", "PASS", "CAP-X", 'Art. 12 "quoted" \\ back'))]

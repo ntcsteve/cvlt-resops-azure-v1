@@ -1,4 +1,4 @@
-"""Tier 2 (T2-4) — finding lifecycle state machine. No live tenant."""
+"""Tier 2 (T2-4) – finding lifecycle state machine. No live tenant."""
 from resops.evidence import FunctionResult, Outcome
 from resops.assurance.findings import track_findings
 

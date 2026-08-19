@@ -1,4 +1,4 @@
-# THE INCIDENT — four candidate recovery points for ONE workload.
+# THE INCIDENT – four candidate recovery points for ONE workload.
 #
 #   python3 -m resops gate config/incident.yaml
 #
@@ -32,7 +32,7 @@
 #   under compromise, the freshest point is the most DANGEROUS one.
 #
 # The gate narrows four options to one on the evidence it has. It cannot know
-# when the compromise began. Necessary, and not sufficient — the last call is
+# when the compromise began. Necessary, and not sufficient – the last call is
 # still yours, and now you can show your working.
 #
 # ── WHAT TO NOTICE BEFORE YOU ARGUE ──────────────────────────────────────────

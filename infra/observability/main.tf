@@ -1,14 +1,14 @@
-# The observability stack — ONE small VM running pushgateway + prometheus + grafana.
+# The observability stack – ONE small VM running pushgateway + prometheus + grafana.
 #
 # WHY A SEPARATE ROOT: infra/platform/ is Commvault plan-as-code (commvault
 # provider, CV_TER_TOKEN). This is Azure infrastructure with a different lifecycle
-# — you deploy it before a workshop and destroy it after. Separate root, separate
+# – you deploy it before a workshop and destroy it after. Separate root, separate
 # state, no shared blast radius.
 #
 # WHY NOTHING IS INSTALLED ON PROTECTED WORKLOADS: this stack scrapes NOTHING.
 # `resops metrics` reads the evidence a run already wrote and pushes it here. No
 # agent, no node_exporter, no VNet peering. (Every workload VNet is 10.123.0.0/16,
-# so they overlap and could never be peered anyway — a scrape design would have
+# so they overlap and could never be peered anyway – a scrape design would have
 # hit that wall.)
 #
 # IT IS CATTLE. No volumes, no persistence. Destroy it and rebuild with one apply;
@@ -38,7 +38,7 @@ resource "azurerm_virtual_network" "this" {
   name                = "${local.name}-vnet"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
-  # Deliberately NOT 10.123.0.0/16 — that's the workload range. No peering is
+  # Deliberately NOT 10.123.0.0/16 – that's the workload range. No peering is
   # needed (push, not scrape), but overlapping ranges would foreclose the option.
   address_space = ["10.250.0.0/16"]
 }
@@ -119,7 +119,7 @@ resource "azurerm_linux_virtual_machine" "this" {
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
   # BS family on purpose: it does not compete with the Falsv7 quota the workload
-  # VMs need. NOTE the regional vCPU ceiling is shared — this VM's 2 vCPUs come
+  # VMs need. NOTE the regional vCPU ceiling is shared – this VM's 2 vCPUs come
   # off the same 10, leaving 8 for participants (2 each at restore peak).
   size                            = var.vm_size
   admin_username                  = var.admin_username
@@ -142,7 +142,7 @@ resource "azurerm_linux_virtual_machine" "this" {
 
   # Every artifact is a REAL FILE in ./stack/, embedded here rather than restated.
   # That is what lets test-stack.sh run the same compose file locally and prove
-  # something about what actually deploys — a test against a copy proves nothing.
+  # something about what actually deploys – a test against a copy proves nothing.
   # (file() does not interpolate, so compose's own $${GRAFANA_PASSWORD} survives.)
   custom_data = base64encode(templatefile("${path.module}/cloud-init.yaml", {
     grafana_password = random_password.grafana.result

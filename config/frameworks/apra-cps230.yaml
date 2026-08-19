@@ -1,16 +1,16 @@
-# Framework pack — APRA Prudential Standard CPS 230 (Operational Risk Management).
+# Framework pack – APRA Prudential Standard CPS 230 (Operational Risk Management).
 # Maps OUR capabilities (resops/capabilities.py) to CPS 230 requirement areas.
 # References are by topic area, not exact paragraph numbers, to stay honest.
-# INDICATIVE — supports an internal resilience programme, not an attestation.
+# INDICATIVE – supports an internal resilience program, not an attestation.
 id: apra-cps230
 name: "APRA CPS 230 (Operational Risk Management)"
-disclaimer: "Indicative APRA CPS 230 mapping — supports a resilience programme, not a compliance attestation."
+disclaimer: "Indicative APRA CPS 230 mapping – supports a resilience program, not a compliance attestation."
 references:
-  CAP-ASSET-IDENTIFICATION: "CPS 230 — identification of critical operations"
-  CAP-BACKUP-COVERAGE: "CPS 230 — operational risk controls"
-  CAP-BACKUP-MONITORING: "CPS 230 — monitoring of operational risk"
-  CAP-RECOVERY-POINT-TRUST: "CPS 230 — integrity of critical operations before recovery"
-  CAP-RECOVERY-READINESS: "CPS 230 — BCP: recovery within tolerance levels"
-  CAP-RESTORE-TESTED: "CPS 230 — scenario & business continuity testing"
-  CAP-EVIDENCE-TRAIL: "CPS 230 — review & assurance of controls"
-  CAP-GOVERNED-CHANGE: "CPS 230 — Board oversight & risk acceptance"
+  CAP-ASSET-IDENTIFICATION: "CPS 230 – identification of critical operations"
+  CAP-BACKUP-COVERAGE: "CPS 230 – operational risk controls"
+  CAP-BACKUP-MONITORING: "CPS 230 – monitoring of operational risk"
+  CAP-RECOVERY-POINT-TRUST: "CPS 230 – integrity of critical operations before recovery"
+  CAP-RECOVERY-READINESS: "CPS 230 – BCP: recovery within tolerance levels"
+  CAP-RESTORE-TESTED: "CPS 230 – scenario & business continuity testing"
+  CAP-EVIDENCE-TRAIL: "CPS 230 – review & assurance of controls"
+  CAP-GOVERNED-CHANGE: "CPS 230 – Board oversight & risk acceptance"

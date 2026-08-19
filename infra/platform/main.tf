@@ -17,7 +17,7 @@ provider "commvault" {
 
 # ── M2 ── one plan per tier, from config/tiers.yaml. PROVEN: commvault_plan (inline storage by name).
 # The tier's RPO sets the plan's backup frequency, and the resops gate enforces the tier's
-# rpo_hours/rto_minutes bars on every run. This simple resource expresses RPO in whole DAYS only —
+# rpo_hours/rto_minutes bars on every run. This simple resource expresses RPO in whole DAYS only –
 # fine for the workshop, where the tier is a declarative label.
 #
 # PRODUCTION-REAL RPO: to make tier1 actually back up every 8h (not just declare it), swap this
