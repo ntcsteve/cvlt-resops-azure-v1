@@ -38,7 +38,7 @@
 <text x="496" y="477" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#30881c">ran inside the restored copy</text>
 <rect x="250" y="496" width="460" height="48" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
 <text x="226" y="525" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">the app team</text>
-<text x="734" y="516" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">you read it</text>
-<text x="734" y="534" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">in chapter 2</text>
-<text x="480" y="525" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">verify.sh &#183; about seventy lines anyone can read</text>
+<text x="734" y="516" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">you read it in</text>
+<text x="734" y="534" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">Reading the Proof</text>
+<text x="480" y="525" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">verify.sh &#183; about 70 lines anyone can read</text>
 </svg>

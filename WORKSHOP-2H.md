@@ -103,19 +103,19 @@ production* to *we find out at the pull request*, three times over.
 ## What you will walk
 
 ```list
- 1 · Building the Workload      Recovery, demonstrated. Most estates have
-                                 never done it once.
- 2 · Reading the Proof           What good looks like, on a day when yes is
-                                 boring.
- 3 · Introducing a Compromise    Green is a job status, not a verdict about
-                                 your data.
- 4 · Choosing a Recovery Point   Under compromise, the freshest recovery
-                                 point is the most dangerous one.
- 5 · Re-Proving Recovery         Trust is re-opened, not re-assured.
- 6 · Gating the Pipeline         The fourth shift-left, shaped exactly like
-                                 the other three.
- 7 · Cleaning Up                 Disposable by design, because a drill has
-                                 to be cheap to repeat.
+ Building the Workload        Recovery, demonstrated. Most estates have
+                              never done it once.
+ Reading the Proof            What good looks like, on a day when yes is
+                              boring.
+ Introducing a Compromise     Green is a job status, not a verdict about
+                              your data.
+ Choosing a Recovery Point    Under compromise, the freshest recovery
+                              point is the most dangerous one.
+ Re-Proving Recovery          Trust is re-opened, not re-assured.
+ Gating the Pipeline          The fourth shift-left, shaped exactly like
+                              the other three.
+ Cleaning Up                  Disposable by design, because a drill has
+                              to be cheap to repeat.
 ```
 
 Some of these chapters run against a real Azure VM and a real backup
@@ -159,8 +159,9 @@ facilitated session most of this is done for you.
 ```
 
 **This lab provisions real Azure resources and they bill until you retire
-them in the final chapter.** Budget eight minutes at the end, and do not
-skip it.
+them in Cleaning Up, the closing chapter of the self-paced path.** Budget
+eight minutes for it, and do not skip it. In a facilitated session the
+facilitator retires the lab.
 
 ### How to read the commands on this page
 
@@ -396,7 +397,7 @@ not an API call.
 
    All three read Not protected, which is correct here. Discovery makes a
    resource visible to the platform. Protection is a separate decision, and
-   it is what the next chapter's `op protect` does.
+   it is what `op protect` does later in this chapter.
 
    That Resources tab is the same view `op preflight` reads. The next command
    asks the API the question you just answered by eye.
@@ -671,7 +672,7 @@ This chapter turns on one question:
 
 You proved this workload recovers. That proof was about one moment, and
 there will be a newer recovery point within the hour. Answer for yourself
-first; the tools give their answer in the next two chapters.
+first; the tools give their answer in the next chapter.
 
 ### Write it down before we break it
 
@@ -688,8 +689,8 @@ Answer this before you run anything in this chapter.
                                        (what you would check)
 ```
 
-Chapter 4 asks the same question after the tools have answered it. Compare
-your answer with theirs.
+The next chapter asks the same question after the tools have answered it.
+Compare your answer with theirs.
 
 ### Plant the compromise
 
@@ -1493,7 +1494,8 @@ The gate is a required check, and it wires in like one. It runs on every
 pull request beside your tests and scans, and once on a schedule.
 Recoverability drifts without a code change: a backup fails overnight, an
 attestation ages past its bar. The exit code is the whole integration
-surface, which is why the workflow file you read in chapter 6 is short.
+surface, which is why the workflow file you read in Gating the Pipeline
+is short.
 
 ```
  pull request        tests ✓ · scans ✓ · plan ✓ · resops gate ✓ ──▸ merge
