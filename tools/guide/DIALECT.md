@@ -226,8 +226,26 @@ both are a flat band. Ours was at 30% and read as an essay.
  OPEN WITH EITHER   a definition, or a state transition ("now that X, it is
                     time to Y"). AWS reuses one frame across unrelated labs
                     rather than crafting each opening
- REPEAT YOUR STOCK  "Run the following command", "You should see". Both
-   PHRASES          corpora treat consistent repetition as a feature
+ REPEAT YOUR STOCK  the canonical set is below. Both corpora treat
+   PHRASES          consistent repetition as a feature
+```
+
+The stock phrases, canonical. These are the sentences WORKSHOP-2H.md
+already repeats; reuse them before inventing a near-synonym, so workshop
+number two sounds like workshop number one without anyone trying to:
+
+```
+ THE DIAGNOSTICS     ✓ YOU SHOULD SEE · ✗ IF NOT · ⏱ HOW LONG
+ READING OUTPUT      Compare, do not guess.
+ A BENIGN WAIT       Waiting for one is normal and not a failure.
+                     DO NOT KILL IT.
+ THE MEDIA AGENT     the shared worker that moves the data
+ A GUEST-AGENT CALL  this runs through the Azure guest agent, which is a
+                     single blocking call that reports once at the end
+                     rather than streaming
+ IN A ROOM           "In a room, ask now rather than when the first
+                     command runs" and "tell the facilitator your
+                     codename rather than debugging it yourself"
 ```
 
 Chapter 5 is the house model: 45 words of prose for four commands, section
