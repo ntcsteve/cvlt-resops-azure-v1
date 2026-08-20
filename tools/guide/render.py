@@ -61,7 +61,7 @@ def sentence(label):
 DIAG_CLASS = {"✓": "yes", "✗": "no", "⏱": "clock"}
 
 
-def render_nodes(nodes, images, mode='solo', icons=None, attest=None):
+def render_nodes(nodes, images, mode='solo', icons=None):
     out = []
     for node in nodes:
         kind = node[0]
@@ -87,8 +87,6 @@ def render_nodes(nodes, images, mode='solo', icons=None, attest=None):
             out.append(render_dolearn(node[1]))
         elif kind == "deflist":
             out.append(render_deflist(node[1], icons, len(node) > 2 and node[2]))
-        elif kind == "attestation":
-            out.append(render_attestation(attest))
         elif kind == "statement":
             out.append(
                 '<div class="statement">'
@@ -101,45 +99,6 @@ def render_nodes(nodes, images, mode='solo', icons=None, attest=None):
         else:
             raise SystemExit(f"unrendered node kind {kind!r}")
     return "\n".join(out)
-
-
-def render_attestation(facts):
-    """The one claim on this page that a platform-published workshop cannot
-    make. AWS Workshop Studio ships no dates at all; Google Codelabs stamps a
-    fresh `last-updated` on a page teaching Node 12 and gcr.io. This says
-    which half of the guide is machine-checked and which half is transcribed.
-
-    PURE, like everything else here: build.py reads the walk record and the
-    offline step list and hands the numbers in, so this module still only
-    produces markup."""
-    facts = facts or {}
-    walked = ""
-    if facts.get("walked_at"):
-        walked = (f", last walked {facts['walked_at']} at "
-                  f"{facts['walked_commit']}")
-    rows = [
-        ("OFFLINE", f"{facts.get('verified', 0)} of the {facts.get('total', 0)} "
-                    "commands in this guide need no cloud account, and every "
-                    "one of those is re-run and "
-                    "compared against the box you see by the same suite that "
-                    "gates this file. If the tool stopped printing what a box "
-                    "promises, this page would not have been built."),
-        ("LIVE", f"{facts.get('live', 0)} of the {facts.get('total', 0)} run "
-                 "against a real Azure subscription and a "
-                 "real Commvault tenant. Their boxes are a transcript of a "
-                 f"full rehearsal, not a reconstruction{walked}. A guard fails "
-                 "the build when the code behind a quoted line changes and "
-                 "the walk has not caught up."),
-        ("IF A BOX IS WRONG", "Say so. Every box here is meant to reproduce, "
-                              "and one that does not is a defect in this "
-                              "guide rather than a mistake you made."),
-    ]
-    out = ['<div class="attest">']
-    for label, text in rows:
-        out.append(f'<div class="attest-row"><span>{esc(label)}</span>'
-                   f"<p>{inline(text)}</p></div>")
-    out.append("</div>")
-    return "".join(out)
 
 
 def render_cmd(code):
@@ -279,7 +238,7 @@ def render_fig(caption, path, images):
 
 # ---------------------------------------------------------------- steps
 
-def render_body(nodes, images, mode='solo', icons=None, attest=None):
+def render_body(nodes, images, mode='solo', icons=None):
     """Section-aware: a ### heading or chapter-level furniture (DO/LEARN,
     ✦ checkpoint, ?! reveal) closes the step rail; step numbering runs
     continuously across a chapter's sections."""
@@ -293,7 +252,7 @@ def render_body(nodes, images, mode='solo', icons=None, attest=None):
         if step is not None:
             parts.append(
                 f'<div class="step"><span class="step-num">{counter}</span>'
-                f'<div class="step-body">{render_nodes(step, images, mode, icons, attest)}'
+                f'<div class="step-body">{render_nodes(step, images, mode, icons)}'
                 "</div></div>")
             step = None
 
@@ -315,11 +274,11 @@ def render_body(nodes, images, mode='solo', icons=None, attest=None):
             step = [node]
         elif kind in ("h2", "h2s", "h3", "dolearn", "mark", "reveal"):
             close_rail()
-            parts.append(render_nodes([node], images, mode, icons, attest))
+            parts.append(render_nodes([node], images, mode, icons))
         elif step is not None:
             step.append(node)
         else:
-            parts.append(render_nodes([node], images, mode, icons, attest))
+            parts.append(render_nodes([node], images, mode, icons))
     close_rail()
     return "\n".join(parts)
 
@@ -360,20 +319,20 @@ def promote_sections(nodes):
     return [("h2s", n[1]) if n[0] == "h3" else n for n in nodes]
 
 
-def build_pages(ws, images, mode, icons=None, attest=None):
+def build_pages(ws, images, mode, icons=None):
     """The ordered page list: Overview, Setup, the chapters, close."""
     overview = [n for n in ws["overview"] if n[0] != "hero"]
     pages = [{
         "route": "#/overview", "pid": "page-overview", "title": "Overview",
         "crumb": None, "kicker": None, "meta": None, "icon": None,
         "hero": next((n[1] for n in ws["overview"] if n[0] == "hero"), None),
-        "body": render_body(promote_sections(overview), images, mode, icons, attest),
+        "body": render_body(promote_sections(overview), images, mode, icons),
     }]
     if ws["setup"]:
         pages.append({
             "route": "#/setup", "pid": "page-setup", "title": "Setup",
             "crumb": None, "kicker": None, "meta": None, "icon": None,
-            "body": render_body(promote_sections(ws["setup"]), images, mode, icons, attest),
+            "body": render_body(promote_sections(ws["setup"]), images, mode, icons),
         })
     # Chapters are numbered per BUILD, not per markdown: a room build omits the
     # SOLO chapters, so numbering it 1..N keeps its sidebar gapless. Solo skips
@@ -398,7 +357,7 @@ def build_pages(ws, images, mode, icons=None, attest=None):
             "heading": ch["name"],
             "crumb": f"Chapter {shown}",
             "kicker": f"CHAPTER {shown}", "icon": ch.get("icon"),
-            "body": band + render_body(body_nodes, images, mode, icons, attest),
+            "body": band + render_body(body_nodes, images, mode, icons),
         })
     close_nodes = list(ws["close"])
     close_title = "Close"
@@ -409,7 +368,7 @@ def build_pages(ws, images, mode, icons=None, attest=None):
         "route": "#/close", "pid": "page-close", "title": close_title,
         "crumb": None, "kicker": None, "meta": None, "icon": None,
         "body": inherited_band(inherited, images)
-                + render_body(promote_sections(close_nodes), images, mode, icons, attest),
+                + render_body(promote_sections(close_nodes), images, mode, icons),
     })
     return pages
 
@@ -553,8 +512,8 @@ TEMPLATE = """<!doctype html>
 """
 
 
-def render_document(ws, css, js, images, brand, mode, icons=None, attest=None):
-    pages = build_pages(ws, images, mode, icons, attest)
+def render_document(ws, css, js, images, brand, mode, icons=None):
+    pages = build_pages(ws, images, mode, icons)
     return (TEMPLATE
             .replace("{{TITLE}}", esc(ws["title"]))
             .replace("{{FAVICON}}", brand["favicon"])

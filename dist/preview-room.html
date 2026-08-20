@@ -619,22 +619,6 @@ h2 + .statement, h3 + .statement { margin-top: 22px; }
   *, *::before, *::after { transition: none !important; }
 }
 
-/* ---- the attestation block: where the expected outputs came from --------
-   Deliberately NOT a card. It is a claim about the rest of the page, so it
-   reads as part of the page, in the same label-beside-prose shape the
-   orientation lists already use. The only emphasis it gets is the accent
-   label, because the content is the emphasis. ---- */
-.attest { margin: 6px 0 34px; display: flex; flex-direction: column; gap: 14px; }
-.attest-row { display: grid; grid-template-columns: 132px 1fr; gap: 18px;
-  align-items: baseline; }
-.attest-row span {
-  font-family: var(--f-mono); font-size: 11px; font-weight: 700;
-  letter-spacing: 0.10em; color: var(--accent); text-transform: uppercase;
-}
-.attest-row p { margin: 0; color: var(--muted); }
-@media (max-width: 620px) {
-  .attest-row { grid-template-columns: 1fr; gap: 4px; }
-}
 
 /* The shell: topbar over everything, sidebar left, full-width content.
    Narrow (half-screen beside a terminal) collapses the sidebar and the
@@ -887,7 +871,7 @@ main { padding: 0 40px 64px; }
 <main id="main" tabindex="-1">
 <section class="page" id="page-overview" data-route="#/overview" data-title="Overview"><div class="mast"><div class="mast-text"><header class="page-head"><h1>DevOps Meets ResOps</h1></header><p class="standfirst"><strong>A hands-on workshop in Resilience Operations: running recovery the way you already run delivery.</strong> Every command is copy-paste, every step shows the expected result, and every concept is proven on a live workload as you go.</p></div><div class="hero-card" aria-hidden="true"><span class="hero-cmd"><i>$</i>op gate infra/workloads</span><span class="hero-out">●●●●●●  <span class="v-yes">VALIDATED</span>  ·  RPO 0.1h</span><span class="hero-out"><span class="v-yes">PROMOTE</span>  recoverability proven · exit 0</span><span class="hero-gap"></span><span class="hero-cmd"><i>$</i>op backup infra/workloads</span><span class="hero-out">  backup Completed</span><span class="hero-gap"></span><span class="hero-cmd"><i>$</i>op gate infra/workloads</span><span class="hero-out">●●●●●●  <span class="v-yes">VALIDATED</span>  ·  RPO 0.1h</span><span class="hero-out"><span class="v-no">HOLD</span>  attestation does not cover the newest recovery point · exit 1</span></div></div><h2>Half Your Pipeline Was Engineered</h2>
 <p>Code. Build. Deploy. Observe. Respond. Every one of those is versioned, automated, owned and observable. You would not accept a manual step in any of them, and you would not ship a service whose deploy path had never run.</p>
-<p>Now say the other four out loud.</p>
+<p>Now the other four.</p>
 <pre class="panel">ENGINEERED   Code ── Build ── Deploy ── Observe ── Respond
 A HANDOFF    Recover ┄┄ Validate ┄┄ Prove ┄┄ Improve</pre>
 <p>For most cloud teams that second row belongs to another team, lives in a runbook, and is exercised once a year by someone who does not deploy your code. That is not a criticism of anyone. It is the half nobody got to yet.</p>
@@ -904,11 +888,9 @@ ResOps asks    can we PROVE critical services recover, clean,
 <p>Each era bolted its answer onto the last: backup, then disaster recovery, then cyber resilience, each arriving as a separate tool and a separate team. The first three all describe intent. Only the fourth insists on evidence, and the difference is the whole subject of this workshop.</p>
 <pre class="panel">From assumption-based resilience
   to evidence-based, measurable, predictable recoverability.</pre>
-<p>That is one sentence to describe a shift that takes an afternoon to feel. By the end of this workshop you will have made it happen to a real service, with your own hands, and you will have the output to show for it.</p>
+<p>By the end of this workshop you will have done it to a real service, with your own hands, and you will have the output to show for it.</p>
 <h2>Who this is for</h2>
 <div class="deflist"><div class="dl-row"><span class="dl-key">LEVEL</span><div class="dl-val"><p>300-400.</p></div></div><div class="dl-row"><span class="dl-key">DURATION</span><div class="dl-val"><p>Two hours facilitated, about three hours self-paced.</p></div></div><div class="dl-row"><span class="dl-key">WRITTEN FOR</span><div class="dl-val"><p>Platform engineers, SREs and cloud architects who already run CI, infrastructure as code and required checks, and the people who fund that work.</p></div></div><div class="dl-row"><span class="dl-key">ASSUMES</span><div class="dl-val"><p>You are comfortable with a terminal, a pull request and a cloud console. No backup or recovery background is needed.</p></div></div><div class="dl-row"><span class="dl-key">NOT FOR</span><div class="dl-val"><p>Teams looking for a backup product evaluation, or a step-by-step guide to configuring one. Neither is what this covers.</p></div></div><div class="dl-row"><span class="dl-key">YOU WILL LEAVE</span><div class="dl-val"><p>Able to explain, and to demonstrate, why recoverability belongs in the same place as your other required checks.</p></div></div></div>
-<h2>Where these expected outputs come from</h2>
-<div class="attest"><div class="attest-row"><span>OFFLINE</span><p>7 of the 27 commands in this guide need no cloud account, and every one of those is re-run and compared against the box you see by the same suite that gates this file. If the tool stopped printing what a box promises, this page would not have been built.</p></div><div class="attest-row"><span>LIVE</span><p>19 of the 27 run against a real Azure subscription and a real Commvault tenant. Their boxes are a transcript of a full rehearsal, not a reconstruction, last walked 2026-08-19 at 32b870b. A guard fails the build when the code behind a quoted line changes and the walk has not caught up.</p></div><div class="attest-row"><span>IF A BOX IS WRONG</span><p>Say so. Every box here is meant to reproduce, and one that does not is a defect in this guide rather than a mistake you made.</p></div></div>
 <h2>The one idea</h2>
 <div class="statement"><p>You gate on tests.</p><p>You gate on security scans.</p><p><strong>You do not gate on recoverability.</strong></p></div>
 <p>You have taken a whole class of failure and moved it from <em>we find out in production</em> to <em>we find out at the pull request</em>. Three times.</p>
@@ -1030,11 +1012,11 @@ NEXT    Take one existing backup of one workload and have something
         open it and read it. This week. You are not changing anything.
         You are finding out whether anything ever has.</pre>
 <p>You have a proven workload and a gate that says yes. Now break it. On purpose, with something harmless and detectable.</p>
-<p>But first, stay with this question, because the whole chapter turns on it:</p>
+<p>The whole chapter turns on one question:</p>
 <pre class="panel">Which recovery point did you just prove?</pre>
 <p>You proved this workload recovers. That proof was about one moment, and there will be a newer one within the hour. Hold your answer. The tools are about to give you theirs.</p>
 <h2 class="section">Write it down before we break it</h2>
-<p>One sentence, out loud or on paper, before you run anything in this chapter.</p>
+<p>Answer this before you run anything in this chapter.</p>
 <pre class="panel">If ─────────────────────── happens to my workload,
      (a specific failure)
 
@@ -1101,9 +1083,8 @@ LEARN   Why outage policy answers the wrong question under
         compromise, and the number that measures the right one
 CLAIM   Under compromise, the freshest recovery point is the most
         dangerous one.
-NEXT    Ask your team, out loud: under compromise, which recovery point
-        would we restore from, and who decides? The silence is the
-        finding.</pre>
+NEXT    Ask your team: under compromise, which recovery point would we
+        restore from, and who decides? The silence is the finding.</pre>
 <h2 class="section">Put it back</h2>
 <p>First, put your own workload back. This runs while you do the exercise.</p>
 <div class="steps">

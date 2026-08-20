@@ -750,36 +750,6 @@ def test_the_masthead_owns_the_aura_height_not_the_page(page):
     assert "@media (max-width: 1340px) {" in page
 
 
-def test_the_attestation_is_generated_and_cannot_be_written_by_hand(page):
-    """The Overview states where its expected outputs come from, and that
-    claim is only worth printing if it cannot drift from the truth.
-
-    Google Codelabs stamps `last-updated="2026-03-20"` on a page teaching
-    Node 12 and gcr.io; AWS Workshop Studio ships no dates at all. The
-    difference between those and this is not the words, it is whether the
-    words are generated. So ```attestation takes NO body: the author picks
-    the place, the build decides the text, from the offline step list and
-    tests/workshop_walk.json."""
-    with pytest.raises(SystemExit, match="takes NO body"):
-        parser.parse("# T\n\n```attestation\nlast updated 2026-03-20\n```\n")
-    assert page.count('class="attest"') == 1
-    assert "re-run and compared" in page
-    assert "transcript of a full rehearsal" in page
-
-
-def test_the_attestation_numbers_add_up(page):
-    """Three buckets, not two. Subtracting verified from total would count
-    the `cd`/`source .venv` block as needing an Azure subscription, which is
-    the small kind of untruth this block exists to prevent."""
-    import re
-    nums = [int(n) for n in re.findall(r"attest-row\"><span>[A-Z ]+</span><p>(\d+)", page)]
-    assert len(nums) == 2, f"expected an offline and a live count, got {nums}"
-    offline, live = nums
-    total = int(re.search(r"of the (\d+) commands in this guide", page).group(1))
-    assert offline + live <= total, "the buckets exceed the command count"
-    assert offline >= 1 and live >= 1
-
-
 def test_the_aura_is_dithered_because_this_guide_gets_projected(page):
     """A two-stop gradient in 8-bit sRGB bands where it crosses hue, and a
     projector crushes the bottom two stops, so steps invisible on a laptop

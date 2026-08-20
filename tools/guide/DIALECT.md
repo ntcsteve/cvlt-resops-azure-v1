@@ -108,17 +108,6 @@ parser, never hand-edit the HTML.
 ```statement       display type. For the one or two lines the workshop
                    exists to make somebody repeat. Inline markup is
                    processed, so **bold** carries the punch line
-```attestation     WHERE THE EXPECTED OUTPUTS CAME FROM. Takes NO BODY and
-                   fails the build if given one. The author picks the place,
-                   the BUILD writes the text, from the offline step list in
-                   tests/test_workshop_guide.py and from
-                   tests/workshop_walk.json. A hand-written freshness claim
-                   is the thing this block exists to prevent: Google Codelabs
-                   stamps a fresh `last-updated` on a page teaching Node 12,
-                   and AWS Workshop Studio ships no dates at all. Nothing in
-                   it may vary without a source change, because dist/ is
-                   committed and byte-compared -- so no elapsed days and no
-                   HEAD sha, only the walk record's own date and commit
 ```hero            a terminal transcript for the masthead: one per workshop,
                    authored in the front matter, rendered beside the title
                    rather than in the body. A `$` opens a command line;

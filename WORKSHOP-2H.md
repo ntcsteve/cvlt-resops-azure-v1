@@ -26,7 +26,7 @@ Code. Build. Deploy. Observe. Respond. Every one of those is versioned,
 automated, owned and observable. You would not accept a manual step in any of
 them, and you would not ship a service whose deploy path had never run.
 
-Now say the other four out loud.
+Now the other four.
 
 ```
   ENGINEERED   Code ── Build ── Deploy ── Observe ── Respond
@@ -75,8 +75,7 @@ evidence, and the difference is the whole subject of this workshop.
    to evidence-based, measurable, predictable recoverability.
 ```
 
-That is one sentence to describe a shift that takes an afternoon to feel.
-By the end of this workshop you will have made it happen to a real service,
+By the end of this workshop you will have done it to a real service,
 with your own hands, and you will have the output to show for it.
 
 ## Who this is for
@@ -94,11 +93,6 @@ with your own hands, and you will have the output to show for it.
                   this covers.
  YOU WILL LEAVE   Able to explain, and to demonstrate, why recoverability
                   belongs in the same place as your other required checks.
-```
-
-## Where these expected outputs come from
-
-```attestation
 ```
 
 ## The one idea
@@ -592,7 +586,7 @@ mount passes the first four and fails a real service on its first write.
 You have a proven workload and a gate that says yes. Now break it. On
 purpose, with something harmless and detectable.
 
-But first, stay with this question, because the whole chapter turns on it:
+The whole chapter turns on one question:
 
 ```
           Which recovery point did you just prove?
@@ -604,7 +598,7 @@ about to give you theirs.
 
 ### Write it down before we break it
 
-One sentence, out loud or on paper, before you run anything in this chapter.
+Answer this before you run anything in this chapter.
 
 ```
   If ─────────────────────── happens to my workload,
@@ -756,9 +750,8 @@ green, and the recovery point you would have restored from is poison.
          compromise, and the number that measures the right one
  CLAIM   Under compromise, the freshest recovery point is the most
          dangerous one.
- NEXT    Ask your team, out loud: under compromise, which recovery point
-         would we restore from, and who decides? The silence is the
-         finding.
+ NEXT    Ask your team: under compromise, which recovery point would we
+         restore from, and who decides? The silence is the finding.
 ```
 
 ### Put it back

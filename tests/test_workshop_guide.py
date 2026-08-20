@@ -40,8 +40,8 @@ OFFLINE_STEPS = [
     # come from: "re-run by the suite that gates this build". Four of the 2h
     # guide's seven offline commands were covered when that claim was drafted,
     # so the other three plus the report were added rather than the claim
-    # softened. A stamp is only worth printing if the machinery behind it is
-    # complete; see render_attestation() in tools/guide/render.py.
+    # softened: the guide's offline commands should all be re-run and
+    # compared, not just the four that happened to be covered first.
     #
     # `cat` and `grep` steps are here for the same reason as the resops ones:
     # the guide quotes what they print, so an edit to tiers.yaml or to the
