@@ -771,6 +771,26 @@ def test_the_tracking_ladder_covers_the_middle_of_the_scale(page):
     assert "letter-spacing: -0.005em;" in page, "the standfirst is untracked again"
 
 
+def test_every_chapter_strip_actually_RENDERS_as_a_strip(page):
+    """The companion to the markdown test below, and the one that was missing.
+
+    The parser identifies the chapter strip by its FIRST label. That label was
+    DO. On 2026-08-20 STAGE was added above it, the `^DO\\s{2,}` match stopped
+    firing, and all seven strips silently fell through to a plain <pre> panel:
+    no accent labels, no grid, monospace. It shipped in two commits.
+
+    The five-row test passed the whole time, because it reads WORKSHOP-2H.md
+    and never looked at the HTML. A test that reads the source cannot catch a
+    rendering regression. This one reads the render."""
+    assert page.count('<div class="strip">') == 7, (
+        "a chapter strip is not rendering as a strip; the parser identifies "
+        "it by its first label, so renaming that label breaks the match")
+    assert '<pre class="panel">STAGE' not in page, (
+        "a strip fell through to a plain panel")
+    for label in ("STAGE", "EXERCISE", "LEARN", "RULE", "NEXT"):
+        assert f"<span>{label}</span>" in page, f"{label} is not a strip label"
+
+
 def test_every_chapter_carries_the_same_five_row_unit():
     """THE PATTERN. Every chapter head is STAGE / DO / LEARN / CLAIM / NEXT,
     in that order, with no exceptions.
@@ -791,7 +811,7 @@ def test_every_chapter_carries_the_same_five_row_unit():
     assert len(heads) == 7, f"expected 7 chapters, found {len(heads)}"
     for i, body in enumerate(heads, 1):
         labels = re.findall(r"^ ([A-Z]+)\s{2,}", body, re.M)
-        assert labels == ["STAGE", "DO", "LEARN", "CLAIM", "NEXT"], (
+        assert labels == ["STAGE", "EXERCISE", "LEARN", "RULE", "NEXT"], (
             f"chapter {i} strip is {labels}, not the five-row unit")
 
 
@@ -835,7 +855,7 @@ def test_sections_are_divided_by_space_not_by_a_rule(page):
     The hairlines that SURVIVE are the ones that carry meaning, so this also
     pins that they did not get swept away with it."""
     assert "h2.section, .page > h3 { margin-top: 64px; }" in page
-    assert ".dolearn + h2.section, .page-head + h2.section { margin-top: 10px; }" in page
+    assert ".strip + h2.section, .page-head + h2.section { margin-top: 10px; }" in page
     assert "h2.section, .page > h3 { border-top:" not in page, (
         "the section hairline is back; sections are divided by space now")
     assert ".page-head {" in page and "border-bottom: 1px solid var(--line);\n  padding-bottom" not in page, (

@@ -176,15 +176,15 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
        Two labeled rows, hairline box, no tint: informative, not loud. ---- */
 /* The strip is three labeled lines, not a card. The accent-colored labels
    already say "this is the orientation"; a border around them said it twice. */
-.dolearn {
+.strip {
   padding: 0; margin: 4px 0 30px;
   display: flex; flex-direction: column; gap: 8px;
 }
-.dolearn-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px;
+.strip-row { display: grid; grid-template-columns: 78px 1fr; gap: 14px;
   align-items: baseline; }
-.dolearn-row span { font-size: 11px; font-weight: 700;
+.strip-row span { font-size: 11px; font-weight: 700;
   letter-spacing: 0.10em; color: var(--accent); }
-.dolearn-row p { margin: 0; }
+.strip-row p { margin: 0; }
 
 /* ---- checkpoint card: quiet consolidation at a chapter's end ---- */
 .mark {

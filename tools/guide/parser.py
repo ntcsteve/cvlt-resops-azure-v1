@@ -179,8 +179,13 @@ def classify_fence(lang, body, fence_line):
         return labeled(body, "aside", 1)
     if first.startswith("✦"):
         return labeled(body, "mark", 1)
-    if re.match(r"^DO\s{2,}", first):
-        return ("dolearn", strip_rows(body, fence_line + 1))
+    if re.match(r"^STAGE\s{2,}", first):
+        # The chapter strip is identified by its FIRST label. It used to be
+        # DO; adding STAGE above it on 2026-08-20 silently broke that match
+        # and seven strips rendered as plain <pre> panels for two commits,
+        # because the test that pinned the five rows read the MARKDOWN and
+        # never looked at the render.
+        return ("strip", strip_rows(body, fence_line + 1))
     check_not_a_mistyped_diag(body, fence_line + 1)
     return ("panel", dedent(body))
 

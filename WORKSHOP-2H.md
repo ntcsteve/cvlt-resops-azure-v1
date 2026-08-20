@@ -22,11 +22,13 @@ HOLD  attestation does not cover the newest recovery point · exit 1
 
 ## Half Your Pipeline Was Engineered
 
-Code. Build. Deploy. Observe. Respond. Every one of those is versioned,
-automated, owned and observable. You would not accept a manual step in any of
-them, and you would not ship a service whose deploy path had never run.
+Your delivery pipeline is versioned, automated, owned and observable at
+every stage: code, build, deploy, observe, respond. You would not accept a
+manual step in any of them, and you would not ship a service whose deploy
+path had never run.
 
-Now the other four.
+Recovery has four equivalent stages, and in most cloud teams none of them
+works that way.
 
 ```
   ENGINEERED   Code ── Build ── Deploy ── Observe ── Respond
@@ -104,7 +106,7 @@ You gate on security scans.
 ```
 
 You have taken a whole class of failure and moved it from *we find out in
-production* to *we find out at the pull request*. Three times.
+production* to *we find out at the pull request*, three times over.
 
 ```
  SHIFTED LEFT ALREADY              STILL ON THE RIGHT
@@ -285,16 +287,16 @@ than a confident one.
 ## Chapter 1 · Building the Workload · SOLO
 
 ```
- STAGE   All six. Discover, Protect, Detect, Recover, Scan, Validate: the
-         full climb, once, so you have seen what a yes is made of.
- DO      Stand up a production service, protect it, and climb it to a
-         proven recovery
- LEARN   The three planes, the one door into a sealed VM, and what a
-         drill actually opens
- CLAIM   Most estates have never demonstrated recovery once. You will
-         have, in twenty minutes.
- NEXT    Pick one workload you own and find out whether the platform has
-         even discovered it. Read-only. Today.
+ STAGE      All six. Discover, Protect, Detect, Recover, Scan, Validate: the
+            full climb, once, so you have seen what a yes is made of.
+ EXERCISE   Stand up a production service, protect it, and climb it to a
+            proven recovery
+ LEARN      The three planes, the one door into a sealed VM, and what a
+            drill actually opens
+ RULE       Recovery is demonstrated or it is assumed. There is no third
+            state.
+ NEXT       Pick one workload you own and find out whether the platform has
+            even discovered it. Read-only. Today.
 ```
 
 One `terraform apply` gives you a real service: a VM with no public IP, no
@@ -398,9 +400,9 @@ python3 -m resops.operator.op backup infra/workloads
 
 ### Prove it restores
 
-A recovery point exists. Nothing has proven it works. That proof is a
-restore drill: rebuild a copy from the point, in isolation, and verify it
-from the inside.
+A recovery point existing is not the same as a recovery point working, and
+only a restore drill can tell them apart: rebuild a copy from the point, in
+isolation, and verify it from the inside.
 
 ```bash
 python3 -m resops.operator.op restore infra/workloads
@@ -435,20 +437,20 @@ python3 -m resops.operator.op restore infra/workloads
 ## Chapter 2 · Reading the Proof
 
 ```
- STAGE   None. This chapter reads the ladder instead of moving it, which
-         is the only chapter that can afford to.
- DO      Read the ladder, the gate, and the contract that earned them
- LEARN   What a Service Resilience Indicator is, and what an
-         attestation actually claims
- CLAIM   If yes is not boring, no will not mean anything.
- NEXT    Open the bar your workloads are judged against. If it does not
-         state a number somebody tests, you have found your first gap.
-         Read-only. Today.
+ STAGE      None. This chapter reads the ladder instead of moving it, which
+            is the only chapter that can afford to.
+ EXERCISE   Read the ladder, the gate, and the contract that earned them
+ LEARN      What a Service Resilience Indicator is, and what an
+            attestation actually claims
+ RULE       A gate whose pass is not routine cannot make its fail
+            meaningful.
+ NEXT       Open the bar your workloads are judged against. If it does not
+            state a number somebody tests, you have found your first gap.
+            Read-only. Today.
 ```
 
-Your workload stands at the top of its ladder. Before anything gets broken,
-see what good looks like and where each claim comes from. This part is
-deliberately calm.
+Your workload is at the top of its ladder. This chapter reads what good
+looks like and where each claim comes from, before anything gets broken.
 
 ### Read the ladder
 
@@ -571,20 +573,20 @@ mount passes the first four and fails a real service on its first write.
 ## Chapter 3 · Introducing a Compromise
 
 ```
- STAGE   Scan. It falls, and it falls from a backup job that said
-         Completed.
- DO      Compromise the workload you built, then watch two controls
-         catch it two different ways
- LEARN   Why proof does not accumulate, and where a verdict can
-         honestly come from
- CLAIM   Green is a job status, not a verdict about your data.
- NEXT    Take one existing backup of one workload and have something
-         open it and read it. This week. You are not changing anything.
-         You are finding out whether anything ever has.
+ STAGE      Scan. It falls, and it falls from a backup job that said
+            Completed.
+ EXERCISE   Compromise the workload you built, then watch two controls
+            catch it two different ways
+ LEARN      Why proof does not accumulate, and where a verdict can
+            honestly come from
+ RULE       Green is a job status, not a verdict about your data.
+ NEXT       Take one existing backup of one workload and have something
+            open it and read it. This week. You are not changing anything.
+            You are finding out whether anything ever has.
 ```
 
-You have a proven workload and a gate that says yes. Now break it. On
-purpose, with something harmless and detectable.
+You have a proven workload and a gate that says yes. The next step breaks
+it on purpose, with something harmless and detectable.
 
 The whole chapter turns on one question:
 
@@ -593,8 +595,8 @@ The whole chapter turns on one question:
 ```
 
 You proved this workload recovers. That proof was about one moment, and
-there will be a newer one within the hour. Hold your answer. The tools are
-about to give you theirs.
+there will be a newer recovery point within the hour. Answer for yourself
+first; the tools give their answer in the next two chapters.
 
 ### Write it down before we break it
 
@@ -611,8 +613,8 @@ Answer this before you run anything in this chapter.
                                        (what you would check)
 ```
 
-Keep it. Chapter 4 asks you the same question after the tools have answered
-it, and the distance between the two answers is the lesson.
+Chapter 4 asks the same question after the tools have answered it. Compare
+your answer with theirs.
 
 ### Plant the compromise
 
@@ -626,6 +628,10 @@ python3 -m resops.operator.op incident infra/workloads
                     <your-codename> (resops-<your-codename>-rg)
                     planted: 2 EICAR files, 14 .locked files, 1 note
                     BASELINE marker still present: yes
+ ⏱ HOW LONG         up to a couple of minutes, with no output until it is
+                    done. The VM has no inbound access, so this runs through
+                    the Azure guest agent, which is a single blocking call
+                    that reports once at the end rather than streaming.
  ✗ IF NOT           check the VM is running: the guest agent needs about two minutes after boot. Retry once, then stop and ask.
 ```
 
@@ -705,6 +711,10 @@ python3 -m resops.operator.op threatscan infra/workloads
 ```
  ✓ YOU SHOULD SEE   a scan that ran, and a verdict that this recovery point is not safe to restore from
                     THREATS DETECTED · exit 1
+ ⏱ HOW LONG         about three minutes, and up to six. The job id prints
+                    straight away, then the client polls every twenty
+                    seconds until the scan finishes. Silence in between is
+                    the poll interval, not a hang.
  ✗ IF NOT           if it stops and asks for scan_plan_id, set it in config/workshop.yaml and run it again. The first lesson above has already landed either way.
 ```
 
@@ -742,16 +752,16 @@ green, and the recovery point you would have restored from is poison.
 ## Chapter 4 · Choosing a Recovery Point
 
 ```
- STAGE   Recover. You choose the point everything downstream is judged
-         on, and outage policy gives you the wrong answer.
- DO      Put your workload back, then pick a recovery point under the
-         conditions that actually matter
- LEARN   Why outage policy answers the wrong question under
-         compromise, and the number that measures the right one
- CLAIM   Under compromise, the freshest recovery point is the most
-         dangerous one.
- NEXT    Ask your team: under compromise, which recovery point would we
-         restore from, and who decides? The silence is the finding.
+ STAGE      Recover. You choose the point everything downstream is judged
+            on, and outage policy gives you the wrong answer.
+ EXERCISE   Put your workload back, then pick a recovery point under the
+            conditions that actually matter
+ LEARN      Why outage policy answers the wrong question under
+            compromise, and the number that measures the right one
+ RULE       Under compromise, the freshest recovery point is the most
+            dangerous one.
+ NEXT       Ask your team: under compromise, which recovery point would we
+            restore from, and who decides? The silence is the finding.
 ```
 
 ### Put it back
@@ -764,6 +774,10 @@ python3 -m resops.operator.op remediate infra/workloads
 
 ```
  ✓ YOU SHOULD SEE   the planted files removed, the stashed files restored, and the attester re-run, ending on a verdict line that starts OK:
+ ⏱ HOW LONG         up to a couple of minutes, with no output until it is
+                    done. The VM has no inbound access, so this runs through
+                    the Azure guest agent, which is a single blocking call
+                    that reports once at the end rather than streaming.
  ✗ IF NOT           it raises rather than reporting success. Read what it raised before you touch anything, and do not run it twice blindly.
 ```
 
@@ -778,7 +792,7 @@ python3 -m resops.operator.op remediate infra/workloads
 
 ### Four recovery points, one decision
 
-Now the exercise. Four recovery points, no cloud, no token:
+Four recovery points, offline, with no cloud account and no token:
 
 ```bash
 python3 -m resops gate config/incident.yaml
@@ -804,7 +818,7 @@ The four points, side by side:
 
 **The fact you do not have:** the first anomalous log entry is *"sometime
 last week"*. Retention is seven days and the earliest surviving entry is
-already abnormal. It may have started three days ago. Or nine.
+already abnormal. The compromise may be three days old, or nine.
 
 **Choose one. Justify it in a sentence, naming what you give up.**
 
@@ -845,16 +859,16 @@ already abnormal. It may have started three days ago. Or nine.
 ## Chapter 5 · Re-Proving Recovery · SOLO
 
 ```
- STAGE   Scan, then Validate. Re-earned, not restored.
- DO      Close the loop: take a clean point, scan it, drill it, and
-         earn the green verdict back
- LEARN   What actually restores trust after an incident, and what
-         only looks like it does
- CLAIM   Cleaning production changes nothing inside an immutable
-         vault. Trust is re-opened, not re-assured.
- NEXT    Run one drill that produces an attestation. This is the first
-         step that needs the application team, and it is where adoption
-         stops being free.
+ STAGE      Scan, then Validate. Re-earned, not restored.
+ EXERCISE   Close the loop: take a clean point, scan it, drill it, and
+            earn the green verdict back
+ LEARN      What actually restores trust after an incident, and what
+            only looks like it does
+ RULE       Cleaning production changes nothing inside an immutable
+            vault. Trust is re-opened, not re-assured.
+ NEXT       Run one drill that produces an attestation. This is the first
+            step that needs the application team, and it is where adoption
+            stops being free.
 ```
 
 Your VM is clean, but the gate still holds: the newest recovery point
@@ -884,6 +898,10 @@ python3 -m resops.operator.op threatscan infra/workloads
  ✓ YOU SHOULD SEE   no threat recorded, and the tool refusing to call that clean. Read its wording carefully, because it is the best sentence in the toolkit.
                     no threat recorded for this workload - which is NOT the same
                     as clean, and does not clear the Scan rung on its own
+ ⏱ HOW LONG         about three minutes, and up to six. The job id prints
+                    straight away, then the client polls every twenty
+                    seconds until the scan finishes. Silence in between is
+                    the poll interval, not a hang.
 ```
 
 ```
@@ -927,16 +945,16 @@ python3 -m resops.operator.op gate infra/workloads
 ## Chapter 6 · Gating the Pipeline
 
 ```
- STAGE   All six, across six workloads at once. The same ladder you
-         climbed by hand, read as an estate.
- DO      Run the gate across an estate, publish its numbers, and read
-         the evidence and the CI file that make it a merge blocker
- LEARN   How a check survives contact with a real estate: the ratchet,
-         the control evidence, and who owns what
- CLAIM   You have shifted this left three times already. This is the
-         fourth, and it looks identical.
- NEXT    Add one required check on one repository, with a dated tolerance
-         so it cannot block anyone on day one. Needs CI.
+ STAGE      All six, across six workloads at once. The same ladder you
+            climbed by hand, read as an estate.
+ EXERCISE   Run the gate across an estate, publish its numbers, and read
+            the evidence and the CI file that make it a merge blocker
+ LEARN      How a check survives contact with a real estate: the ratchet,
+            the control evidence, and who owns what
+ RULE       A recoverability check belongs in the same place as your tests
+            and your security scans, and it is built the same way.
+ NEXT       Add one required check on one repository, with a dated tolerance
+            so it cannot block anyone on day one. Needs CI.
 ```
 
 One workload proving itself is a demo. The discipline starts when the same
@@ -955,9 +973,9 @@ python3 -m resops gate config/estate.yaml
                                       edge-cache, legacy-batch · exit 1
 ```
 
-**Stop on `checkout-api` and `identity-svc`.** Same rung. Opposite reasons.
-One was tested and is contaminated; one was never tested at all. The rung
-hides that. The blocked stage names it.
+**Compare `checkout-api` and `identity-svc`.** Both sit on the same rung for
+opposite reasons: one was tested and is contaminated, the other was never
+tested at all. The rung does not distinguish them. The blocked stage does.
 
 ### Publish the numbers
 
@@ -1073,15 +1091,15 @@ cat .github/workflows/resops-gate.yml
 ## Chapter 7 · Cleaning Up · SOLO
 
 ```
- STAGE   None. The ladder goes away with the workload, which is the
-         point.
- DO      Destroy everything you built, and verify it is gone
- LEARN   Why disposability is part of the discipline rather than the
-         tidying up
- CLAIM   A drill you cannot afford to run twice is a drill you will
-         run once.
- NEXT    Cost one drill. A drill you cannot afford to run twice is a
-         drill you will run once, and once is a demo, not a discipline.
+ STAGE      None. The ladder goes away with the workload, which is the
+            point.
+ EXERCISE   Destroy everything you built, and verify it is gone
+ LEARN      Why disposability is part of the discipline rather than the
+            tidying up
+ RULE       A drill you cannot afford to run twice is a drill you will
+            run once.
+ NEXT       Cost one drill. A drill you cannot afford to run twice is a
+            drill you will run once, and once is a demo, not a discipline.
 ```
 
 Everything you built is real, and it bills until it is gone: a VM, a disk,
@@ -1142,7 +1160,8 @@ PYTHONUNBUFFERED=1 python3 -m resops.operator.op teardown infra/workloads
 
 ### Verify it is gone
 
-Teardown just told you it succeeded. Go and check.
+Teardown reported success. Verify it independently, because a teardown that
+reports success and leaves resources running is the expensive failure.
 
 ```bash
 az resource list --query "length(@)" -o tsv
@@ -1190,7 +1209,8 @@ terraform -chdir=infra/workloads state list | wc -l
 
 ### What you proved
 
-One command. One workload. Four different answers, across two hours.
+The same command gave four different answers about one workload over two
+hours.
 
 ```list card
  after the first drill    `op gate` says PROMOTE. The proof covers the
@@ -1309,7 +1329,8 @@ watched happen rather than a claim you are repeating.
 
 Most teams live in the first row. They have read the model, they believe they
 could recover, and they have never once demonstrated it on a workload that
-matters. You spent two hours in the second row. Everything below is the third.
+matters. You spent two hours in the second row. The rest of this page is
+how to reach the third.
 
 ### What this workshop does not solve
 
@@ -1385,7 +1406,8 @@ create, update or delete calls of any kind, and a test in the suite fails if
 anyone adds one. That is the point of starting there: it costs an afternoon
 and risks nothing.
 
-**One next action. Named workload. Dated. Owner.** Not three.
+**Pick one next action, not three.** Name the workload, set a date, and
+name an owner.
 
 ### The question you will be asked
 
@@ -1406,8 +1428,8 @@ than a feature.
    to evidence-based, measurable, predictable recoverability.
 ```
 
-Heroism cannot scale. A discipline can, and it starts with one honest
-measurement.
+Individual effort does not scale across an estate. A repeatable practice
+does, and it starts with one honest measurement.
 
 **In seven days there is one question: did you run it against anything
 real?**

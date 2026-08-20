@@ -174,7 +174,7 @@ h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
    carry meaning -- the aside's left rule, the verdict tint on a row, the
    terminal's title bar. */
 h2.section, .page > h3 { margin-top: 64px; }
-.dolearn + h2.section, .page-head + h2.section { margin-top: 10px; }
+.strip + h2.section, .page-head + h2.section { margin-top: 10px; }
 
 p { margin: 14px 0; text-wrap: pretty; }
 strong { font-weight: 600; }
@@ -411,15 +411,15 @@ figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
        Two labeled rows, hairline box, no tint: informative, not loud. ---- */
 /* The strip is three labeled lines, not a card. The accent-colored labels
    already say "this is the orientation"; a border around them said it twice. */
-.dolearn {
+.strip {
   padding: 0; margin: 4px 0 30px;
   display: flex; flex-direction: column; gap: 8px;
 }
-.dolearn-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px;
+.strip-row { display: grid; grid-template-columns: 78px 1fr; gap: 14px;
   align-items: baseline; }
-.dolearn-row span { font-size: 11px; font-weight: 700;
+.strip-row span { font-size: 11px; font-weight: 700;
   letter-spacing: 0.10em; color: var(--accent); }
-.dolearn-row p { margin: 0; }
+.strip-row p { margin: 0; }
 
 /* ---- checkpoint card: quiet consolidation at a chapter's end ---- */
 .mark {
@@ -870,8 +870,8 @@ main { padding: 0 40px 64px; }
 <aside id="sidebar"><nav aria-label="Workshop contents"><a class="nav-row" href="#/overview" data-route="#/overview"><span class="nav-name">Overview</span></a><a class="nav-row" href="#/setup" data-route="#/setup"><span class="nav-name">Setup</span></a><a class="nav-row" href="#/1" data-route="#/1"><span class="nav-num">1.</span><span class="nav-name">Building the Workload</span></a><a class="nav-row" href="#/2" data-route="#/2"><span class="nav-num">2.</span><span class="nav-name">Reading the Proof</span></a><a class="nav-row" href="#/3" data-route="#/3"><span class="nav-num">3.</span><span class="nav-name">Introducing a Compromise</span></a><a class="nav-row" href="#/4" data-route="#/4"><span class="nav-num">4.</span><span class="nav-name">Choosing a Recovery Point</span></a><a class="nav-row" href="#/5" data-route="#/5"><span class="nav-num">5.</span><span class="nav-name">Re-Proving Recovery</span></a><a class="nav-row" href="#/6" data-route="#/6"><span class="nav-num">6.</span><span class="nav-name">Gating the Pipeline</span></a><a class="nav-row" href="#/7" data-route="#/7"><span class="nav-num">7.</span><span class="nav-name">Cleaning Up</span></a><a class="nav-row" href="#/close" data-route="#/close"><span class="nav-name">Wrap-Up</span></a></nav></aside>
 <main id="main" tabindex="-1">
 <section class="page" id="page-overview" data-route="#/overview" data-title="Overview"><div class="mast"><div class="mast-text"><header class="page-head"><h1>DevOps Meets ResOps</h1></header><p class="standfirst"><strong>A hands-on workshop in Resilience Operations: running recovery the way you already run delivery.</strong> Every command is copy-paste, every step shows the expected result, and every concept is proven on a live workload as you go.</p></div><div class="hero-card" aria-hidden="true"><span class="hero-cmd"><i>$</i>op gate infra/workloads</span><span class="hero-out">●●●●●●  <span class="v-yes">VALIDATED</span>  ·  RPO 0.1h</span><span class="hero-out"><span class="v-yes">PROMOTE</span>  recoverability proven · exit 0</span><span class="hero-gap"></span><span class="hero-cmd"><i>$</i>op backup infra/workloads</span><span class="hero-out">  backup Completed</span><span class="hero-gap"></span><span class="hero-cmd"><i>$</i>op gate infra/workloads</span><span class="hero-out">●●●●●●  <span class="v-yes">VALIDATED</span>  ·  RPO 0.1h</span><span class="hero-out"><span class="v-no">HOLD</span>  attestation does not cover the newest recovery point · exit 1</span></div></div><h2>Half Your Pipeline Was Engineered</h2>
-<p>Code. Build. Deploy. Observe. Respond. Every one of those is versioned, automated, owned and observable. You would not accept a manual step in any of them, and you would not ship a service whose deploy path had never run.</p>
-<p>Now the other four.</p>
+<p>Your delivery pipeline is versioned, automated, owned and observable at every stage: code, build, deploy, observe, respond. You would not accept a manual step in any of them, and you would not ship a service whose deploy path had never run.</p>
+<p>Recovery has four equivalent stages, and in most cloud teams none of them works that way.</p>
 <pre class="panel">ENGINEERED   Code ── Build ── Deploy ── Observe ── Respond
 A HANDOFF    Recover ┄┄ Validate ┄┄ Prove ┄┄ Improve</pre>
 <p>For most cloud teams that second row belongs to another team, lives in a runbook, and is exercised once a year by someone who does not deploy your code. That is not a criticism of anyone. It is the half nobody got to yet.</p>
@@ -893,7 +893,7 @@ ResOps asks    can we PROVE critical services recover, clean,
 <div class="deflist"><div class="dl-row"><span class="dl-key">LEVEL</span><div class="dl-val"><p>300-400.</p></div></div><div class="dl-row"><span class="dl-key">DURATION</span><div class="dl-val"><p>Two hours facilitated, about three hours self-paced.</p></div></div><div class="dl-row"><span class="dl-key">WRITTEN FOR</span><div class="dl-val"><p>Platform engineers, SREs and cloud architects who already run CI, infrastructure as code and required checks, and the people who fund that work.</p></div></div><div class="dl-row"><span class="dl-key">ASSUMES</span><div class="dl-val"><p>You are comfortable with a terminal, a pull request and a cloud console. No backup or recovery background is needed.</p></div></div><div class="dl-row"><span class="dl-key">NOT FOR</span><div class="dl-val"><p>Teams looking for a backup product evaluation, or a step-by-step guide to configuring one. Neither is what this covers.</p></div></div><div class="dl-row"><span class="dl-key">YOU WILL LEAVE</span><div class="dl-val"><p>Able to explain, and to demonstrate, why recoverability belongs in the same place as your other required checks.</p></div></div></div>
 <h2>The one idea</h2>
 <div class="statement"><p>You gate on tests.</p><p>You gate on security scans.</p><p><strong>You do not gate on recoverability.</strong></p></div>
-<p>You have taken a whole class of failure and moved it from <em>we find out in production</em> to <em>we find out at the pull request</em>. Three times.</p>
+<p>You have taken a whole class of failure and moved it from <em>we find out in production</em> to <em>we find out at the pull request</em>, three times over.</p>
 <pre class="panel">SHIFTED LEFT ALREADY              STILL ON THE RIGHT
 tests       -&gt; CI gate            recoverability -&gt; a ticket,
 security    -&gt; scanner gate                        after an outage
@@ -938,16 +938,7 @@ source .venv/bin/activate</code></pre></div>
 <p>Write these down now and set them aside. You come back to them at the end, and the distance between your two sets of answers is the only measurement this workshop makes.</p>
 <p>Very few organizations can answer the first question with confidence. That is the industry's position today, not a judgement on any one team, and it is the reason this workshop exists. An honest low number is worth more here than a confident one.</p>
 <div class="deflist"><div class="dl-row"><span class="dl-key">1</span><div class="dl-val"><p>What percentage of your production estate could you PROVE is recoverable, right now?</p><p>Not "is backed up". Proved, by something that opened a copy and read what was inside it. A backup dashboard reports that a job ran. That is a different claim, and most estates have only that one.</p></div></div><div class="dl-row"><span class="dl-key">2</span><div class="dl-val"><p>Who would you have to convince, and what would they accept as proof?</p><p>Name a real person. An auditor accepts a document. A staff engineer accepts a command they can run themselves. Those are different artifacts, and most teams have only the first.</p></div></div><div class="dl-row"><span class="dl-key">3</span><div class="dl-val"><p>How long would producing that proof take, starting now?</p><p>Count the people who would have to be asked. Where that answer is measured in weeks, the constraint is usually organizational rather than technical.</p></div></div></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/overview">← Overview</a><a class="pager-next" href="#/1">1. Building the Workload →</a></nav></section>
-<section class="page" id="page-1" data-route="#/1" data-title="1. Building the Workload"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>1. Building the Workload</b></nav><p class="kicker">CHAPTER 1</p><header class="page-head"><h1>Building the Workload</h1></header><pre class="panel">STAGE   All six. Discover, Protect, Detect, Recover, Scan, Validate: the
-        full climb, once, so you have seen what a yes is made of.
-DO      Stand up a production service, protect it, and climb it to a
-        proven recovery
-LEARN   The three planes, the one door into a sealed VM, and what a
-        drill actually opens
-CLAIM   Most estates have never demonstrated recovery once. You will
-        have, in twenty minutes.
-NEXT    Pick one workload you own and find out whether the platform has
-        even discovered it. Read-only. Today.</pre>
+<section class="page" id="page-1" data-route="#/1" data-title="1. Building the Workload"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>1. Building the Workload</b></nav><p class="kicker">CHAPTER 1</p><header class="page-head"><h1>Building the Workload</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>All six. Discover, Protect, Detect, Recover, Scan, Validate: the full climb, once, so you have seen what a yes is made of.</p></div><div class="strip-row"><span>EXERCISE</span><p>Stand up a production service, protect it, and climb it to a proven recovery</p></div><div class="strip-row"><span>LEARN</span><p>The three planes, the one door into a sealed VM, and what a drill actually opens</p></div><div class="strip-row"><span>RULE</span><p>Recovery is demonstrated or it is assumed. There is no third state.</p></div><div class="strip-row"><span>NEXT</span><p>Pick one workload you own and find out whether the platform has even discovered it. Read-only. Today.</p></div></div>
 <p>One <code>terraform apply</code> gives you a real service: a VM with no public IP, no inbound rules, no way in. Everything you do to it from here travels through doors you are about to meet, and every step prints what it did so you can compare against the boxes below.</p>
 <h2 class="section">Provision the service</h2>
 <div class="steps">
@@ -991,7 +982,7 @@ vm_name        = "&lt;your-codename&gt;"</pre></div>
 <p>The vault preserves every moment faithfully, including this one. Choosing which moment to trust is the discipline the rest of this workshop builds.</p></aside></div></div>
 </div>
 <h2 class="section">Prove it restores</h2>
-<p>A recovery point exists. Nothing has proven it works. That proof is a restore drill: rebuild a copy from the point, in isolation, and verify it from the inside.</p>
+<p>A recovery point existing is not the same as a recovery point working, and only a restore drill can tell them apart: rebuild a copy from the point, in isolation, and verify it from the inside.</p>
 <div class="steps">
 <div class="step"><span class="step-num">5</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op restore infra/workloads</code></pre></div>
 <aside class="diag" role="note">
@@ -1003,16 +994,8 @@ vm_name        = "&lt;your-codename&gt;"</pre></div>
 <aside class="aside" role="note"><p class="aside-title">? Under the hood: what a drill restore is</p><p>An out-of-place restore builds a NEW VM from the recovery point's disk: fresh machine, fresh identity, no connection to production. The attester runs inside that copy, writes its verdict, and the copy is deleted. Production never stops, never rolls back, and never meets the restored machine. That is why drills are safe to run on any schedule: the blast radius is one disposable VM.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just built</p><p>A sealed production service, a recovery point in a vault the service itself cannot touch, and a drill that proved the point restores clean. You did in twenty minutes what most estates have never done once: recovery, demonstrated.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/setup">← Setup</a><a class="pager-next" href="#/2">2. Reading the Proof →</a></nav></section>
-<section class="page" id="page-2" data-route="#/2" data-title="2. Reading the Proof"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>2. Reading the Proof</b></nav><p class="kicker">CHAPTER 2</p><header class="page-head"><h1>Reading the Proof</h1></header><pre class="panel">STAGE   None. This chapter reads the ladder instead of moving it, which
-        is the only chapter that can afford to.
-DO      Read the ladder, the gate, and the contract that earned them
-LEARN   What a Service Resilience Indicator is, and what an
-        attestation actually claims
-CLAIM   If yes is not boring, no will not mean anything.
-NEXT    Open the bar your workloads are judged against. If it does not
-        state a number somebody tests, you have found your first gap.
-        Read-only. Today.</pre>
-<p>Your workload stands at the top of its ladder. Before anything gets broken, see what good looks like and where each claim comes from. This part is deliberately calm.</p>
+<section class="page" id="page-2" data-route="#/2" data-title="2. Reading the Proof"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>2. Reading the Proof</b></nav><p class="kicker">CHAPTER 2</p><header class="page-head"><h1>Reading the Proof</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>None. This chapter reads the ladder instead of moving it, which is the only chapter that can afford to.</p></div><div class="strip-row"><span>EXERCISE</span><p>Read the ladder, the gate, and the contract that earned them</p></div><div class="strip-row"><span>LEARN</span><p>What a Service Resilience Indicator is, and what an attestation actually claims</p></div><div class="strip-row"><span>RULE</span><p>A gate whose pass is not routine cannot make its fail meaningful.</p></div><div class="strip-row"><span>NEXT</span><p>Open the bar your workloads are judged against. If it does not state a number somebody tests, you have found your first gap. Read-only. Today.</p></div></div>
+<p>Your workload is at the top of its ladder. This chapter reads what good looks like and where each claim comes from, before anything gets broken.</p>
 <h2 class="section">Read the ladder</h2>
 <div class="steps">
 <div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op status infra/workloads</code></pre></div>
@@ -1066,20 +1049,11 @@ attestation_max_age_days</pre></div>
 <aside class="aside" role="note"><p class="aside-title">? Under the hood: what the drill writes</p><p>When a restore drill runs that script inside a restored copy, the verdict line gets captured into an attestation file: which recovery point, what was checked, what it said, when. The gate reads that file. It is evidence, not a flag somebody set, and its history is hash-chained so a rewritten past shows as a broken chain. You will watch this file lose its power in about ten minutes.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just read</p><p>A proven ladder, a per-tier bar, and a short contract owned by the people who know what "good" means for this service. Every claim traced to something you could open and read.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/1">← 1. Building the Workload</a><a class="pager-next" href="#/3">3. Introducing a Compromise →</a></nav></section>
-<section class="page" id="page-3" data-route="#/3" data-title="3. Introducing a Compromise"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>3. Introducing a Compromise</b></nav><p class="kicker">CHAPTER 3</p><header class="page-head"><h1>Introducing a Compromise</h1></header><pre class="panel">STAGE   Scan. It falls, and it falls from a backup job that said
-        Completed.
-DO      Compromise the workload you built, then watch two controls
-        catch it two different ways
-LEARN   Why proof does not accumulate, and where a verdict can
-        honestly come from
-CLAIM   Green is a job status, not a verdict about your data.
-NEXT    Take one existing backup of one workload and have something
-        open it and read it. This week. You are not changing anything.
-        You are finding out whether anything ever has.</pre>
-<p>You have a proven workload and a gate that says yes. Now break it. On purpose, with something harmless and detectable.</p>
+<section class="page" id="page-3" data-route="#/3" data-title="3. Introducing a Compromise"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>3. Introducing a Compromise</b></nav><p class="kicker">CHAPTER 3</p><header class="page-head"><h1>Introducing a Compromise</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>Scan. It falls, and it falls from a backup job that said Completed.</p></div><div class="strip-row"><span>EXERCISE</span><p>Compromise the workload you built, then watch two controls catch it two different ways</p></div><div class="strip-row"><span>LEARN</span><p>Why proof does not accumulate, and where a verdict can honestly come from</p></div><div class="strip-row"><span>RULE</span><p>Green is a job status, not a verdict about your data.</p></div><div class="strip-row"><span>NEXT</span><p>Take one existing backup of one workload and have something open it and read it. This week. You are not changing anything. You are finding out whether anything ever has.</p></div></div>
+<p>You have a proven workload and a gate that says yes. The next step breaks it on purpose, with something harmless and detectable.</p>
 <p>The whole chapter turns on one question:</p>
 <pre class="panel">Which recovery point did you just prove?</pre>
-<p>You proved this workload recovers. That proof was about one moment, and there will be a newer one within the hour. Hold your answer. The tools are about to give you theirs.</p>
+<p>You proved this workload recovers. That proof was about one moment, and there will be a newer recovery point within the hour. Answer for yourself first; the tools give their answer in the next two chapters.</p>
 <h2 class="section">Write it down before we break it</h2>
 <p>Answer this before you run anything in this chapter.</p>
 <pre class="panel">If ─────────────────────── happens to my workload,
@@ -1090,7 +1064,7 @@ I would recover from ─────────────────── ,
 
 and I would know it worked because ─────────────────── .
                                      (what you would check)</pre>
-<p>Keep it. Chapter 4 asks you the same question after the tools have answered it, and the distance between the two answers is the lesson.</p>
+<p>Chapter 4 asks the same question after the tools have answered it. Compare your answer with theirs.</p>
 <h2 class="section">Plant the compromise</h2>
 <div class="steps">
 <div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op incident infra/workloads</code></pre></div>
@@ -1099,6 +1073,7 @@ and I would know it worked because ───────────────
 &lt;your-codename&gt; (resops-&lt;your-codename&gt;-rg)
 planted: 2 EICAR files, 14 .locked files, 1 note
 BASELINE marker still present: yes</pre></div>
+<div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">up to a couple of minutes, with no output until it is</p><p class="diag-text">done. The VM has no inbound access, so this runs through the Azure guest agent, which is a single blocking call that reports once at the end rather than streaming.</p></div>
 <div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">check the VM is running: the guest agent needs about two minutes after boot. Retry once, then stop and ask.</p></div>
 </aside>
 <p>EICAR is a 68-character test string the antivirus industry standardized in the 1990s. Every scanner agrees to detect it as though it were malware, so that detection can be tested without handling anything dangerous. The <code>.locked</code> files are high-entropy junk using ransomware's naming pattern. Nothing here is armed; everything here is detectable. That is the point: we need the alarms to be real, not the fire.</p></div></div>
@@ -1131,6 +1106,7 @@ BASELINE marker still present: yes</pre></div>
 <div class="step"><span class="step-num">4</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op threatscan infra/workloads</code></pre></div>
 <aside class="diag" role="note">
 <div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">a scan that ran, and a verdict that this recovery point is not safe to restore from</p><pre><span class="v-no">THREATS DETECTED</span> · exit 1</pre></div>
+<div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">about three minutes, and up to six. The job id prints</p><p class="diag-text">straight away, then the client polls every twenty seconds until the scan finishes. Silence in between is the poll interval, not a hang.</p></div>
 <div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">if it stops and asks for scan_plan_id, set it in config/workshop.yaml and run it again. The first lesson above has already landed either way.</p></div>
 </aside>
 <aside class="aside" role="note"><p class="aside-title">? Where the scan ran, and what it is called</p><p>That was THREAT SCAN, and it did not run on the VM. It opened the backup copy in the recovery plane and read it there; production was never touched.</p>
@@ -1140,28 +1116,20 @@ BASELINE marker still present: yes</pre></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just proved</p><p>A green pipeline committed a compromise into an immutable vault, and the gate caught it twice: once because proof went stale, once because something looked inside.</p>
 <p>Green is a job status, not a verdict about your data.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/2">← 2. Reading the Proof</a><a class="pager-next" href="#/4">4. Choosing a Recovery Point →</a></nav></section>
-<section class="page" id="page-4" data-route="#/4" data-title="4. Choosing a Recovery Point"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>4. Choosing a Recovery Point</b></nav><p class="kicker">CHAPTER 4</p><header class="page-head"><h1>Choosing a Recovery Point</h1></header><pre class="panel">STAGE   Recover. You choose the point everything downstream is judged
-        on, and outage policy gives you the wrong answer.
-DO      Put your workload back, then pick a recovery point under the
-        conditions that actually matter
-LEARN   Why outage policy answers the wrong question under
-        compromise, and the number that measures the right one
-CLAIM   Under compromise, the freshest recovery point is the most
-        dangerous one.
-NEXT    Ask your team: under compromise, which recovery point would we
-        restore from, and who decides? The silence is the finding.</pre>
+<section class="page" id="page-4" data-route="#/4" data-title="4. Choosing a Recovery Point"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>4. Choosing a Recovery Point</b></nav><p class="kicker">CHAPTER 4</p><header class="page-head"><h1>Choosing a Recovery Point</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>Recover. You choose the point everything downstream is judged on, and outage policy gives you the wrong answer.</p></div><div class="strip-row"><span>EXERCISE</span><p>Put your workload back, then pick a recovery point under the conditions that actually matter</p></div><div class="strip-row"><span>LEARN</span><p>Why outage policy answers the wrong question under compromise, and the number that measures the right one</p></div><div class="strip-row"><span>RULE</span><p>Under compromise, the freshest recovery point is the most dangerous one.</p></div><div class="strip-row"><span>NEXT</span><p>Ask your team: under compromise, which recovery point would we restore from, and who decides? The silence is the finding.</p></div></div>
 <h2 class="section">Put it back</h2>
 <p>First, put your own workload back. This runs while you do the exercise.</p>
 <div class="steps">
 <div class="step"><span class="step-num">1</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op remediate infra/workloads</code></pre></div>
 <aside class="diag" role="note">
 <div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">the planted files removed, the stashed files restored, and the attester re-run, ending on a verdict line that starts OK:</p></div>
+<div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">up to a couple of minutes, with no output until it is</p><p class="diag-text">done. The VM has no inbound access, so this runs through the Azure guest agent, which is a single blocking call that reports once at the end rather than streaming.</p></div>
 <div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">it raises rather than reporting success. Read what it raised before you touch anything, and do not run it twice blindly.</p></div>
 </aside>
 <aside class="aside" role="note"><p class="aside-title">? What remediate actually does</p><p>It removes exactly what the incident planted, restores the two files it stashed, and re-runs the attester. Surgical, because our incident recorded what it changed. The discipline for incidents that keep no manifest is exactly what comes next: choosing recovery points on evidence.</p></aside></div></div>
 </div>
 <h2 class="section">Four recovery points, one decision</h2>
-<p>Now the exercise. Four recovery points, no cloud, no token:</p>
+<p>Four recovery points, offline, with no cloud account and no token:</p>
 <div class="steps">
 <div class="step"><span class="step-num">2</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops gate config/incident.yaml</code></pre></div>
 <aside class="diag" role="note">
@@ -1176,7 +1144,7 @@ AGGREGATE  <span class="v-no">HOLD</span> – C-32-hours-ago, B-6-days-ago, A-40
 C   32 hours ago    ●●●●✗·  RECOVERABLE   unattested      HOLD
 B   6 days ago      ●●●●●●  VALIDATED     RPO 144.0h      HOLD
 A   400 days ago    ●●●●●●  VALIDATED     RPO 9600.0h     HOLD</pre>
-<p><strong>The fact you do not have:</strong> the first anomalous log entry is <em>"sometime last week"</em>. Retention is seven days and the earliest surviving entry is already abnormal. It may have started three days ago. Or nine.</p>
+<p><strong>The fact you do not have:</strong> the first anomalous log entry is <em>"sometime last week"</em>. Retention is seven days and the earliest surviving entry is already abnormal. The compromise may be three days old, or nine.</p>
 <p><strong>Choose one. Justify it in a sentence, naming what you give up.</strong></p>
 <aside class="aside" role="note"><p class="aside-title">? Why this matters</p><p>The gate promotes exactly one point, and it is the one squarely inside the incident window. That is not a bug. It is a policy written for OUTAGES answering a question about COMPROMISE.</p>
 <p>A recovery point objective (RPO) target assumes the only cost of an older point is LOST DATA. Under compromise, the freshest point is the most DANGEROUS one.</p>
@@ -1185,16 +1153,7 @@ A   400 days ago    ●●●●●●  VALIDATED     RPO 9600.0h     HOLD</pre>
 <p>That is Mean Time to Clean Recovery. Not time to recovery. Time to CLEAN recovery. The word "clean" is the entire argument.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just decided</p><p>Recovery under compromise is a decision, made by a human, on evidence, against a clock. The tools narrow the choice; they do not make it. MTCR measures how fast your organization can make it well.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/3">← 3. Introducing a Compromise</a><a class="pager-next" href="#/5">5. Re-Proving Recovery →</a></nav></section>
-<section class="page" id="page-5" data-route="#/5" data-title="5. Re-Proving Recovery"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>5. Re-Proving Recovery</b></nav><p class="kicker">CHAPTER 5</p><header class="page-head"><h1>Re-Proving Recovery</h1></header><pre class="panel">STAGE   Scan, then Validate. Re-earned, not restored.
-DO      Close the loop: take a clean point, scan it, drill it, and
-        earn the green verdict back
-LEARN   What actually restores trust after an incident, and what
-        only looks like it does
-CLAIM   Cleaning production changes nothing inside an immutable
-        vault. Trust is re-opened, not re-assured.
-NEXT    Run one drill that produces an attestation. This is the first
-        step that needs the application team, and it is where adoption
-        stops being free.</pre>
+<section class="page" id="page-5" data-route="#/5" data-title="5. Re-Proving Recovery"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>5. Re-Proving Recovery</b></nav><p class="kicker">CHAPTER 5</p><header class="page-head"><h1>Re-Proving Recovery</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>Scan, then Validate. Re-earned, not restored.</p></div><div class="strip-row"><span>EXERCISE</span><p>Close the loop: take a clean point, scan it, drill it, and earn the green verdict back</p></div><div class="strip-row"><span>LEARN</span><p>What actually restores trust after an incident, and what only looks like it does</p></div><div class="strip-row"><span>RULE</span><p>Cleaning production changes nothing inside an immutable vault. Trust is re-opened, not re-assured.</p></div><div class="strip-row"><span>NEXT</span><p>Run one drill that produces an attestation. This is the first step that needs the application team, and it is where adoption stops being free.</p></div></div>
 <p>Your VM is clean, but the gate still holds: the newest recovery point still contains the compromise, and cleaning production changes nothing inside an immutable vault. Trust is re-earned the same way it was earned the first time.</p>
 <h2 class="section">A clean point</h2>
 <div class="steps">
@@ -1210,6 +1169,7 @@ NEXT    Run one drill that produces an attestation. This is the first
 <aside class="diag" role="note">
 <div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">no threat recorded, and the tool refusing to call that clean. Read its wording carefully, because it is the best sentence in the toolkit.</p><pre>no threat recorded for this workload - which is NOT the same
 as clean, and does not clear the Scan rung on its own</pre></div>
+<div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">about three minutes, and up to six. The job id prints</p><p class="diag-text">straight away, then the client polls every twenty seconds until the scan finishes. Silence in between is the poll interval, not a hang.</p></div>
 </aside>
 <aside class="aside" role="note"><p class="aside-title">? Why this matters</p><p>The scanner found nothing, and the tool refuses to call that clean. Absence of evidence is never a pass. What clears the Scan rung is the drill: something must OPEN the point and verify it from the inside.</p></aside></div></div>
 </div>
@@ -1228,16 +1188,7 @@ as clean, and does not clear the Scan rung on its own</pre></div>
 </aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just closed</p><p>Incident to trusted recovery, end to end: repair, clean point, scan, drill, gate. The verdict came back green because you re-proved it, not because time passed or a dashboard said so.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/4">← 4. Choosing a Recovery Point</a><a class="pager-next" href="#/6">6. Gating the Pipeline →</a></nav></section>
-<section class="page" id="page-6" data-route="#/6" data-title="6. Gating the Pipeline"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>6. Gating the Pipeline</b></nav><p class="kicker">CHAPTER 6</p><header class="page-head"><h1>Gating the Pipeline</h1></header><pre class="panel">STAGE   All six, across six workloads at once. The same ladder you
-        climbed by hand, read as an estate.
-DO      Run the gate across an estate, publish its numbers, and read
-        the evidence and the CI file that make it a merge blocker
-LEARN   How a check survives contact with a real estate: the ratchet,
-        the control evidence, and who owns what
-CLAIM   You have shifted this left three times already. This is the
-        fourth, and it looks identical.
-NEXT    Add one required check on one repository, with a dated tolerance
-        so it cannot block anyone on day one. Needs CI.</pre>
+<section class="page" id="page-6" data-route="#/6" data-title="6. Gating the Pipeline"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>6. Gating the Pipeline</b></nav><p class="kicker">CHAPTER 6</p><header class="page-head"><h1>Gating the Pipeline</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>All six, across six workloads at once. The same ladder you climbed by hand, read as an estate.</p></div><div class="strip-row"><span>EXERCISE</span><p>Run the gate across an estate, publish its numbers, and read the evidence and the CI file that make it a merge blocker</p></div><div class="strip-row"><span>LEARN</span><p>How a check survives contact with a real estate: the ratchet, the control evidence, and who owns what</p></div><div class="strip-row"><span>RULE</span><p>A recoverability check belongs in the same place as your tests and your security scans, and it is built the same way.</p></div><div class="strip-row"><span>NEXT</span><p>Add one required check on one repository, with a dated tolerance so it cannot block anyone on day one. Needs CI.</p></div></div>
 <p>One workload proving itself is a demo. The discipline starts when the same gate runs across everything, on every pull request, publishing numbers somebody has to look at.</p>
 <h2 class="section">The estate</h2>
 <div class="steps">
@@ -1246,7 +1197,7 @@ NEXT    Add one required check on one repository, with a dated tolerance
 <div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">six workloads, five of them holding, and one aggregate line at the bottom that a pipeline can act on</p><pre>AGGREGATE  <span class="v-no">HOLD</span> – checkout-api, identity-svc, reporting-db,
                   edge-cache, legacy-batch · exit 1</pre></div>
 </aside>
-<p><strong>Stop on <code>checkout-api</code> and <code>identity-svc</code>.</strong> Same rung. Opposite reasons. One was tested and is contaminated; one was never tested at all. The rung hides that. The blocked stage names it.</p></div></div>
+<p><strong>Compare <code>checkout-api</code> and <code>identity-svc</code>.</strong> Both sit on the same rung for opposite reasons: one was tested and is contaminated, the other was never tested at all. The rung does not distinguish them. The blocked stage does.</p></div></div>
 </div>
 <h2 class="section">Publish the numbers</h2>
 <div class="steps">
@@ -1291,15 +1242,7 @@ tolerance_reason: "backup policy rebuild in flight"</pre>
 <aside class="aside" role="note"><p class="aside-title">? Will this wake someone at 3am?</p><p>No. Recoverability drift is not an incident. It fails a pull request and waits for office hours.</p></aside></div></div>
 </div>
 <div class="mark"><p class="mark-title">✦ What you just wired</p><p>The fourth gate, shaped exactly like the other three: a required check, an honest number, evidence somebody outside engineering can read, and a ratchet that lets an estate adopt it without blocking releases.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/5">← 5. Re-Proving Recovery</a><a class="pager-next" href="#/7">7. Cleaning Up →</a></nav></section>
-<section class="page" id="page-7" data-route="#/7" data-title="7. Cleaning Up"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>7. Cleaning Up</b></nav><p class="kicker">CHAPTER 7</p><header class="page-head"><h1>Cleaning Up</h1></header><pre class="panel">STAGE   None. The ladder goes away with the workload, which is the
-        point.
-DO      Destroy everything you built, and verify it is gone
-LEARN   Why disposability is part of the discipline rather than the
-        tidying up
-CLAIM   A drill you cannot afford to run twice is a drill you will
-        run once.
-NEXT    Cost one drill. A drill you cannot afford to run twice is a
-        drill you will run once, and once is a demo, not a discipline.</pre>
+<section class="page" id="page-7" data-route="#/7" data-title="7. Cleaning Up"><nav class="crumb" aria-label="Breadcrumb"><a href="#/overview">DevOps Meets ResOps</a><span class="crumb-sep">›</span><b>7. Cleaning Up</b></nav><p class="kicker">CHAPTER 7</p><header class="page-head"><h1>Cleaning Up</h1></header><div class="strip"><div class="strip-row"><span>STAGE</span><p>None. The ladder goes away with the workload, which is the point.</p></div><div class="strip-row"><span>EXERCISE</span><p>Destroy everything you built, and verify it is gone</p></div><div class="strip-row"><span>LEARN</span><p>Why disposability is part of the discipline rather than the tidying up</p></div><div class="strip-row"><span>RULE</span><p>A drill you cannot afford to run twice is a drill you will run once.</p></div><div class="strip-row"><span>NEXT</span><p>Cost one drill. A drill you cannot afford to run twice is a drill you will run once, and once is a demo, not a discipline.</p></div></div>
 <p>Everything you built is real, and it bills until it is gone: a VM, a disk, a storage account, a virtual network, and a protected workload on a backup platform.</p>
 <p>This is also the last time today you get to practice the only habit that has mattered all workshop. Something is about to report success. You are not going to believe it until you have opened the environment and read it yourself.</p>
 <h2 class="section">Retire the workload</h2>
@@ -1320,7 +1263,7 @@ Destroy complete!</pre></div>
 <p>The practical consequence: your codename is spent. If you run this lab again, pick a new one. Reusing it adopts the old group and attaches it to a machine that no longer exists, and the failure surfaces later at backup, reading like nothing at all.</p></aside></div></div>
 </div>
 <h2 class="section">Verify it is gone</h2>
-<p>Teardown just told you it succeeded. Go and check.</p>
+<p>Teardown reported success. Verify it independently, because a teardown that reports success and leaves resources running is the expensive failure.</p>
 <div class="steps">
 <div class="step"><span class="step-num">2</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>az resource list --query "length(@)" -o tsv</code></pre></div>
 <aside class="diag" role="note">
@@ -1337,7 +1280,7 @@ Destroy complete!</pre></div>
 <div class="mark"><p class="mark-title">✦ What you just closed</p><p>A lab that costs nothing to leave behind, retired and verified empty by command rather than by report.</p>
 <p>Recovery drills only happen on a schedule if they are cheap to start and cheap to end. That is not an operational detail. It is the difference between a discipline and an annual exercise.</p></div><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/6">← 6. Gating the Pipeline</a><a class="pager-next" href="#/close">Wrap-Up →</a></nav></section>
 <section class="page" id="page-close" data-route="#/close" data-title="Wrap-Up"><header class="page-head"><h1>Wrap-Up</h1></header><h2 class="section">What you proved</h2>
-<p>One command. One workload. Four different answers, across two hours.</p>
+<p>The same command gave four different answers about one workload over two hours.</p>
 <div class="deflist deflist-card"><div class="dl-row"><span class="dl-key dl-yes">after the first drill</span><div class="dl-val"><p><code>op gate</code> says PROMOTE. The proof covers the newest recovery point.</p></div></div><div class="dl-row"><span class="dl-key dl-no">after a BACKUP</span><div class="dl-val"><p><code>op gate</code> says HOLD. You took a backup. That is the only thing you did.</p></div></div><div class="dl-row"><span class="dl-key dl-no">after the scan</span><div class="dl-val"><p><code>op threatscan</code> says HOLD. Something looked, and it found malware.</p></div></div><div class="dl-row"><span class="dl-key dl-yes">after the second drill</span><div class="dl-val"><p><code>op gate</code> says PROMOTE. Re-proved, not re-assured.</p></div></div></div>
 <p>Nothing in that column moved because the VM changed. It moved because what had been <strong>opened and read</strong> changed. That is assumption-based resilience becoming evidence-based, in four lines.</p>
 <h2 class="section">The model you just walked</h2>
@@ -1355,7 +1298,7 @@ Destroy complete!</pre></div>
 <div class="deflist"><div class="dl-row"><span class="dl-key">1</span><div class="dl-val"><p>We gate on tests. We gate on scans. We do not gate on recoverability.</p></div></div><div class="dl-row"><span class="dl-key">2</span><div class="dl-val"><p>A green backup dashboard is a build artefact, not a run signal. It proves the job ran, not that the data is recoverable.</p></div></div><div class="dl-row"><span class="dl-key">3</span><div class="dl-val"><p>Available is not trusted. The distance between them is the resilience gap.</p></div></div><div class="dl-row"><span class="dl-key">4</span><div class="dl-val"><p>A check that examined nothing must never report a pass.</p></div></div><div class="dl-row"><span class="dl-key">5</span><div class="dl-val"><p>The number is time to CLEAN recovery. Not time to recovery.</p></div></div><div class="dl-row"><span class="dl-key">6</span><div class="dl-val"><p>This does not wake anyone at 3am. It fails a pull request.</p></div></div></div>
 <h2 class="section">Where you are now</h2>
 <div class="deflist"><div class="dl-row"><span class="dl-key">UNDERSTAND</span><div class="dl-val"><p>the deck          The five domains, the contract, and why recovery is still a handoff. 45 minutes.</p></div></div><div class="dl-row"><span class="dl-key">PROVE</span><div class="dl-val"><p>this workshop     One workload, one loop, your hands, and a verdict you could show an auditor. 2 hours.</p></div></div><div class="dl-row"><span class="dl-key">OPERATE</span><div class="dl-val"><p>Monday onward     Your estate, with the loop running without you standing over it.</p></div></div></div>
-<p>Most teams live in the first row. They have read the model, they believe they could recover, and they have never once demonstrated it on a workload that matters. You spent two hours in the second row. Everything below is the third.</p>
+<p>Most teams live in the first row. They have read the model, they believe they could recover, and they have never once demonstrated it on a workload that matters. You spent two hours in the second row. The rest of this page is how to reach the third.</p>
 <h2 class="section">What this workshop does not solve</h2>
 <div class="deflist"><div class="dl-row"><span class="dl-key">the lab workload is a VM</span><div class="dl-val"><p>The contract transfers, but worked examples for managed databases and object storage are not written yet.</p></div></div><div class="dl-row"><span class="dl-key">restore-verify costs money</span><div class="dl-val"><p>Sampling plus a per-tier freshness bar is a policy, not a cost model, and we do not have a cost model.</p></div></div><div class="dl-row"><span class="dl-key">the crosswalk is indicative</span><div class="dl-val"><p>It supports a resilience program. It is not a compliance attestation, and it will not become one.</p></div></div><div class="dl-row"><span class="dl-key">recovery planning</span><div class="dl-val"><p>Dependency mapping and impact tolerances across a real estate is a program, not a lab. Two hours cannot fake it.</p></div></div><div class="dl-row"><span class="dl-key">nobody owns this by default</span><div class="dl-val"><p>It spans three teams who mostly do not talk about recovery together.</p></div></div><div class="dl-row"><span class="dl-key">nobody funds the drill</span><div class="dl-val"><p>Costing a repeatable drill is a budget conversation, not a technical act, and it is the most common place this quietly stops.</p></div></div></div>
 <h2 class="section">When this gate is not worth it</h2>
@@ -1370,14 +1313,14 @@ Destroy complete!</pre></div>
 <p><strong>What step one actually needs, so nobody is surprised on Monday:</strong></p>
 <div class="deflist"><div class="dl-row"><span class="dl-key">1</span><div class="dl-val"><p>An access token from Command Center, under avatar -&gt; Access Tokens.</p></div></div><div class="dl-row"><span class="dl-key">2</span><div class="dl-val"><p>Your Commvault Cloud tenant's API endpoint.</p></div></div><div class="dl-row"><span class="dl-key">3</span><div class="dl-val"><p>Two ids, both readable from a console URL: the hypervisor and the protection plan.</p></div></div><div class="dl-row"><span class="dl-key">4</span><div class="dl-val"><p>The workload's group. <code>resops list</code> finds it by name.</p></div></div></div>
 <p>Step one is read-only and <strong>cannot modify your environment.</strong> The engine makes no create, update or delete calls of any kind, and a test in the suite fails if anyone adds one. That is the point of starting there: it costs an afternoon and risks nothing.</p>
-<p><strong>One next action. Named workload. Dated. Owner.</strong> Not three.</p>
+<p><strong>Pick one next action, not three.</strong> Name the workload, set a date, and name an owner.</p>
 <h2 class="section">The question you will be asked</h2>
 <p>You will be asked about this within a month, and the questions will be reasonable ones. Answer the hardest of them now, while the evidence is still in front of you.</p>
 <p><strong>Write down the one question you are most likely to be asked, and your answer to it.</strong> That page is what you take back.</p>
 <p>Nobody owns this by default. It spans three teams who mostly do not talk about recovery together. That is not a tooling gap, and no product closes it alone. It is why ResOps is described as an operating discipline rather than a feature.</p>
 <pre class="panel">From assumption-based resilience
   to evidence-based, measurable, predictable recoverability.</pre>
-<p>Heroism cannot scale. A discipline can, and it starts with one honest measurement.</p>
+<p>Individual effort does not scale across an estate. A repeatable practice does, and it starts with one honest measurement.</p>
 <p><strong>In seven days there is one question: did you run it against anything real?</strong></p><nav class="pager" aria-label="Pages"><a class="pager-prev" href="#/7">← 7. Cleaning Up</a></nav></section>
 </main>
 </div>

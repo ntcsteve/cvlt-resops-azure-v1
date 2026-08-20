@@ -52,7 +52,7 @@ h3, h2.section { font-size: 17px; font-weight: 700; margin: 34px 0 10px; }
    carry meaning -- the aside's left rule, the verdict tint on a row, the
    terminal's title bar. */
 h2.section, .page > h3 { margin-top: 64px; }
-.dolearn + h2.section, .page-head + h2.section { margin-top: 10px; }
+.strip + h2.section, .page-head + h2.section { margin-top: 10px; }
 
 p { margin: 14px 0; text-wrap: pretty; }
 strong { font-weight: 600; }

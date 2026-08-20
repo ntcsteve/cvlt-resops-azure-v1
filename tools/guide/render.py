@@ -83,8 +83,8 @@ def render_nodes(nodes, images, mode='solo', icons=None):
             out.append(render_reveal(node[1], node[2]))
         elif kind == "mark":
             out.append(render_titled(node, "mark", "mark-title"))
-        elif kind == "dolearn":
-            out.append(render_dolearn(node[1]))
+        elif kind == "strip":
+            out.append(render_strip(node[1]))
         elif kind == "deflist":
             out.append(render_deflist(node[1], icons, len(node) > 2 and node[2]))
         elif kind == "statement":
@@ -188,11 +188,11 @@ def render_reveal(title, parts):
             f"</summary><div>{render_parts(parts)}</div></details>")
 
 
-def render_dolearn(rows):
+def render_strip(rows):
     cells = "".join(
-        f'<div class="dolearn-row"><span>{esc(r["label"])}</span>'
+        f'<div class="strip-row"><span>{esc(r["label"])}</span>'
         f"<p>{inline(r['text'])}</p></div>" for r in rows)
-    return f'<div class="dolearn">{cells}</div>'
+    return f'<div class="strip">{cells}</div>'
 
 
 def render_deflist(rows, icons=None, card=False):
@@ -272,7 +272,7 @@ def render_body(nodes, images, mode='solo', icons=None):
                 rail_open = True
             counter += 1
             step = [node]
-        elif kind in ("h2", "h2s", "h3", "dolearn", "mark", "reveal"):
+        elif kind in ("h2", "h2s", "h3", "strip", "mark", "reveal"):
             close_rail()
             parts.append(render_nodes([node], images, mode, icons))
         elif step is not None:
