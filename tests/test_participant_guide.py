@@ -479,7 +479,10 @@ def test_primary_headings_are_title_case_and_subheads_are_not():
 # negative ships.
 
 SOURCE_SUFFIXES = (".md", ".py", ".css", ".yaml", ".yml", ".sh", ".tf",
-                   ".json", ".html", ".example")
+                   ".json", ".html", ".example",
+                   # The figure SVGs carry prose a participant reads, so
+                   # the editorial guards cover them like any other page.
+                   ".svg")
 
 BRITISH = (
     (r"[a-z]+is(?:e|es|ed|ing|er|ers|able|ables|ability|ation|ations)",
