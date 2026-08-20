@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 230"
+     width="960" height="230" role="img"
+     aria-label="Two recovery points on a time axis. The attestation covers
+point 1 and nothing after it; point 2, the backup you just took, is outside
+its reach, so the gate holds.">
+  <!-- Colors mirror tools/guide/assets/tokens.css: the yes shade #30881c,
+       the no shade #db2961, muted #707391, ink #00053b, fog #eaeaea.
+       Change them there first. -->
+  <rect width="960" height="230" fill="#ffffff"/>
+
+  <line x1="60" y1="96" x2="888" y2="96" stroke="#eaeaea"
+        stroke-width="2"/>
+  <path d="M 888 90 L 902 96 L 888 102 Z" fill="#eaeaea"/>
+  <text x="902" y="120" text-anchor="end" font-family="Arial, Helvetica, sans-serif"
+        font-size="13" fill="#707391">time</text>
+
+  <circle cx="280" cy="96" r="9" fill="#30881c"/>
+  <text x="280" y="54" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="15" font-weight="bold" fill="#00053b">recovery point 1</text>
+  <text x="280" y="76" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" fill="#707391">drilled, read, attested clean</text>
+
+  <circle cx="660" cy="96" r="9" fill="#ffffff" stroke="#00053b"
+          stroke-width="2"/>
+  <text x="660" y="54" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="15" font-weight="bold" fill="#00053b">recovery point 2</text>
+  <text x="660" y="76" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" fill="#707391">your backup, a minute ago</text>
+
+  <path d="M 210 128 L 210 140 L 350 140 L 350 128"
+        fill="none" stroke="#30881c" stroke-width="1.5"/>
+  <text x="280" y="162" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" fill="#30881c">the attestation covers this point</text>
+  <text x="280" y="182" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" fill="#30881c">and nothing after it</text>
+
+  <text x="660" y="162" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" fill="#707391">nothing has looked at it</text>
+  <text x="660" y="184" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" fill="#707391">so the gate says
+    <tspan font-weight="bold" fill="#db2961">HOLD</tspan>, and it is right</text>
+</svg>

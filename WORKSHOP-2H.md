@@ -760,6 +760,8 @@ python3 -m resops.operator.op gate infra/workloads
                     HOLD  attestation does not cover the newest recovery point · exit 1
 ```
 
+![The attestation covers recovery point 1, and nothing after it.](images/proof-timeline.svg)
+
 The ladder still reads VALIDATED and the gate now says HOLD. The ladder
 reports the rung reached; the gate reports whether that rung is still
 trustworthy, so they can disagree.
