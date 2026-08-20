@@ -562,7 +562,7 @@ if [ -d "$STASH" ]; then
   done
 fi
 
-echo "removed the planted artefacts; restored $restored file(s) from the stash"
+echo "removed the planted artifacts; restored $restored file(s) from the stash"
 echo "locked_remaining=$(find "$DATA" -name '*.locked' | wc -l)"
 echo "stash_present=$([ -d "$STASH" ] && echo yes || echo NO)"
 

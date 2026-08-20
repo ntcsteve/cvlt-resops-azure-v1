@@ -1458,7 +1458,7 @@ watched happen rather than a claim you are repeating.
 
 ```list
  1   We gate on tests. We gate on scans. We do not gate on recoverability.
- 2   A green backup dashboard is a build artefact, not a run signal. It
+ 2   A green backup dashboard is a build artifact, not a run signal. It
      proves the job ran, not that the data is recoverable.
  3   Available is not trusted. The distance between them is the resilience
      gap.

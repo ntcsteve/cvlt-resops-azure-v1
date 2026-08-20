@@ -489,6 +489,10 @@ BRITISH = (
     (r"(?:cancell|labell|modell|travell|signall|fuell)[a-z]*", "doubled l"),
     (r"fulfil",                               "fulfil -> fulfill"),
     (r"practise[a-z]*",                       "practise -> practice"),
+    # A lexical pair with no suffix class: -ae- sweeps up US words the way a
+    # narrow word entry does not (aesthetic, aerial, algae). Same shape as
+    # fulfil and practise above.
+    (r"artefact[a-z]*",                       "artefact -> artifact"),
 )
 
 # Ordinary English the suffix patterns catch. Every entry is a word that is

@@ -153,7 +153,7 @@ def test_no_attestation_at_all_proves_nothing():
 
 
 def test_a_job_the_commcell_cannot_confirm_fails_closed():
-    """The attestation is our own artefact. If the vendor has no record of the job
+    """The attestation is our own artifact. If the vendor has no record of the job
     it names, we have a claim and no confirmation, which must never read as proof."""
     routes = _routes(**{"Job/9999999": (200, {"jobs": []})})
     proof, err = _recovery_proof(FakeClient(routes), {"restore_job": "9999999"})

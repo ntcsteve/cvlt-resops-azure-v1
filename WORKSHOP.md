@@ -255,7 +255,7 @@ Three modes. You already live all three.
      INCIDENT   someone clicks restore, in a panic
 
    That missing middle is the only place recoverability is proven
-   or lost. Green backup dashboards are a BUILD artefact being read
+   or lost. Green backup dashboards are a BUILD artifact being read
    as a RUN signal. "We have backups" is a build claim.
    "We can recover" is a run claim.
 
