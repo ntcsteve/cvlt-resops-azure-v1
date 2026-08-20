@@ -365,8 +365,8 @@ terraform -chdir=infra/workloads apply -auto-approve
    guest agent: a process inside the VM that Azure hands scripts to,
    with your subscription's credentials as the key. Every plant, every
    repair, and every drill verification in this workshop goes through
-   that one door, and the door works even when the network story is
-   hostile.
+   that one door, and the door works even when the network is
+   compromised.
 ```
 
 ### Connect the platform
@@ -462,9 +462,8 @@ python3 -m resops.operator.op backup infra/workloads
    professional move is destroying backups before revealing itself.
    This is the control that makes that move fail.
 
-   The vault preserves every moment faithfully, including this one.
-   Choosing which moment to trust is the discipline the rest of this
-   workshop builds.
+   The pool keeps every recovery point, including this one. Choosing
+   which point to trust is what the rest of this workshop covers.
 ```
 
 ### Prove it restores
@@ -506,8 +505,8 @@ python3 -m resops.operator.op restore infra/workloads
 ## Chapter 2 · Reading the Proof
 
 ```
- STAGE      None. This chapter reads the ladder instead of moving it, which
-            is the only chapter that can afford to.
+ STAGE      None. This chapter reads the ladder instead of moving it, and
+            it is the only one that can afford to.
  EXERCISE   Read the ladder, the gate, and the contract that earned them
  LEARN      What a Service Resilience Indicator is, and what an
             attestation actually claims
@@ -643,8 +642,8 @@ mount passes the first four and fails a real service on its first write.
    verdict line gets captured into an attestation file: which recovery
    point, what was checked, what it said, when. The gate reads that
    file. It is evidence, not a flag somebody set, and its history is
-   hash-chained so a rewritten past shows as a broken chain. You will
-   watch this file lose its power in about ten minutes.
+   hash-chained so a rewritten past shows as a broken chain. The next
+   chapter's backup makes this file stale.
 ```
 
 ```
@@ -776,7 +775,7 @@ reports the rung reached; the gate reports whether that rung is still
 trustworthy, so they can disagree.
 
 ```
- ? WHY THIS MATTERS, AND NOBODY PREDICTS THIS ONE
+ ? WHY THIS MATTERS
 
    You did not change the verdict. You took a BACKUP.
 
@@ -960,7 +959,7 @@ already abnormal. The compromise may be three days old, or nine.
    older point is LOST DATA.
    Under compromise, the freshest point is the most DANGEROUS one.
 
-   And look at A. The only point anyone can be certain about costs 400
+   Point A is the other lesson. The only point anyone can be certain about costs 400
    days of orders, and it is only certain because NOTHING WAS VERIFIED
    between it and last week. That gap is not bad luck. It is the drill
    nobody scheduled.
@@ -1023,7 +1022,7 @@ python3 -m resops.operator.op threatscan infra/workloads
 ```
 
 ```
- ✓ YOU SHOULD SEE   no threat recorded, and the tool refusing to call that clean. Read its wording carefully, because it is the best sentence in the toolkit.
+ ✓ YOU SHOULD SEE   no threat recorded, and the tool refusing to call that clean
                     no threat recorded for this workload - which is NOT the same
                     as clean, and does not clear the Scan rung on its own
  ⏱ HOW LONG         about three minutes, and up to six. The job id prints
@@ -1052,9 +1051,8 @@ Open **Secure**, then **Threat scan**, and select your workload again.
 
 ```
  ? HOW IT WORKS: THE NUMBER WENT BACK TO ZERO
-   Chapter 3 said this would happen, and here it is. The chart reports the
-   most recent scan, so a clean scan replaces a dirty one and the estate
-   view shows no trace of what you planted.
+   The chart reports the most recent scan, so a clean scan replaces a
+   dirty one and the estate view shows no trace of what you planted.
 
    Two consequences worth carrying back. A dashboard that reads zero does
    not mean nothing was ever found, and the recovery point that contained
@@ -1268,8 +1266,8 @@ cat .github/workflows/resops-gate.yml
             tidying up
  RULE       A drill you cannot afford to run twice is a drill you will
             run once.
- NEXT       Cost one drill. A drill you cannot afford to run twice is a
-            drill you will run once, and once is a demo, not a discipline.
+ NEXT       Price one drill for a workload you own: the compute, the
+            storage, the minutes. This week.
 ```
 
 Everything you built is real, and it bills until it is gone: a VM, a disk,
@@ -1358,8 +1356,7 @@ terraform -chdir=infra/workloads state list | wc -l
    Teardown printed success. These two commands are the only things
    that know whether it is true.
 
-   Apply that habit to a backup dashboard on Monday and you have the
-   whole workshop.
+   The same habit applies to a backup dashboard on Monday.
 ```
 
 ```
