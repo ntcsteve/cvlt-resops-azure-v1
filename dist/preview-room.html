@@ -963,7 +963,8 @@ rto_minutes
 attestation_max_age_days</pre></div>
 </aside>
 <details class="aside aside-fold"><summary>? Why this matters</summary><div><p>A measurable, testable target per critical service is a Service Resilience Indicator. Read the NOTE at the bottom of that file: nobody restore-verifies everything every day, so the policy is not "everything is verified", it is "for THIS tier, something must have opened a recovery point and read it within N days".</p>
-<p>A tier that declares no freshness value is never checked for it. That is a legitimate choice, made explicitly, and still recorded.</p></div></details></div></div>
+<p>A tier that declares no freshness value is never checked for it. That is a legitimate choice, made explicitly, and still recorded.</p></div></details>
+<details class="aside aside-fold"><summary>? If you run slos already</summary><div><p>A Service Resilience Indicator is to recovery what an SLO is to reliability: a declared, testable bar per service, owned as policy rather than kept as an intention. Recoverability today is where reliability was before SRE existed: designed up front, improvised in an incident, and unmeasured in between. This file is the missing run layer.</p></div></details></div></div>
 </div>
 <h2 class="section">The contract that earned it</h2>
 <p>The verdict came from this script, which runs inside the restored copy:</p>

@@ -601,6 +601,16 @@ cat config/tiers.yaml
    That is a legitimate choice, made explicitly, and still recorded.
 ```
 
+```
+ ? IF YOU RUN SLOs ALREADY
+   A Service Resilience Indicator is to recovery what an SLO is to
+   reliability: a declared, testable bar per service, owned as policy
+   rather than kept as an intention. Recoverability today is where
+   reliability was before SRE existed: designed up front, improvised
+   in an incident, and unmeasured in between. This file is the
+   missing run layer.
+```
+
 ### The contract that earned it
 
 The verdict came from this script, which runs inside the restored copy:
