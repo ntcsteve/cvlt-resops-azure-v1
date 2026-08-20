@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 278" width="960" height="278" role="img" aria-label="Two loops. Delivery: code, build, deploy, observe, respond, already gated by tests, scans, lint and plan. Recovery: discover, protect, detect, recover, scan, validate, gated by one required check that exits 0 or 1 on every change.">
+  <!-- Colors mirror tools/guide/assets/tokens.css: crocus #844896 on
+       the row kickers, the yes shade #30881c on the fourth gate,
+       muted #707391, ink #00053b, fog #eaeaea. Change them there
+       first. -->
+  <rect width="960" height="278" fill="#ffffff"/>
+<text x="40" y="51" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" letter-spacing="1" fill="#844896">DELIVERY</text>
+<rect x="150" y="24" width="136" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="218" y="51" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Code</text>
+<rect x="310" y="24" width="136" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="378" y="51" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Build</text>
+<line x1="289" y1="46" x2="302" y2="46" stroke="#707391" stroke-width="1.2"/>
+<path d="M 302 42 L 309 46 L 302 50 Z" fill="#707391"/>
+<rect x="470" y="24" width="136" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="538" y="51" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Deploy</text>
+<line x1="449" y1="46" x2="462" y2="46" stroke="#707391" stroke-width="1.2"/>
+<path d="M 462 42 L 469 46 L 462 50 Z" fill="#707391"/>
+<rect x="630" y="24" width="136" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="698" y="51" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Observe</text>
+<line x1="609" y1="46" x2="622" y2="46" stroke="#707391" stroke-width="1.2"/>
+<path d="M 622 42 L 629 46 L 622 50 Z" fill="#707391"/>
+<rect x="790" y="24" width="136" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="858" y="51" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Respond</text>
+<line x1="769" y1="46" x2="782" y2="46" stroke="#707391" stroke-width="1.2"/>
+<path d="M 782 42 L 789 46 L 782 50 Z" fill="#707391"/>
+<path d="M 150 78 L 150 87 L 930 87 L 930 78" fill="none" stroke="#707391" stroke-width="1.5"/>
+<text x="540" y="108" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">gated already: tests, security scans, lint, infrastructure plan</text>
+<text x="40" y="169" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" letter-spacing="1" fill="#844896">RECOVERY</text>
+<rect x="150" y="142" width="110" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="205" y="169" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Discover</text>
+<rect x="284" y="142" width="110" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="339" y="169" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Protect</text>
+<line x1="263" y1="164" x2="276" y2="164" stroke="#707391" stroke-width="1.2"/>
+<path d="M 276 160 L 283 164 L 276 168 Z" fill="#707391"/>
+<rect x="418" y="142" width="110" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="473" y="169" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Detect</text>
+<line x1="397" y1="164" x2="410" y2="164" stroke="#707391" stroke-width="1.2"/>
+<path d="M 410 160 L 417 164 L 410 168 Z" fill="#707391"/>
+<rect x="552" y="142" width="110" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="607" y="169" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Recover</text>
+<line x1="531" y1="164" x2="544" y2="164" stroke="#707391" stroke-width="1.2"/>
+<path d="M 544 160 L 551 164 L 544 168 Z" fill="#707391"/>
+<rect x="686" y="142" width="110" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="741" y="169" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Scan</text>
+<line x1="665" y1="164" x2="678" y2="164" stroke="#707391" stroke-width="1.2"/>
+<path d="M 678 160 L 685 164 L 678 168 Z" fill="#707391"/>
+<rect x="820" y="142" width="110" height="44" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="875" y="169" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">Validate</text>
+<line x1="799" y1="164" x2="812" y2="164" stroke="#707391" stroke-width="1.2"/>
+<path d="M 812 160 L 819 164 L 812 168 Z" fill="#707391"/>
+<path d="M 150 196 L 150 205 L 930 205 L 930 196" fill="none" stroke="#30881c" stroke-width="1.5"/>
+<text x="540" y="226" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#30881c">the fourth gate: one required check, exit 0 or 1, on every change</text>
+</svg>

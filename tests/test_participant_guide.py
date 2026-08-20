@@ -924,7 +924,10 @@ def test_the_concepts_sit_with_the_commands_that_prove_them():
         "the planes are back on the Overview"
     assert "SHIFTED LEFT ALREADY" in ch6, "the shift-left table left chapter 6"
     assert "SHIFTED LEFT ALREADY" not in overview
-    assert "What transfers, and what does not" in wrap
+    # The portability caveat merged into the judgment section on 2026-08-20,
+    # when the Wrap-Up was restructured around a stated conclusion.
+    assert "Where the gate earns its place" in wrap
+    assert "vendor-neutral" in wrap, "the portability statement left the Wrap-Up"
     assert "portable" not in overview, "the portability caveat is back on the Overview"
 
     # PROSE words, fences excluded, measured the way the 771 -> 468 figure was

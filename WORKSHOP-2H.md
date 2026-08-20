@@ -1373,11 +1373,28 @@ Nothing in that trail moved because the VM changed. It moved because what
 had been **opened and read** changed. That is assumption-based resilience
 becoming evidence-based, in four verdicts.
 
+### The fourth gate
+
+You already gate delivery: tests, security scans, lint, infrastructure
+plans. Today you ran the equivalent loop for recovery and gated it the
+same way.
+
+![Both loops gated, and CI reads both as exit codes.](images/fourth-gate.svg)
+
+Both loops work the same way: a bar declared in a file, a check that runs
+on every change, an exit code CI can act on, and evidence that outlives
+the person who produced it. The first loop proves the service works, and
+the second proves it can be restored.
+
+ResOps is this loop run as standard practice, the way SRE turned
+reliability into SLOs, error budgets and required checks. You ran the
+loop once today; the next step is running it on a schedule, on a
+workload you own.
+
 ### The model you just walked
 
-ResOps is five domains. This workshop walks three of them fully and touches
-two lightly. Saying which is which is the same discipline the gate applies
-to a recovery point.
+ResOps is five domains. This workshop covered three of them hands-on and
+two through the files that define them.
 
 ```list
 @governance Resilience governance        **Lightly.** The per-tier bar you read
@@ -1399,6 +1416,12 @@ Capability answers "could we?". Outcomes answer "did we, and can we prove
 it?". ResOps measures outcomes.
 
 ### What you used, and what it is called
+
+Cyber resilience is the ability to keep operating through an attack and to
+prove recovery afterward. Regulators now require that proof: DORA and NIS2
+both mandate demonstrated recoverability, not documented intent. The lab
+ran on Commvault Cloud; ResOps is Commvault's discipline for running
+recovery this way.
 
 Four ResOps ideas are below. These are the Commvault Cloud capabilities that
 carried them, so you can name them to a colleague or look them up later.
@@ -1464,72 +1487,52 @@ watched happen rather than a claim you are repeating.
  6   This does not wake anyone at 3am. It fails a pull request.
 ```
 
-### Where you are now
-
-```list
- UNDERSTAND   the deck          The five domains, the contract, and why
-                                recovery is still a handoff. 45 minutes.
- PROVE        this workshop     One workload, one loop, your hands, and a
-                                verdict you could show an auditor. 2 hours.
- OPERATE      Monday onward     Your estate, with the loop running without
-                                you standing over it.
-```
-
-Most teams live in the first row. They have read the model, they believe they
-could recover, and they have never once demonstrated it on a workload that
-matters. You spent two hours in the second row. The rest of this page is
-how to reach the third.
-
-### What transfers, and what does not
-
-**What is portable here, and what is not.** The lab runs on
-Commvault® Cloud, powered by Metallic® AI. The discipline is the point,
-though, and it transfers to any backup platform: declare a bar per tier, open a recovery
-point and read it, gate on the result, keep the evidence. The lab is built
-on Azure and Commvault Cloud because a lab has to run on something real. In the
-toolkit itself the gate, the evidence chain, the control crosswalk and the
-metrics are vendor-neutral; the layer that reads a workload's state is not,
-and there is no second adapter today. That is stated plainly so nobody has
-to discover it later.
-
-### What this workshop does not solve
-
-```list
- the lab workload is a VM     The contract transfers, but worked examples
-                              for managed databases and object storage are
-                              not written yet.
- restore-verify costs money   Sampling plus a per-tier freshness bar is a
-                              policy, not a cost model, and we do not have
-                              a cost model.
- the crosswalk is indicative  It supports a resilience program. It is not
-                              a compliance attestation, and it will not
-                              become one.
- recovery planning            Dependency mapping and impact tolerances
-                              across a real estate is a program, not a
-                              lab. Two hours cannot fake it.
- nobody owns this by default  It spans three teams who mostly do not talk
-                              about recovery together.
- nobody funds the drill       Costing a repeatable drill is a budget
-                              conversation, not a technical act, and it is
-                              the most common place this quietly stops.
-```
-
-### When this gate is not worth it
-
-Do not gate a workload you would rebuild from infrastructure as code faster
-than you would restore it. Do not gate a stateless service whose data lives
-somewhere else. Do not gate in the first week of a migration, when everything
-fails and nobody trusts the signal yet.
+### Where the gate earns its place
 
 The gate earns its place where the data is authoritative, the rebuild is
-slow, or somebody outside your team will one day ask you to prove it.
+slow, or somebody outside your team will one day ask you to prove it. Do
+not gate a workload you would rebuild from infrastructure as code faster
+than you would restore it, a stateless service whose data lives somewhere
+else, or anything in the first week of a migration, when everything fails
+and nobody trusts the signal yet. A required check that fires for the
+wrong reason gets switched off, and the switch stays off.
 
-A required check that fires for the wrong reason gets switched off, and the
-switch stays off.
+The lab runs on Commvault® Cloud, powered by Metallic® AI, because a lab
+has to run on something real. The discipline transfers to any backup
+platform: declare a bar per tier, open a recovery point and read it, gate
+on the result, keep the evidence. In the toolkit the gate, the evidence
+chain, the control crosswalk and the metrics are vendor-neutral; the
+layer that reads a workload's state is Commvault-specific today, and
+there is no second adapter.
+
+### Out of scope, on purpose
+
+Four things are out of scope, by decision rather than by oversight.
+
+```list
+ worked examples beyond a VM   The `verify.sh` contract transfers to
+                               managed databases and object storage; the
+                               worked examples are not written yet.
+ a cost model                  Sampling plus a per-tier freshness bar is a
+                               policy for what restore-verify costs, not a
+                               cost model. Costing the drill is a budget
+                               conversation, and it is the most common
+                               place adoption quietly stops.
+ recovery planning at scale    Dependency mapping and impact tolerances
+                               across a real estate is a program, not a
+                               lab.
+ an owner by default           The gate spans three teams who mostly do
+                               not talk about recovery together. Naming
+                               the owner is the first organizational step,
+                               and no product takes it for you.
+```
 
 ### What you do next
 
-Six things, and you already agreed to each one at the end of a chapter.
+You proved one workload by hand today; an operating model is the same
+loop running on a schedule, across an estate, without you standing over
+it. The path there is six steps, and you already agreed to each one at
+the end of a chapter.
 
 ```list
  1  Read one workload's real state              Read-only. Today.
@@ -1577,11 +1580,6 @@ still in front of you.
 
 **Write down the one question you are most likely to be asked, and your
 answer to it.** That page is what you take back.
-
-Nobody owns this by default. It spans three teams who mostly do not talk
-about recovery together. That is not a tooling gap, and no product closes
-it alone. It is why ResOps is described as an operating discipline rather
-than a feature.
 
 ```
  From assumption-based resilience
