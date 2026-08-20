@@ -141,9 +141,10 @@ facilitated session most of this is done for you.
 ```list
  an Azure subscription      One free vCPU in your region. The lab is one
                             small VM, plus a short-lived restore copy.
- Commvault Cloud            A tenant, its API endpoint, and an access token
-                            from Command Center under avatar -> Access
-                            Tokens.
+ Commvault Cloud            A tenant of Commvault® Cloud, powered by
+                            Metallic® AI: its API endpoint, and an access
+                            token from Command Center under avatar ->
+                            Access Tokens.
 
                             Two things inside it have to be configured, both
                             one-time. A **hypervisor connection** is the link
@@ -220,7 +221,7 @@ error, verbatim.
                                after boot. Retry once before investigating.
  Waiting                       The job is queued for a media agent, the shared
                                worker that moves the data. About two minutes
-                               is normal and up to twenty-seven has been seen.
+                               is normal and up to 27 has been seen.
                                Do not kill it.
  threatscan trigger refused    The scan plan id is missing or wrong. Set
                                `scan_plan_id` in `config/workshop.yaml`.
@@ -602,8 +603,9 @@ cat config/tiers.yaml
 
 ```
  ? IF YOU RUN SLOs ALREADY
-   A Service Resilience Indicator is to recovery what an SLO is to
-   reliability: a declared, testable bar per service, owned as policy
+   A Service Resilience Indicator is to recovery what a service level
+   objective (SLO) is to reliability: a declared, testable bar per
+   service, owned as policy
    rather than kept as an intention. Recoverability today is where
    reliability was before SRE existed: designed up front, improvised
    in an incident, and unmeasured in between. This file is the
@@ -619,7 +621,7 @@ grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
 ```
 
 ```
- ✓ YOU SHOULD SEE   about seventy lines of shell, carrying five checks. The last one WRITES a record and reads it back, and the script ends at exit 0. The start of the next file in the listing may show below that.
+ ✓ YOU SHOULD SEE   about 70 lines of shell, carrying five checks. The last one WRITES a record and reads it back, and the script ends at exit 0. The start of the next file in the listing may show below that.
 ```
 
 ```
@@ -781,7 +783,7 @@ trustworthy, so they can disagree.
 
    An attestation is a claim about ONE recovery point, not a property
    of the workload. There is now a newer point and nothing has opened
-   it, so the proof you had ten minutes ago vouches for nothing. Most
+   it, so the proof you had 10 minutes ago vouches for nothing. Most
    people expect proof to accumulate. It does not.
 
    The distance between what an organization believes it can recover
@@ -799,7 +801,7 @@ python3 -m resops.operator.op threatscan infra/workloads
  ✓ YOU SHOULD SEE   a scan that ran, and a verdict that this recovery point is not safe to restore from
                     THREATS DETECTED · exit 1
  ⏱ HOW LONG         about three minutes, and up to six. The job id prints
-                    straight away, then the client polls every twenty
+                    straight away, then the client polls every 20
                     seconds until the scan finishes. Silence in between is
                     the poll interval, not a hang.
  ✗ IF NOT           if it stops and asks for scan_plan_id, set it in config/workshop.yaml and run it again. The first lesson above has already landed either way.
@@ -836,7 +838,7 @@ watches threats across the estate.
 ```
  ? HOW IT WORKS: WHAT THESE TWO NUMBERS DO AND DO NOT TELL YOU
    The count is a window, not a ledger. Observed on 2026-08-18: it read 2
-   after this scan and 0 again fifteen minutes later, once a clean scan had
+   after this scan and 0 again 15 minutes later, once a clean scan had
    run. Commvault does not document how the counts age out, so treat the
    chart as a view of the latest scan, and do not build an alert on the
    assumption that it accumulates.
@@ -971,7 +973,7 @@ already abnormal. The compromise may be three days old, or nine.
    when a human signs the service back off. Everything between is
    automatable and measurable.
 
-   That is Mean Time to Clean Recovery. Not time to recovery. Time to
+   That is Mean Time to Clean Recovery (MTCR). Not time to recovery. Time to
    CLEAN recovery. The word "clean" is the entire argument.
 ```
 
@@ -1026,7 +1028,7 @@ python3 -m resops.operator.op threatscan infra/workloads
                     no threat recorded for this workload - which is NOT the same
                     as clean, and does not clear the Scan rung on its own
  ⏱ HOW LONG         about three minutes, and up to six. The job id prints
-                    straight away, then the client polls every twenty
+                    straight away, then the client polls every 20
                     seconds until the scan finishes. Silence in between is
                     the poll interval, not a hang.
  ✗ IF NOT           if it stops and asks for scan_plan_id, set it in config/workshop.yaml and run it again.
@@ -1428,10 +1430,12 @@ it?". ResOps measures outcomes.
 ### What you used, and what it is called
 
 Cyber resilience is the ability to keep operating through an attack and to
-prove recovery afterward. Regulators now require that proof: DORA and NIS2
-both mandate demonstrated recoverability, not documented intent. The lab
-ran on Commvault® Cloud, powered by Metallic® AI; ResOps is Commvault's
-discipline for running recovery this way.
+prove recovery afterward. Regulators now require that proof: the EU's
+Digital Operational Resilience Act (DORA) and its second network and
+information security directive (NIS2) both mandate demonstrated
+recoverability, not documented intent. The lab
+ran on Commvault Cloud; ResOps is Commvault's discipline for running
+recovery this way.
 
 Four ResOps ideas are below. These are the Commvault Cloud capabilities that
 carried them, so you can name them to a colleague or look them up later.
@@ -1469,13 +1473,14 @@ chain and the control crosswalk.
 ```list
  impact tolerance   How much disruption the business will absorb before it
                     stops being survivable. Set by the business, not by you.
-                    RTO and RPO are yours. This one is not, and that is why
+                    The recovery time objective (RTO) and RPO are yours.
+                    This one is not, and that is why
                     asking for it starts a different conversation.
  SRI                Service Resilience Indicator. A declared, testable
                     resilience bar per tier. `tiers.yaml` declares three:
                     RPO, RTO and attestation freshness. You watched RPO and
                     attestation freshness act today.
- MTCR               Mean time to CLEAN recovery. RTO measures how fast. RPO
+ MTCR               Mean Time to Clean Recovery. RTO measures how fast. RPO
                     measures how recent. MTCR measures how trustworthy.
  resilience gap     The distance between what an organization believes it
                     can recover and what it can prove.
@@ -1496,7 +1501,7 @@ watched happen rather than a claim you are repeating.
      gap.
  4   A check that examined nothing must never report a pass.
  5   The number is time to CLEAN recovery. Not time to recovery.
- 6   This does not wake anyone at 3am. It fails a pull request.
+ 6   This does not wake anyone at 3 a.m. It fails a pull request.
 ```
 
 ### Wiring the gate into your pipeline
