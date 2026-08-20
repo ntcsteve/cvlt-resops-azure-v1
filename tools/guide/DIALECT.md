@@ -236,7 +236,7 @@ headings that are plain verbs, one paragraph of context. Edit toward it.
 BANNED WORDS, from Google's word list: simply, simple, easily, just, please,
 leverage, utilize. Also no exclamation marks.
 
-## 9b. What the build does NOT check, and the suite does
+## 10. What the build does NOT check, and the suite does
 
 Two editorial rules hold over everything this repo ships, including your
 markdown. The BUILD does not enforce them, so a page with either will build
