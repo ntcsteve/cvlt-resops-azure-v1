@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 568" width="960" height="568" role="img" aria-label="One crosswalk row traced downward: a DORA, NIST and APRA reference rests on a report capability, which rests on the gate finding, which rests on the attestation the drill wrote, which rests on verify.sh, the command that ran.">
+  <!-- Colors mirror tools/guide/assets/tokens.css: the yes shade
+       #30881c on verified links, muted #707391 on the indicative
+       one, ink #00053b, fog #eaeaea. Change them there first. -->
+  <rect width="960" height="568" fill="#ffffff"/>
+<rect x="250" y="24" width="460" height="64" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="226" y="61" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">the auditor</text>
+<text x="734" y="52" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">a yaml pack:</text>
+<text x="734" y="70" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">data, not code</text>
+<text x="480" y="51" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">DORA Art. 11/12 · NIST CP-4, CP-9(1)</text>
+<text x="480" y="71" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#00053b">APRA CPS 230 scenario &amp; business continuity testing</text>
+<line x1="480" y1="152" x2="480" y2="99" stroke="#707391" stroke-width="1.5" stroke-dasharray="5 4"/>
+<path d="M 475 100 L 480 89 L 485 100 Z" fill="#707391"/>
+<text x="496" y="129" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">indicative mapping · the one soft link</text>
+<rect x="250" y="152" width="460" height="48" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="226" y="181" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">the report</text>
+<text x="734" y="181" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">report.md</text>
+<text x="480" y="181" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">CAP-RESTORE-TESTED</text>
+<line x1="480" y1="256" x2="480" y2="211" stroke="#30881c" stroke-width="1.5"/>
+<path d="M 475 212 L 480 201 L 485 212 Z" fill="#30881c"/>
+<text x="496" y="237" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#30881c">this run&#8217;s finding</text>
+<rect x="250" y="256" width="460" height="64" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="226" y="293" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">the gate</text>
+<text x="734" y="293" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">exit 0 / 1</text>
+<text x="480" y="283" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">validate PASS</text>
+<text x="480" y="303" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">recovery proven &#183; job 884730</text>
+<line x1="480" y1="376" x2="480" y2="331" stroke="#30881c" stroke-width="1.5"/>
+<path d="M 475 332 L 480 321 L 485 332 Z" fill="#30881c"/>
+<text x="496" y="357" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#30881c">reads the attestation the drill wrote</text>
+<rect x="250" y="376" width="460" height="64" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="226" y="413" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">the drill</text>
+<text x="734" y="404" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">hash-chained</text>
+<text x="734" y="422" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">history.jsonl</text>
+<text x="480" y="403" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b"><tspan fill="#30881c">OK:</tspan> code intact, baseline present, 3 customer records,</text>
+<text x="480" y="423" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">no encryption markers, write/read verified</text>
+<line x1="480" y1="496" x2="480" y2="451" stroke="#30881c" stroke-width="1.5"/>
+<path d="M 475 452 L 480 441 L 485 452 Z" fill="#30881c"/>
+<text x="496" y="477" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#30881c">ran inside the restored copy</text>
+<rect x="250" y="496" width="460" height="48" rx="6" fill="#ffffff" stroke="#eaeaea" stroke-width="1.5"/>
+<text x="226" y="525" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#707391">the app team</text>
+<text x="734" y="516" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">you read it</text>
+<text x="734" y="534" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#707391">in chapter 2</text>
+<text x="480" y="525" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#00053b">verify.sh &#183; about seventy lines anyone can read</text>
+</svg>

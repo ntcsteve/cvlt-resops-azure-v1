@@ -1163,6 +1163,8 @@ cat evidence/estate/payments-api/report.md
  ✗ IF NOT           "No such file" means the estate gate above has not run yet. It is what writes this file.
 ```
 
+![One crosswalk row, traced to the command that ran. Every link below the dashed one is verified by this run.](images/evidence-chain.svg)
+
 ```
  ? WHY THE DISCLAIMER IS THE POINT
    That last line is not a legal hedge, it is the same discipline the
