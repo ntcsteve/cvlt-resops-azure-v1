@@ -991,7 +991,7 @@ vm_name        = "&lt;your-codename&gt;"</pre></div>
 <div class="steps">
 <div class="step"><span class="step-num">5</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op restore infra/workloads</code></pre></div>
 <aside class="diag" role="note">
-<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">the restore job complete, a restored VM validated in Azure, then the attester's verdict read from inside that copy, and finally the copy tearing itself down</p><pre>OK: code intact, baseline present, 3 customer records,
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">the restore job complete, a restored VM validated in Azure, then the attester's verdict read from inside that copy, and finally the copy tearing itself down</p><pre><span class="v-yes">OK:</span> code intact, baseline present, 3 customer records,
     no encryption markers, write/read verified</pre></div>
 <div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">about five minutes end to end</p></div>
 <div class="diag-row diag-no"><p class="diag-label"><span class="diag-mark">✗</span>If not</p><p class="diag-text">a guest-agent-not-ready failure on a fresh restore is transient: run it again. Any FAIL: line is the attester doing its job, so read it before you retry.</p></div>
@@ -1203,7 +1203,7 @@ Encryption   0</pre></div>
 <div class="steps">
 <div class="step"><span class="step-num">3</span><div class="step-body"><div class="cmd" data-copy><div class="cmd-head"><span>terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m resops.operator.op restore infra/workloads</code></pre></div>
 <aside class="diag" role="note">
-<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">the drill verdict, read from inside a fresh copy of the clean point</p><pre>OK: code intact, baseline present, 3 customer records,
+<div class="diag-row diag-yes"><p class="diag-label"><span class="diag-mark">✓</span>You should see</p><p class="diag-text">the drill verdict, read from inside a fresh copy of the clean point</p><pre><span class="v-yes">OK:</span> code intact, baseline present, 3 customer records,
     no encryption markers, write/read verified</pre></div>
 <div class="diag-row diag-clock"><p class="diag-label"><span class="diag-mark">⏱</span>How long</p><p class="diag-text">about five minutes</p></div>
 </aside></div></div>

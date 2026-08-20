@@ -616,6 +616,17 @@ def test_the_thesis_is_display_type_not_a_terminal_panel(page):
     assert "<strong>You do not gate on recoverability.</strong>" in page
 
 
+def test_the_attesters_verdict_carries_its_colour_too(page):
+    """The gate's words (PROMOTE, HOLD, VALIDATED) were tinted in quoted
+    output; the attester's verdict was not, although VERIFY.md makes the
+    line-initial OK:/FAIL: THE authoritative line. Both verdicts the day
+    produces now carry their colour. Prose that merely mentions the token
+    ("Any FAIL: line is the attester doing its job") stays plain, because
+    a reference is not a verdict: only line-initial tokens tint."""
+    assert '<span class="v-yes">OK:</span> code intact' in page
+    assert "Any FAIL: line is the attester doing its job" in page  # untinted
+
+
 def test_the_verdict_trail_carries_its_own_verdict_colours(page, room_page):
     """The verdict trail exists to show that one command gave four opposite
     answers. The shape must read before the words, so each verdict carries

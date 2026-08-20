@@ -47,6 +47,14 @@ def verdicts(escaped):
     for word in VERDICTS_NO:
         escaped = re.sub(rf"\b{word}\b",
                          f'<span class="v-no">{word}</span>', escaped)
+    # The attester's verdict too, not only the gate's: VERIFY.md makes the
+    # line-initial OK:/FAIL: authoritative, so only line-initial ones tint.
+    # A prose mention ("read the FAIL: line") is a reference, not a verdict,
+    # and stays plain because it never starts the line.
+    escaped = re.sub(r"(?m)^(\s*)OK:",
+                     r'\1<span class="v-yes">OK:</span>', escaped)
+    escaped = re.sub(r"(?m)^(\s*)FAIL:",
+                     r'\1<span class="v-no">FAIL:</span>', escaped)
     return escaped
 
 
