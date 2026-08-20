@@ -1378,9 +1378,9 @@ becoming evidence-based, in four lines.
 
 ### The model you just walked
 
-ResOps is five domains. This workshop walks three of them properly, touches
-a fourth, and does not attempt the fifth. Saying which is which is the same
-discipline the gate applies to a recovery point.
+ResOps is five domains. This workshop walks three of them fully and touches
+two lightly. Saying which is which is the same discipline the gate applies
+to a recovery point.
 
 ```list
 @governance Resilience governance        **Lightly.** The per-tier bar you read
