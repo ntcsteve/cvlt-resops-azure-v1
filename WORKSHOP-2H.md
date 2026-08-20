@@ -1365,8 +1365,7 @@ terraform -chdir=infra/workloads state list | wc -l
 
 ### What you proved
 
-The same command gave four different answers about one workload over two
-hours.
+One workload produced four verdicts in two hours.
 
 ![One workload, two hours, four answers.](images/verdict-trail.svg)
 
@@ -1428,10 +1427,10 @@ Four ResOps ideas are below. These are the Commvault Cloud capabilities that
 carried them, so you can name them to a colleague or look them up later.
 
 ```list
-@command-center Command Center    The web console. You opened it once to
-                   bring a new Azure workload under protection, and twice
-                   more to read the threat view. Every operation you
-                   performed was an API call.
+@command-center Command Center    The web console. You opened it to bring a
+                   new Azure workload under protection, and again to read
+                   the threat view. Every operation you performed was an
+                   API call.
 @data-protection Protection plan   The policy: how often to back up, how long
                    to keep it, and to which storage. A workload picks a plan.
                    It does not configure recoverability itself.
@@ -1441,13 +1440,14 @@ carried them, so you can name them to a colleague or look them up later.
                    compromised machine could not reach the copies.
 @ransomware Threat Scan            Opens a recovery point in the recovery
                    plane and reads it for malware, without touching
-                   production. It found the two planted files, and it
-                   honestly reported no encryption, which our own check
-                   caught instead. It runs on demand, or when an anomaly trips
-                   it. It does not run on a schedule, and that is the
-                   mechanism behind the sentence the engine keeps printing:
-                   no threat recorded is not the same as clean, because
-                   nothing may have looked.
+                   production. It found the two planted files and honestly
+                   reported no encryption: the `.locked` files are renamed
+                   rather than encrypted, so a content scan finds nothing,
+                   and the marker check in `verify.sh` is what would flag
+                   them. It runs on demand, or when an anomaly trips it. It
+                   does not run on a schedule, and that is the mechanism
+                   behind the engine's rule: no threat recorded is not the
+                   same as clean, because nothing may have looked.
 ```
 
 Everything else you ran was ours and is in this repository: the readiness
@@ -1462,8 +1462,9 @@ chain and the control crosswalk.
                     RTO and RPO are yours. This one is not, and that is why
                     asking for it starts a different conversation.
  SRI                Service Resilience Indicator. A declared, testable
-                    resilience bar per tier. Six measures sit under it. You
-                    used two of them today.
+                    resilience bar per tier. `tiers.yaml` declares three:
+                    RPO, RTO and attestation freshness. You watched RPO and
+                    attestation freshness act today.
  MTCR               Mean time to CLEAN recovery. RTO measures how fast. RPO
                     measures how recent. MTCR measures how trustworthy.
  resilience gap     The distance between what an organization believes it
