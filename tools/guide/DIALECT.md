@@ -82,7 +82,7 @@ parser, never hand-edit the HTML.
                    more spaces, continuation lines are indented under
                    the text. Getting any of this wrong is a build error
                    with the line number, never a silently wrong page
-``` starting ?     a quiet aside (why this matters, UNDER THE HOOD).
+``` starting ?     a quiet aside (why this matters, HOW IT WORKS).
                    title on the first line, prose and indented
                    pre-chunks after
 ``` starting ?!    a collapsed reveal: closed by default, same body rules

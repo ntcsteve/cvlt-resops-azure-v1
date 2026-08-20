@@ -143,8 +143,9 @@ storage pool: the recovery plane. Nothing running on the VM can reach that
 pool, including anything an attacker plants there. Restore drills rebuild a
 copy of the service in isolation, verify it from the inside, and remove it.
 
-Three planes. Trust flows one way, and every verdict in this workshop
-comes from the plane that cannot be lied to.
+Three planes, and trust flows one way. Every verdict in this workshop is
+read from the copy rather than from the machine that produced it, because a
+compromised machine can only report on itself.
 
 If you have not used Commvault before, this is what you are about to touch:
 
@@ -175,7 +176,7 @@ metrics are vendor-neutral; the layer that reads a workload's state is not,
 and there is no second adapter today. That is stated plainly so nobody has
 to discover it later.
 
-When a concept deserves the fuller story, look for the UNDER THE HOOD notes
+When a concept deserves the fuller story, look for the HOW IT WORKS notes
 as you go.
 
 ## What you will walk
@@ -360,9 +361,9 @@ than a confident one.
 ```
 
 One `terraform apply` gives you a real service: a VM with no public IP, no
-inbound rules, no way in. Everything you do to it from here travels through
-doors you are about to meet, and every step prints what it did so you can
-compare against the boxes below.
+inbound rules and no interactive access. Every command from here reaches it
+through the Azure guest agent or the Commvault Cloud API, and each one prints
+what it did so you can compare it against the box below.
 
 ### Provision the service
 
@@ -381,7 +382,7 @@ terraform -chdir=infra/workloads apply -auto-approve
 ```
 
 ```
- ? UNDER THE HOOD: THE ONLY DOOR
+ ? HOW IT WORKS: THE ONLY DOOR
    The VM has no network path in, so commands travel through the Azure
    guest agent: a process inside the VM that Azure hands scripts to,
    with your subscription's credentials as the key. Every plant, every
@@ -400,7 +401,7 @@ job to finish, about two minutes.
 
 This is a decision rather than a workaround: bringing new cloud resources
 under protection is an operation the platform keeps behind its own controls.
-Everything after this is API.
+Every step after this one is an API call.
 
 ```bash
 python3 -m resops.operator.op preflight infra/workloads
@@ -435,7 +436,7 @@ python3 -m resops.operator.op backup infra/workloads
 ```
 
 ```
- ? UNDER THE HOOD: AIR GAP AND IMMUTABILITY
+ ? HOW IT WORKS: AIR GAP AND IMMUTABILITY
    The recovery point you just created landed in an air-gapped,
    immutable storage pool.
 
@@ -477,7 +478,7 @@ python3 -m resops.operator.op restore infra/workloads
 ```
 
 ```
- ? UNDER THE HOOD: WHAT A DRILL RESTORE IS
+ ? HOW IT WORKS: WHAT A DRILL RESTORE IS
    An out-of-place restore builds a NEW VM from the recovery point's
    disk: fresh machine, fresh identity, no connection to production.
    The attester runs inside that copy, writes its verdict, and the
@@ -525,11 +526,17 @@ python3 -m resops.operator.op status infra/workloads
  ✗ IF NOT           re-run the climb that built this workload. In a room, tell the facilitator your codename rather than debugging it yourself.
 ```
 
-Every line of that output pairs a recovery fact with a DevOps practice you
-already run. Discovery works like service discovery. Protection works like
-GitOps drift detection. Detection works like a health check, recovery like
-rollback readiness, and verification like scanning an artifact before you
-deploy it.
+Every line of that output pairs a recovery fact with a practice you already
+run:
+
+```list
+ discover    Service discovery. Is the workload known to the platform?
+ protect     GitOps drift detection. Does declared coverage match actual?
+ detect      A health check. Did the last backup complete cleanly?
+ recover     Rollback readiness. Is the recovery point recent enough?
+ scan        Artifact scanning before deploy. Has anything read the copy?
+ validate    A restore drill. Has recovery been demonstrated, not assumed?
+```
 
 ### The bar it passed
 
@@ -548,8 +555,8 @@ python3 -m resops.operator.op gate infra/workloads
  ✗ IF NOT           if it says HOLD and names coverage, a backup ran after your last drill. Run the drill again and re-gate, or keep reading: you meet that exact behavior on purpose in the next chapter.
 ```
 
-Two lines in that output are worth naming now, because you will see them on
-every run from here.
+Two lines in that output appear on every run from here, so they are worth
+naming.
 
 ```
  = held at VALIDATED over 3 runs
@@ -561,8 +568,7 @@ every run from here.
        run", not "is the service up". Is it safe to ship.
 ```
 
-Now look at the bar it passed. It is not one threshold, it is a per-tier
-one:
+The bar it passed is set per tier rather than as a single threshold:
 
 ```bash
 cat config/tiers.yaml
@@ -589,7 +595,7 @@ cat config/tiers.yaml
 
 ### The contract that earned it
 
-Then read what actually produced the verdict:
+The verdict came from this script, which runs inside the restored copy:
 
 ```bash
 grep -A 80 'path: /opt/app/verify.sh' infra/modules/azure-vm/cloud-init.yaml
@@ -614,7 +620,7 @@ the store still work?*, which none of the others can answer. A read-only
 mount passes the first four and fails a real service on its first write.
 
 ```
- ? UNDER THE HOOD: WHAT THE DRILL WRITES
+ ? HOW IT WORKS: WHAT THE DRILL WRITES
    When a restore drill runs that script inside a restored copy, the
    verdict line gets captured into an attestation file: which recovery
    point, what was checked, what it said, when. The gate reads that
@@ -648,7 +654,7 @@ mount passes the first four and fails a real service on its first write.
 You have a proven workload and a gate that says yes. The next step breaks
 it on purpose, with something harmless and detectable.
 
-The whole chapter turns on one question:
+This chapter turns on one question:
 
 ```
           Which recovery point did you just prove?
@@ -698,8 +704,9 @@ python3 -m resops.operator.op incident infra/workloads
 EICAR is a 68-character test string the antivirus industry standardized in
 the 1990s. Every scanner agrees to detect it as though it were malware, so
 that detection can be tested without handling anything dangerous. The
-`.locked` files are high-entropy junk using ransomware's naming pattern. Nothing here is armed; everything here is detectable. That
-is the point: we need the alarms to be real, not the fire.
+`.locked` files are high-entropy junk using ransomware's naming convention.
+Nothing here encrypts or damages anything, so the detection is real while the
+damage is not.
 
 ### Commit it into a recovery point
 
@@ -725,7 +732,7 @@ python3 -m resops.operator.op backup infra/workloads
 ```
 
 ```
- ? UNDER THE HOOD: WHAT A RECOVERY POINT IS
+ ? HOW IT WORKS: WHAT A RECOVERY POINT IS
    One frozen moment of the disk, copied out whole. It does not
    accumulate, it does not update, and it does not know what happened
    after it. Keep that in mind for the next command.
@@ -744,8 +751,9 @@ python3 -m resops.operator.op gate infra/workloads
                     HOLD  attestation does not cover the newest recovery point · exit 1
 ```
 
-The ladder still reads VALIDATED. The gate is the thing that changed its
-mind, and the difference between those two lines is the entire lesson.
+The ladder still reads VALIDATED and the gate now says HOLD. The ladder
+reports the rung reached; the gate reports whether that rung is still
+trustworthy, so they can disagree.
 
 ```
  ? WHY THIS MATTERS, AND NOBODY PREDICTS THIS ONE
@@ -762,7 +770,7 @@ mind, and the difference between those two lines is the entire lesson.
    just appeared in one line.
 ```
 
-Now ask the threat lane what it thinks:
+Now run the threat lane against the same recovery point:
 
 ```bash
 python3 -m resops.operator.op threatscan infra/workloads
@@ -796,9 +804,9 @@ python3 -m resops.operator.op threatscan infra/workloads
    same. A check that examined nothing must never report a pass.
 ```
 
-**Where you are now.** Your backup job said Completed. The restore said
-Completed. The VM is healthy. Every signal the backup platform gave you was
-green, and the recovery point you would have restored from is poison.
+**Where you are now.** The backup job said Completed, the restore said
+Completed and the VM is healthy. Every signal the platform gave you was green,
+and the recovery point you would have restored from contains the compromise.
 
 ```
  ✦ WHAT YOU JUST PROVED
@@ -1017,9 +1025,10 @@ python3 -m resops.operator.op gate infra/workloads
             so it cannot block anyone on day one. Needs CI.
 ```
 
-One workload proving itself is a demo. The discipline starts when the same
-gate runs across everything, on every pull request, publishing numbers
-somebody has to look at.
+This chapter runs the same gate across an estate of six workloads, publishes
+its numbers, and puts it on a pull request as a required check. One workload
+proving itself is a demonstration; an estate doing it on every change is the
+discipline.
 
 ### The estate
 
@@ -1035,7 +1044,8 @@ python3 -m resops gate config/estate.yaml
 
 **Compare `checkout-api` and `identity-svc`.** Both sit on the same rung for
 opposite reasons: one was tested and is contaminated, the other was never
-tested at all. The rung does not distinguish them. The blocked stage does.
+tested at all. The rung is identical for both, and the blocked stage is what
+tells them apart.
 
 ### Publish the numbers
 
@@ -1053,8 +1063,8 @@ python3 -m resops metrics config/estate.yaml
 
 ### The evidence underneath
 
-The gate does not only decide. It writes down why, in a form somebody
-outside engineering can read.
+The gate also writes down why it decided, in a form somebody outside
+engineering can read.
 
 ```bash
 cat evidence/estate/payments-api/report.md
@@ -1098,7 +1108,7 @@ cat .github/workflows/resops-gate.yml
 ```
 
 ```
- ? UNDER THE HOOD: WHY CI CAN TRUST THIS
+ ? HOW IT WORKS: WHY CI CAN TRUST THIS
    The gate is a pure function: read the facts, apply the tier's
    policy from tiers.yaml, exit 0 or 1. No clock games, no retries, no
    state of its own. That is the entire integration surface, and it is
@@ -1124,7 +1134,7 @@ cat .github/workflows/resops-gate.yml
    that has to go down.
 ```
 
-**Who owns what.** This is the conversation you will have when you get back.
+**Who owns what.** This is the conversation the gate starts back at your desk.
 
 ```list
  verify.sh     The app team, because only they know what "good" means for
@@ -1166,10 +1176,9 @@ Everything you built is real, and it bills until it is gone: a VM, a disk,
 a storage account, a virtual network, and a protected workload on a backup
 platform.
 
-This is also the last time today you get to practice the only habit that
-has mattered all workshop. Something is about to report
-success. You are not going to believe it until you have opened the
-environment and read it yourself.
+The teardown command reports its own success, so this chapter also verifies
+that report independently, which is the habit the whole workshop has been
+about.
 
 ### Retire the workload
 
@@ -1188,7 +1197,7 @@ PYTHONUNBUFFERED=1 python3 -m resops.operator.op teardown infra/workloads
 ```
 
 ```
- ? UNDER THE HOOD: WHAT A TEARDOWN HAS TO SWEEP
+ ? HOW IT WORKS: WHAT A TEARDOWN HAS TO SWEEP
    terraform destroy removes what Terraform created, and that is not
    everything that exists. Your backup platform left snapshots behind.
    Azure created a network watcher nobody asked for. Either one blocks
