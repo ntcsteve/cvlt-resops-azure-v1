@@ -1363,19 +1363,11 @@ terraform -chdir=infra/workloads state list | wc -l
 The same command gave four different answers about one workload over two
 hours.
 
-```list card
- after the first drill    `op gate` says PROMOTE. The proof covers the
-                          newest recovery point.
- after a BACKUP           `op gate` says HOLD. You took a backup. That is
-                          the only thing you did.
- after the scan           `op threatscan` says HOLD. Something looked, and
-                          it found malware.
- after the second drill   `op gate` says PROMOTE. Re-proved, not re-assured.
-```
+![One workload, two hours, four answers.](images/verdict-trail.svg)
 
-Nothing in that column moved because the VM changed. It moved because what
+Nothing in that trail moved because the VM changed. It moved because what
 had been **opened and read** changed. That is assumption-based resilience
-becoming evidence-based, in four lines.
+becoming evidence-based, in four verdicts.
 
 ### The model you just walked
 

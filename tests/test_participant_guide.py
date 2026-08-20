@@ -616,13 +616,20 @@ def test_the_thesis_is_display_type_not_a_terminal_panel(page):
     assert "<strong>You do not gate on recoverability.</strong>" in page
 
 
-def test_each_verdict_row_carries_its_own_verdict_colour(page):
-    """The verdict card exists to show that one command gave four opposite
-    answers. With every row identical the reader had to parse the words to
-    see it; a rule in the verdict's own colour makes the shape visible
-    first. Same rule the page already applies to the WORDS PROMOTE and HOLD."""
-    assert page.count('class="dl-key dl-yes"') == 2      # two PROMOTEs
-    assert page.count('class="dl-key dl-no"') == 2       # two HOLDs
+def test_the_verdict_trail_carries_its_own_verdict_colours(page, room_page):
+    """The verdict trail exists to show that one command gave four opposite
+    answers. The shape must read before the words, so each verdict carries
+    its own colour: the same rule the page applies to the WORDS PROMOTE and
+    HOLD. The list card became an authored SVG trail on 2026-08-20; the
+    colours now live in the figure's source, mirrored from tokens.css, and
+    the trail reaches BOTH builds because the Wrap-Up renders in both."""
+    svg = (REPO / "images" / "verdict-trail.svg").read_text(encoding="utf-8")
+    # Quoted form counts ATTRIBUTES only; the header comment names each hex
+    # once more while pointing at tokens.css.
+    assert svg.count('="#30881c"') == 4   # two PROMOTEs: stroke + word each
+    assert svg.count('="#db2961"') == 4   # two HOLDs: stroke + word each
+    for built in (page, room_page):
+        assert "One workload, two hours, four answers." in built
 
 
 def test_the_overview_masthead_is_flush_with_the_topbar(page):
