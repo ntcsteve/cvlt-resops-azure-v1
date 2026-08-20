@@ -20,6 +20,33 @@ HOLD  attestation does not cover the newest recovery point · exit 1
 
 ---
 
+## Half Your Pipeline Was Engineered
+
+Code. Build. Deploy. Observe. Respond. Every one of those is versioned,
+automated, owned and observable. You would not accept a manual step in any of
+them, and you would not ship a service whose deploy path had never run.
+
+Now say the other four out loud.
+
+```
+  ENGINEERED   Code ── Build ── Deploy ── Observe ── Respond
+  A HANDOFF    Recover ┄┄ Validate ┄┄ Prove ┄┄ Improve
+```
+
+For most cloud teams that second row belongs to another team, lives in a
+runbook, and is exercised once a year by someone who does not deploy your
+code. That is not a criticism of anyone. It is the half nobody got to yet.
+
+```list
+ DevOps      optimizes for   Speed and reliability of delivery.
+ SecOps                      Detection and containment of threats.
+ IT Ops                      Stability and availability of systems.
+ CloudOps                    Cost and performance of infrastructure.
+```
+
+All four assume the business is running normally. ResOps is the only one
+built for the moments when it is not.
+
 ## What is ResOps?
 
 Resilience Operations is the operational discipline that unites security,
@@ -264,12 +291,16 @@ than a confident one.
 ## Chapter 1 · Building the Workload · SOLO
 
 ```
- DO      stand up a production service, protect it, and climb it to a
+ STAGE   All six. Discover, Protect, Detect, Recover, Scan, Validate: the
+         full climb, once, so you have seen what a yes is made of.
+ DO      Stand up a production service, protect it, and climb it to a
          proven recovery
- LEARN   the three planes, the one door into a sealed VM, and what a
+ LEARN   The three planes, the one door into a sealed VM, and what a
          drill actually opens
- CLAIM   most estates have never demonstrated recovery once. You will
+ CLAIM   Most estates have never demonstrated recovery once. You will
          have, in twenty minutes.
+ NEXT    Pick one workload you own and find out whether the platform has
+         even discovered it. Read-only. Today.
 ```
 
 One `terraform apply` gives you a real service: a VM with no public IP, no
@@ -410,10 +441,15 @@ python3 -m resops.operator.op restore infra/workloads
 ## Chapter 2 · Reading the Proof
 
 ```
- DO      read the ladder, the gate, and the contract that earned them
- LEARN   what a Service Resilience Indicator is, and what an
+ STAGE   None. This chapter reads the ladder instead of moving it, which
+         is the only chapter that can afford to.
+ DO      Read the ladder, the gate, and the contract that earned them
+ LEARN   What a Service Resilience Indicator is, and what an
          attestation actually claims
- CLAIM   if yes is not boring, no will not mean anything.
+ CLAIM   If yes is not boring, no will not mean anything.
+ NEXT    Open the bar your workloads are judged against. If it does not
+         state a number somebody tests, you have found your first gap.
+         Read-only. Today.
 ```
 
 Your workload stands at the top of its ladder. Before anything gets broken,
@@ -541,11 +577,16 @@ mount passes the first four and fails a real service on its first write.
 ## Chapter 3 · Introducing a Compromise
 
 ```
- DO      compromise the workload you built, then watch two controls
+ STAGE   Scan. It falls, and it falls from a backup job that said
+         Completed.
+ DO      Compromise the workload you built, then watch two controls
          catch it two different ways
- LEARN   why proof does not accumulate, and where a verdict can
+ LEARN   Why proof does not accumulate, and where a verdict can
          honestly come from
- CLAIM   green is a job status, not a verdict about your data.
+ CLAIM   Green is a job status, not a verdict about your data.
+ NEXT    Take one existing backup of one workload and have something
+         open it and read it. This week. You are not changing anything.
+         You are finding out whether anything ever has.
 ```
 
 You have a proven workload and a gate that says yes. Now break it. On
@@ -560,6 +601,24 @@ But first, stay with this question, because the whole chapter turns on it:
 You proved this workload recovers. That proof was about one moment, and
 there will be a newer one within the hour. Hold your answer. The tools are
 about to give you theirs.
+
+### Write it down before we break it
+
+One sentence, out loud or on paper, before you run anything in this chapter.
+
+```
+  If ─────────────────────── happens to my workload,
+       (a specific failure)
+
+  I would recover from ─────────────────── ,
+                        (which recovery point)
+
+  and I would know it worked because ─────────────────── .
+                                       (what you would check)
+```
+
+Keep it. Chapter 4 asks you the same question after the tools have answered
+it, and the distance between the two answers is the lesson.
 
 ### Plant the compromise
 
@@ -689,12 +748,17 @@ green, and the recovery point you would have restored from is poison.
 ## Chapter 4 · Choosing a Recovery Point
 
 ```
- DO      put your workload back, then pick a recovery point under the
+ STAGE   Recover. You choose the point everything downstream is judged
+         on, and outage policy gives you the wrong answer.
+ DO      Put your workload back, then pick a recovery point under the
          conditions that actually matter
- LEARN   why outage policy answers the wrong question under
+ LEARN   Why outage policy answers the wrong question under
          compromise, and the number that measures the right one
- CLAIM   under compromise, the freshest recovery point is the most
+ CLAIM   Under compromise, the freshest recovery point is the most
          dangerous one.
+ NEXT    Ask your team, out loud: under compromise, which recovery point
+         would we restore from, and who decides? The silence is the
+         finding.
 ```
 
 ### Put it back
@@ -788,12 +852,16 @@ already abnormal. It may have started three days ago. Or nine.
 ## Chapter 5 · Re-Proving Recovery · SOLO
 
 ```
- DO      close the loop: take a clean point, scan it, drill it, and
+ STAGE   Scan, then Validate. Re-earned, not restored.
+ DO      Close the loop: take a clean point, scan it, drill it, and
          earn the green verdict back
- LEARN   what actually restores trust after an incident, and what
+ LEARN   What actually restores trust after an incident, and what
          only looks like it does
- CLAIM   cleaning production changes nothing inside an immutable
+ CLAIM   Cleaning production changes nothing inside an immutable
          vault. Trust is re-opened, not re-assured.
+ NEXT    Run one drill that produces an attestation. This is the first
+         step that needs the application team, and it is where adoption
+         stops being free.
 ```
 
 Your VM is clean, but the gate still holds: the newest recovery point
@@ -866,12 +934,16 @@ python3 -m resops.operator.op gate infra/workloads
 ## Chapter 6 · Gating the Pipeline
 
 ```
- DO      run the gate across an estate, publish its numbers, and read
+ STAGE   All six, across six workloads at once. The same ladder you
+         climbed by hand, read as an estate.
+ DO      Run the gate across an estate, publish its numbers, and read
          the evidence and the CI file that make it a merge blocker
- LEARN   how a check survives contact with a real estate: the ratchet,
+ LEARN   How a check survives contact with a real estate: the ratchet,
          the control evidence, and who owns what
- CLAIM   you have shifted this left three times already. This is the
+ CLAIM   You have shifted this left three times already. This is the
          fourth, and it looks identical.
+ NEXT    Add one required check on one repository, with a dated tolerance
+         so it cannot block anyone on day one. Needs CI.
 ```
 
 One workload proving itself is a demo. The discipline starts when the same
@@ -1008,11 +1080,15 @@ cat .github/workflows/resops-gate.yml
 ## Chapter 7 · Cleaning Up · SOLO
 
 ```
- DO      destroy everything you built, and verify it is gone
- LEARN   why disposability is part of the discipline rather than the
+ STAGE   None. The ladder goes away with the workload, which is the
+         point.
+ DO      Destroy everything you built, and verify it is gone
+ LEARN   Why disposability is part of the discipline rather than the
          tidying up
- CLAIM   a drill you cannot afford to run twice is a drill you will
+ CLAIM   A drill you cannot afford to run twice is a drill you will
          run once.
+ NEXT    Cost one drill. A drill you cannot afford to run twice is a
+         drill you will run once, and once is a demo, not a discipline.
 ```
 
 Everything you built is real, and it bills until it is gone: a VM, a disk,
@@ -1147,14 +1223,14 @@ discipline the gate applies to a recovery point.
 @governance Resilience governance        **Lightly.** The per-tier bar you read
                     in `tiers.yaml`: a Service Resilience Indicator, declared
                     and testable.
-@planning Recovery planning              **Not at all.** Dependency mapping and
-                    impact tolerances across a real estate is a program, not a
-                    lab, and two hours cannot fake it.
+@planning Recovery planning              **Lightly.** The estate view classifies
+                    six workloads by criticality and owner, which is where
+                    planning starts.
 @architecture Recovery architecture      **Fully.** The three planes: air gap,
                     immutability, and drills run in isolation.
-@repetition Resilience through repetition  **Fully.** The drill, and re-earning
+@repetition Recovery assurance           **Fully.** The drill, and re-earning
                     the verdict after an incident.
-@measuring Measuring resilience          **Fully.** MTCR and the resilience gap,
+@measuring Resilience measurement        **Fully.** MTCR and the resilience gap,
                     published as a number somebody has to look at.
 ```
 
@@ -1182,23 +1258,33 @@ carried them, so you can name them to a colleague or look them up later.
                    plane and reads it for malware, without touching
                    production. It found the two planted files, and it
                    honestly reported no encryption, which our own check
-                   caught instead.
+                   caught instead. It runs on demand, or when an anomaly trips
+                   it. It does not run on a schedule, and that is the
+                   mechanism behind the sentence the engine keeps printing:
+                   no threat recorded is not the same as clean, because
+                   nothing may have looked.
 ```
 
 Everything else you ran was ours and is in this repository: the readiness
 ladder, the promotion gate, the restore drill, `verify.sh`, the evidence
 chain and the control crosswalk.
 
-### The four terms you earned
+### The five terms you earned
 
 ```list
- ResOps           Recovery run as an operating discipline, the way you
-                  already run delivery.
- SRI              A measurable, testable resilience bar, declared per tier.
- resilience gap   The distance between what an organization believes it can
-                  recover and what it can prove.
- MTCR             Mean time to CLEAN recovery. The word clean is the entire
-                  argument.
+ impact tolerance   How much disruption the business will absorb before it
+                    stops being survivable. Set by the business, not by you.
+                    RTO and RPO are yours. This one is not, and that is why
+                    asking for it starts a different conversation.
+ SRI                Service Resilience Indicator. A declared, testable
+                    resilience bar per tier. Six measures sit under it. You
+                    used two of them today.
+ MTCR               Mean time to CLEAN recovery. RTO measures how fast. RPO
+                    measures how recent. MTCR measures how trustworthy.
+ resilience gap     The distance between what an organization believes it
+                    can recover and what it can prove.
+ ResOps             Recovery run as an operating discipline, the way you
+                    already run delivery.
 ```
 
 ### What you can say
@@ -1217,14 +1303,20 @@ watched happen rather than a claim you are repeating.
  6   This does not wake anyone at 3am. It fails a pull request.
 ```
 
-### The one question
+### Where you are now
 
-You will be asked about this within a month, and the questions will be
-reasonable ones. Answer the hardest of them now, while the evidence is
-still in front of you.
+```list
+ UNDERSTAND   the deck          The five domains, the contract, and why
+                                recovery is still a handoff. 45 minutes.
+ PROVE        this workshop     One workload, one loop, your hands, and a
+                                verdict you could show an auditor. 2 hours.
+ OPERATE      Monday onward     Your estate, with the loop running without
+                                you standing over it.
+```
 
-**Write down the one question you are most likely to be asked, and your
-answer to it.** That page is what you take back.
+Most teams live in the first row. They have read the model, they believe they
+could recover, and they have never once demonstrated it on a workload that
+matters. You spent two hours in the second row. Everything below is the third.
 
 ### What this workshop does not solve
 
@@ -1243,24 +1335,49 @@ answer to it.** That page is what you take back.
                               lab. Two hours cannot fake it.
  nobody owns this by default  It spans three teams who mostly do not talk
                               about recovery together.
+ nobody funds the drill       Costing a repeatable drill is a budget
+                              conversation, not a technical act, and it is
+                              the most common place this quietly stops.
 ```
 
-### Where this stops being something you can do alone
+### When this gate is not worth it
+
+Do not gate a workload you would rebuild from infrastructure as code faster
+than you would restore it. Do not gate a stateless service whose data lives
+somewhere else. Do not gate in the first week of a migration, when everything
+fails and nobody trusts the signal yet.
+
+The gate earns its place where the data is authoritative, the rebuild is
+slow, or somebody outside your team will one day ask you to prove it.
+
+A required check that fires for the wrong reason gets switched off, and the
+switch stays off.
+
+### What you do next
+
+Six things, and you already agreed to each one at the end of a chapter.
 
 ```list
- L1 · SEE       Read-only, against one workload you own. Your real number.
-                Day one.
- L2 · DECLARE   verify.sh for one tier-1 workload. Week one.
- L3 · PROVE     One scheduled drill, producing one attestation. Week two.
- L4 · GATE      One required check, with the ratchet. Month one.
- L5 · PUBLISH   Percentage provably recoverable, somewhere people see it.
-                Quarter one.
+ 1  Read one workload's real state              Read-only. Today.
+ 2  Read the bar it is judged against           Read-only. Today.
+ 3  Scan one existing backup                    Read-only. This week.
+ 4  Ask which recovery point you would pick     A conversation.
+ 5  Run one drill that produces an attestation  Needs the application team.
+ 6  Add one required check, with a ratchet      Needs CI.
 ```
 
-L1 you can do this week, alone, and it cannot touch anything. L2 needs the
-app team. L4 needs CI. L5 needs somebody who owns the number.
+**Steps one to four you can do this week, alone, against a workload you
+already own, without changing anything and without asking anyone for a
+budget.** Five and six need somebody else. Most adoption advice never says
+where the free part stops, which is why most of it is never adopted.
 
-**What L1 actually needs, so nobody is surprised on Monday:**
+One more thing turns this into an operating discipline rather than a habit:
+publish the percentage of critical services that are provably recoverable,
+somewhere people who do not report to you can see it. That single figure is
+the whole argument, and it is the only part that survives a change of
+management.
+
+**What step one actually needs, so nobody is surprised on Monday:**
 
 ```list
  1   An access token from Command Center, under avatar -> Access Tokens.
@@ -1270,12 +1387,21 @@ app team. L4 needs CI. L5 needs somebody who owns the number.
  4   The workload's group. `resops list` finds it by name.
 ```
 
-L1 is read-only and **cannot modify your environment.** The engine makes no
+Step one is read-only and **cannot modify your environment.** The engine makes no
 create, update or delete calls of any kind, and a test in the suite fails if
 anyone adds one. That is the point of starting there: it costs an afternoon
 and risks nothing.
 
 **One next action. Named workload. Dated. Owner.** Not three.
+
+### The question you will be asked
+
+You will be asked about this within a month, and the questions will be
+reasonable ones. Answer the hardest of them now, while the evidence is
+still in front of you.
+
+**Write down the one question you are most likely to be asked, and your
+answer to it.** That page is what you take back.
 
 Nobody owns this by default. It spans three teams who mostly do not talk
 about recovery together. That is not a tooling gap, and no product closes

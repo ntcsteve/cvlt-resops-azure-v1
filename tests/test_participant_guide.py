@@ -115,7 +115,7 @@ def test_sections_and_page_split(page):
     # because the chapter's own title is the page h1: see the outline test.
     for section in ("Provision the service", "The first recovery point",
                     "The gate answers twice", "Verify it is gone",
-                    "What you proved", "The one question"):
+                    "What you proved", "The question you will be asked"):
         assert f'<h2 class="section">{section}</h2>' in page
     # the closing page takes its title from its first h2. TITLE CASE, because
     # the Commvault editorial guide requires it for primary headings and
@@ -799,6 +799,61 @@ def test_the_tracking_ladder_covers_the_middle_of_the_scale(page):
     assert "h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.022em; }" in page
     assert "letter-spacing: -0.011em;" in page, "h2 is untracked again"
     assert "letter-spacing: -0.005em;" in page, "the standfirst is untracked again"
+
+
+def test_every_chapter_carries_the_same_five_row_unit():
+    """THE PATTERN. Every chapter head is STAGE / DO / LEARN / CLAIM / NEXT,
+    in that order, with no exceptions.
+
+    STAGE names which of the engine's own six stages the chapter moves, using
+    the words the tool prints, so `blocked at Scan` in output and `STAGE Scan`
+    in the head are visibly the same thing. Two chapters legitimately move
+    nothing and say so; naming them is stronger than fudging them.
+
+    NEXT is the adoption path, distributed. Before this existed, the only
+    thing a participant could do on Monday was a single block at minute 118,
+    when they are tired and half the room has gone. Seven small commitments
+    beat one large ladder, and the closing list is now a collection of things
+    they already agreed to rather than new information."""
+    import re
+    md = MD.read_text(encoding="utf-8")
+    heads = re.findall(r"^## Chapter \d+ · .+?$\n\n```\n(.*?)```", md, re.S | re.M)
+    assert len(heads) == 7, f"expected 7 chapters, found {len(heads)}"
+    for i, body in enumerate(heads, 1):
+        labels = re.findall(r"^ ([A-Z]+)\s{2,}", body, re.M)
+        assert labels == ["STAGE", "DO", "LEARN", "CLAIM", "NEXT"], (
+            f"chapter {i} strip is {labels}, not the five-row unit")
+
+
+def test_the_next_rows_and_the_closing_path_are_the_same_promises():
+    """The six steps in "What you do next" must be the NEXT rows the reader
+    already met, not a fresh list invented at the end. If a NEXT row changes
+    and the closing path does not, the workshop promises one thing per
+    chapter and a different thing at the close."""
+    md = MD.read_text(encoding="utf-8")
+    close = md[md.index("### What you do next"):]
+    for phrase in ("Read one workload's real state",
+                   "Read the bar it is judged against",
+                   "Scan one existing backup",
+                   "Ask which recovery point you would pick",
+                   "Run one drill that produces an attestation",
+                   "Add one required check, with a ratchet"):
+        assert phrase in close, f"the closing path lost {phrase!r}"
+    assert "above this line" not in close  # the permission line is prose now
+    assert "Steps one to four you can do this week, alone" in close, (
+        "the closing path no longer says where the free part stops")
+
+
+def test_the_domains_use_commvault_canon(page):
+    """Commvault's framework papers say Recovery assurance and Resilience
+    measurement. Their marketing pages say Resilience assurance and
+    Resilience measurements, and one blog contradicts itself on the plural
+    inside a single page. We follow the papers."""
+    assert "Recovery assurance" in page
+    assert "Resilience measurement" in page
+    assert "Resilience assurance" not in page, "that is the marketing name"
+    assert "Resilience measurements" not in page, "the papers use the singular"
+    assert "Resilience through repetition" not in page, "that name was ours"
 
 
 def test_sections_are_divided_by_space_not_by_a_rule(page):
