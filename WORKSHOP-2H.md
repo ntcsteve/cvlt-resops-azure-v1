@@ -240,6 +240,21 @@ facilitated session most of this is done for you.
 them in the final chapter.** Budget eight minutes at the end, and do not
 skip it.
 
+### How to read the commands on this page
+
+```list
+ $ at the start     A command for you to run. The `$` is the prompt and is
+                    not part of the command; the copy button gives you the
+                    command without it.
+ no $               Output from the machine. You do not type these lines.
+ angle brackets     A placeholder, carrying your own workload name. It
+                    appears in expected output, never inside a command, so
+                    every command on this page is the same for everyone.
+ ✓                  What the command should print. Compare, do not guess.
+ ✗                  What to do when it does not. Every one names an action.
+ ⏱                  How long it takes, and what is happening while you wait.
+```
+
 ### Prove your machine is ready
 
 ```bash
@@ -250,6 +265,51 @@ source .venv/bin/activate
 ```
  ✓ YOU SHOULD SEE   your shell prompt gains a (.venv) prefix. That is the whole check.
  ✗ IF NOT           fix the virtual environment before anything else; nothing below works without it. In a room, ask now rather than when the first command runs.
+```
+
+### When something fails
+
+Search this page for the text your terminal printed. The left column is the
+error, verbatim.
+
+```list
+ missing workshop.yaml         `config/workshop.yaml` does not exist. Copy
+                               `config/workshop.yaml.example` and fill in your
+                               codename and ids.
+ no `workload` output          `terraform apply` has not run, or ran in a
+                               different directory. Run it from the repository
+                               root.
+ not in /VM                    Discovery has not run. It is the one manual
+                               step in this workshop: Command Center,
+                               Protect, Virtualization, your hypervisor,
+                               Discover.
+ no vmgroup for                `op protect` has not run for this workload yet.
+ could not run the command     The VM is not running, or its guest agent is
+                               not ready. The agent needs about two minutes
+                               after boot. Retry once before investigating.
+ Waiting                       The job is queued for a media agent, the shared
+                               worker that moves the data. About two minutes
+                               is normal and up to twenty-seven has been seen.
+                               Do not kill it.
+ threatscan trigger refused    The scan plan id is missing or wrong. Set
+                               `scan_plan_id` in `config/workshop.yaml`.
+ climb stops at the restore    The drill did not pass, which is the drill
+ drill                         doing its job. Read the `FAIL:` line: it names
+                               what it found inside the restored copy.
+ no run to publish             `op gate` has not run yet. `metrics` publishes
+                               the last run rather than taking its own.
+ attestation stale             Something backed up after your last drill, so
+                               the proof no longer covers the newest recovery
+                               point. Run the drill again.
+```
+
+**Before investigating anything, run these three.** All are read-only and two
+need no token.
+
+```
+ op validate     Does your config parse, and are the ids present?
+ op preflight    Can this machine reach Azure and the tenant?
+ op status       What does the platform currently believe about your workload?
 ```
 
 ### Three questions, before anything runs

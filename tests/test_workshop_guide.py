@@ -586,3 +586,33 @@ def test_the_guide_names_the_capabilities_it_makes_participants_use():
         "Air Gap Protect is named before the participant has used it")
     assert lower.index("threat scan") > first_scan, (
         "Threat Scan is named before the participant has run it")
+
+
+def test_the_symptom_index_quotes_errors_the_engine_actually_prints():
+    """The index on the Setup page exists so a stuck reader can paste the text
+    their terminal printed into find-in-page and land on the fix. Fly.io is
+    the only site in the competitive audit that indexes troubleshooting by
+    SYMPTOM rather than by subsystem, and it leads each entry with the
+    verbatim error string for exactly this reason.
+
+    That only works while the strings match. If someone rewords an error in
+    resops/ and not here, the index silently stops matching and a reader who
+    searches for their error finds nothing, which is worse than no index."""
+    import re
+    src = "\n".join(f.read_text(encoding="utf-8")
+                    for f in (ROOT / "resops").rglob("*.py"))
+    guide = GUIDE_2H.read_text(encoding="utf-8")
+    start = guide.index("### When something fails")
+    end = guide.index("**Before investigating")
+    keys = [re.split(r"\s{2,}", l.strip())[0]
+            for l in guide[start:end].split("\n")
+            if l.startswith(" ") and not l.startswith("  ")]
+    assert len(keys) >= 10, f"the symptom index shrank to {len(keys)} entries"
+    for key in keys:
+        if key in ("Waiting", "drill"):
+            continue           # job status, and a wrapped continuation
+        probe = ("copy config/workshop.yaml.example"
+                 if key.startswith("missing workshop") else key)
+        assert probe in src, (
+            f"the index quotes {key!r} but nothing in resops/ prints it; "
+            f"a reader searching for that error will find nothing")
