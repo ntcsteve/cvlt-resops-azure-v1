@@ -153,8 +153,12 @@ facilitated session most of this is done for you.
                             and to which storage. That plan must use
                             air-gapped immutable storage, or the workshop has
                             nothing to argue about.
- this repository            With `config/workshop.yaml` filled in: your
-                            codename, and your subscription and plan ids.
+ this repository            Cloned, with a virtual environment built from
+                            it (`python3 -m venv .venv`, then
+                            `pip install -e .`), the access token in
+                            `.env`, and `config/workshop.yaml` filled in:
+                            your codename, and your subscription and plan
+                            ids.
  terraform, python 3.11+    And the az CLI, logged in.
 ```
 
@@ -187,7 +191,7 @@ source .venv/bin/activate
 
 ```
  ✓ YOU SHOULD SEE   your shell prompt gains a (.venv) prefix. That is the whole check.
- ✗ IF NOT           fix the virtual environment before anything else; nothing below works without it. In a room, ask now rather than when the first command runs.
+ ✗ IF NOT           build it: python3 -m venv .venv, then source .venv/bin/activate and pip install -e . from the repository root. Nothing below works without it. In a room, ask now rather than when the first command runs.
 ```
 
 ### When something fails
@@ -230,16 +234,18 @@ error, verbatim.
 need no token.
 
 ```
- op validate     Does your config parse, and are the ids present?
- op preflight    Can this machine reach Azure and the tenant?
- op status       What does the platform currently believe about your workload?
+ python3 -m resops.operator.op validate  infra/workloads
+     does your config parse, and are the ids present?
+ python3 -m resops.operator.op preflight infra/workloads
+     can this machine reach Azure and the tenant?
+ python3 -m resops.operator.op status    infra/workloads
+     what does the platform currently believe about your workload?
 ```
 
 ### Three questions, before anything runs
 
-Write these down now and set them aside. You come back to them at the end,
-and the distance between your two sets of answers is the only measurement
-this workshop makes.
+Write these down now and set them aside; how they read to you afterward is
+the measure of the workshop.
 
 Very few organizations can answer the first question with confidence. That
 is the industry's position today, not a judgement on any one team, and it is
@@ -370,9 +376,9 @@ Commvault Cloud web console. It is the only operation in this workshop that is
 not an API call.
 
 ```list
- 1   Sign in to Command Center and open your Azure connection. Its name is in
-     your session instructions, or in your own config as
-     `platform.hypervisor.name`.
+ 1   Sign in to Command Center and open **Protect**, then **Virtualization**,
+     then your Azure connection. Its name is in your session instructions,
+     or in your own config as `platform.hypervisor.name`.
  2   Click **Start discovery**.
  3   Wait for **Last update**, at the top of the page, to change to the
      current time with a green check beside it.
@@ -849,7 +855,7 @@ watches threats across the estate.
 
 ```
  ? WHY THIS MATTERS
-   Two HOLDs, two different reasons. The first said "nothing has looked
+   Two exit 1s, two different reasons. The first said "nothing has looked
    at this point". The second said "something looked, and found
    malware". Those are opposite situations and they must never read the
    same. A check that examined nothing must never report a pass.
@@ -911,7 +917,8 @@ python3 -m resops.operator.op remediate infra/workloads
 
 ### Four recovery points, one decision
 
-Four recovery points, offline, with no cloud account and no token:
+Four recovery points, offline, with no cloud account and no token. They
+describe a scenario workload from `config/incident.yaml`, not your VM:
 
 ```bash
 python3 -m resops gate config/incident.yaml
