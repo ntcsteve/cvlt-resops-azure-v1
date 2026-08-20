@@ -118,16 +118,25 @@ This applies to your monitoring too. Go and check what your verifier actually ve
 ## Adopting it
 
 ```
- L1  SEE       resops gate, read-only. learn your real number.        day 1
- L2  DECLARE   write verify.sh for ONE tier-1 workload. 70 lines.     week 1
- L3  PROVE     one scheduled drill. one attestation.                  week 2
- L4  GATE      required CI check on that ONE workload. ratchet.       month 1
- L5  PUBLISH   resops metrics on a wall. % provably recoverable.      quarter 1
+ 1  Read one workload's real state                       read-only   day 1
+ 2  Read the bar it is judged against                    read-only   day 1
+ 3  Scan one existing backup                             read-only   week 1
+ 4  Ask which recovery point you would pick under
+    compromise, and who decides                          a conversation
+ ────────── above this line you need nobody's permission ──────────
+ 5  Write verify.sh for ONE tier-1 workload, then run one drill
+    that produces an attestation                         week 2
+ 6  Make it a required CI check on that ONE workload, with a
+    dated tolerance                                      month 1
+ 7  Publish the percentage provably recoverable, where people
+    who do not report to you can see it                  quarter 1
 ```
 
-L1 is the whole adoption story: read-only, physically cannot mutate your environment (there is a test enforcing that), and it tells you your real position by Monday.
+Steps one to four are read-only or free. The engine physically cannot mutate your environment on those, and there is a test enforcing it, so step one tells you your real position by Monday without a change request.
 
-**L4 is where adoption usually dies**, because a real estate goes red on day one and the check gets deleted by Friday. Use `enforce_from:` – a declared, dated tolerance that never changes a workload's verdict, only whether that verdict blocks the aggregate, and that expires by itself. See the README section *Turning it on without everything going red*.
+Numbered rather than lettered on purpose: Commvault's own ResOps maturity model runs Level 0 to Level 3, and an L1-to-L5 ladder beside it invites a reader to reconcile two things that are not the same. This is an adoption order, not a maturity assessment.
+
+**Step six is where adoption usually dies**, because a real estate goes red on day one and the check gets deleted by Friday. Use `enforce_from:` – a declared, dated tolerance that never changes a workload's verdict, only whether that verdict blocks the aggregate, and that expires by itself. See the README section *Turning it on without everything going red*.
 
 ## Honest limits
 

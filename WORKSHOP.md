@@ -776,15 +776,19 @@ You have now walked all five steps. Write them down for something real.
 ```
 
 ```
- THE ADOPTION LADDER
- L1  SEE       resops gate, read-only. your real number.       day 1
- L2  DECLARE   verify.sh for ONE tier-1 workload. 70 lines.    week 1
- L3  PROVE     one scheduled drill. one attestation.           week 2
- L4  GATE      required check on that ONE workload. ratchet.   month 1
- L5  PUBLISH   % provably recoverable, on a wall.              quarter 1
+ THE ADOPTION ORDER
+ 1  Read one workload's real state                read-only   day 1
+ 2  Read the bar it is judged against             read-only   day 1
+ 3  Scan one existing backup                      read-only   week 1
+ 4  Ask which recovery point you would pick       a conversation
+ ───── above this line you need nobody's permission ─────
+ 5  verify.sh for ONE tier-1 workload, and one drill that
+    produces an attestation                                   week 2
+ 6  A required check on that ONE workload, with a ratchet      month 1
+ 7  Publish the percentage provably recoverable                quarter 1
 ```
 
-L1 is read-only and physically cannot mutate your environment. There is a test enforcing that.
+Steps one to four are read-only and physically cannot mutate your environment. There is a test enforcing that. Numbered rather than lettered because Commvault's ResOps maturity model runs Level 0 to Level 3, and two ladders side by side invite a reader to reconcile things that are not the same.
 
 **In seven days you get one question: did you run it against anything real?**
 
