@@ -395,9 +395,12 @@ def test_a_list_fence_flows_and_a_plain_fence_does_not(page):
     assert '<div class="deflist">' in page
     assert '<span class="dl-key">Air Gap Protect</span>' in page
     assert '<div class="dl-val"><p>The immutable, air-gapped pool' in page
-    # a diagram: still preformatted, still scrolls in its own container
+    # a diagram: still preformatted, still scrolls in its own container.
+    # Specimen: chapter 4's four-points comparison, whose column alignment
+    # is the exercise. (The old specimen, the three-planes panel, became an
+    # authored SVG figure on 2026-08-20.)
     assert '<pre class="panel">' in page
-    assert "PRODUCTION PLANE          RECOVERY PLANE" in page
+    assert "D   7 hours ago     ●●●●●●  VALIDATED" in page
 
 
 def test_an_unparseable_list_row_is_a_loud_error():
@@ -895,8 +898,12 @@ def test_the_concepts_sit_with_the_commands_that_prove_them():
     ch6 = md[md.index("## Chapter 6"):md.index("## Chapter 7")]
     wrap = md[md.index("## Wrap-Up"):]
 
-    assert "PRODUCTION PLANE" in ch1, "the planes diagram left chapter 1"
-    assert "PRODUCTION PLANE" not in overview, "the planes are back on the Overview"
+    # The planes became an authored SVG on 2026-08-20 (the one figure
+    # exception to ASCII; official icons, tokens.css colors), so the marker
+    # is the figure reference rather than the old panel's header row.
+    assert "images/three-planes.svg" in ch1, "the planes figure left chapter 1"
+    assert "images/three-planes.svg" not in overview, \
+        "the planes are back on the Overview"
     assert "SHIFTED LEFT ALREADY" in ch6, "the shift-left table left chapter 6"
     assert "SHIFTED LEFT ALREADY" not in overview
     assert "What transfers, and what does not" in wrap

@@ -165,9 +165,13 @@
 }
 
 /* ---- figure: build-time inlined image ---- */
-figure { margin: 16px 0; }
+/* A diagram that shrinks with the viewport becomes illegible on a phone,
+   so below min-width the figure SCROLLS instead: the page's standing rule
+   for wide content. min-width beats max-width by spec, which is exactly
+   the wanted behavior: cap at the column, floor at legibility. */
+figure { margin: 16px 0; overflow-x: auto; }
 figure img {
-  max-width: 100%; display: block;
+  max-width: 100%; min-width: 560px; display: block;
   border: 1px solid var(--line); border-radius: var(--radius-md);
 }
 figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }

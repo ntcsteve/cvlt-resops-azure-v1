@@ -287,16 +287,7 @@ workshop depends on which one produced it.
 
 ### The three planes you are about to build
 
-```
- PRODUCTION PLANE          RECOVERY PLANE            ISOLATED PLANE
- ┌───────────────┐         ┌────────────────────┐    ┌───────────────┐
- │ your VM       │ agent   │ AIR-GAP POOL       │    │ restored copy │
- │ no public IP  │──────▸  │ immutable copies   │──▸ │ verified from │
- │ no open ports │ snapshot│ service-held keys  │    │ the inside,   │
- └───────────────┘         └────────────────────┘    │ then deleted  │
-        ▲                            ▲               └───────────────┘
-   attacker ──✗── no path from the VM to the copies, ever
-```
+![The three planes. The attacker can reach the workload and never the copies; trust flows one way.](images/three-planes.svg)
 
 The production plane is an Azure VM running a live service, locked down
 the way production should be: no public IP, no inbound rules, no
