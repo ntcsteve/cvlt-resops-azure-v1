@@ -1420,8 +1420,8 @@ it?". ResOps measures outcomes.
 Cyber resilience is the ability to keep operating through an attack and to
 prove recovery afterward. Regulators now require that proof: DORA and NIS2
 both mandate demonstrated recoverability, not documented intent. The lab
-ran on Commvault Cloud; ResOps is Commvault's discipline for running
-recovery this way.
+ran on Commvault® Cloud, powered by Metallic® AI; ResOps is Commvault's
+discipline for running recovery this way.
 
 Four ResOps ideas are below. These are the Commvault Cloud capabilities that
 carried them, so you can name them to a colleague or look them up later.
@@ -1487,23 +1487,31 @@ watched happen rather than a claim you are repeating.
  6   This does not wake anyone at 3am. It fails a pull request.
 ```
 
-### Where the gate earns its place
+### Wiring the gate into your pipeline
 
-The gate earns its place where the data is authoritative, the rebuild is
-slow, or somebody outside your team will one day ask you to prove it. Do
-not gate a workload you would rebuild from infrastructure as code faster
-than you would restore it, a stateless service whose data lives somewhere
-else, or anything in the first week of a migration, when everything fails
-and nobody trusts the signal yet. A required check that fires for the
-wrong reason gets switched off, and the switch stays off.
+The gate is a required check, and it wires in like one. It runs on every
+pull request beside your tests and scans, and once on a schedule.
+Recoverability drifts without a code change: a backup fails overnight, an
+attestation ages past its bar. The exit code is the whole integration
+surface, which is why the workflow file you read in chapter 6 is short.
 
-The lab runs on Commvault® Cloud, powered by Metallic® AI, because a lab
-has to run on something real. The discipline transfers to any backup
-platform: declare a bar per tier, open a recovery point and read it, gate
-on the result, keep the evidence. In the toolkit the gate, the evidence
-chain, the control crosswalk and the metrics are vendor-neutral; the
-layer that reads a workload's state is Commvault-specific today, and
-there is no second adapter.
+```
+ pull request        tests ✓ · scans ✓ · plan ✓ · resops gate ✓ ──▸ merge
+ schedule, daily     resops gate ──▸ resops metrics ──▸ the wall
+```
+
+Turning it on across a real estate works the same way coverage
+enforcement did. Almost everything HOLDs on day one, correctly, so each
+workload declares a dated tolerance and the aggregate stops counting it
+until that date. Start with one tier-1 workload rather than the estate,
+and let `resops_tolerated` publish the number that has to go down.
+
+Gate the workloads where the data is authoritative, the rebuild is slow,
+or somebody will one day ask for proof; skip stateless services and
+anything mid-migration, because a required check that fires for the wrong
+reason gets switched off. The discipline transfers to any backup platform
+that can open a recovery point: declare the bar, read the point, gate on
+the result, keep the evidence.
 
 ### Out of scope, on purpose
 
@@ -1572,22 +1580,27 @@ and risks nothing.
 **Pick one next action, not three.** Name the workload, set a date, and
 name an owner.
 
-### The question you will be asked
+### ResOps in the real world
 
-You will be asked about this within a month, and the questions will be
-reasonable ones. Answer the hardest of them now, while the evidence is
-still in front of you.
+ResOps is an operating discipline, not a product: it unites security,
+infrastructure and operations teams around critical services, resilient
+design and continuous validation, so an organization can withstand
+disruption, recover within its impact tolerances, and prove it with
+evidence. You ran every part of that sentence today: the three planes
+were the resilient design, the drill was the continuous validation, the
+tiers were the impact tolerances, and the evidence chain was the proof.
 
-**Write down the one question you are most likely to be asked, and your
-answer to it.** That page is what you take back.
+The discipline exists because the real world keeps demonstrating the
+need for it. Recovery plans that were never exercised fail under real
+conditions, restored systems come back running but not yet trusted, and
+regulators from DORA to NIS2 now ask for demonstrated recoverability
+rather than documented intent. Traditional approaches prioritize
+capability, tools in place and policies written; ResOps prioritizes
+outcomes, services restored within tolerance, clean, with evidence. The
+distance between the two is the resilience gap, and it closes one
+measured workload at a time.
 
 ```
  From assumption-based resilience
    to evidence-based, measurable, predictable recoverability.
 ```
-
-Individual effort does not scale across an estate. A repeatable practice
-does, and it starts with one honest measurement.
-
-**In seven days there is one question: did you run it against anything
-real?**

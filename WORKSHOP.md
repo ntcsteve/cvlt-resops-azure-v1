@@ -790,8 +790,6 @@ You have now walked all five steps. Write them down for something real.
 
 Steps one to four are read-only and physically cannot mutate your environment. There is a test enforcing that. Numbered rather than lettered because Commvault's ResOps maturity model runs Level 0 to Level 3, and two ladders side by side invite a reader to reconcile things that are not the same.
 
-**In seven days you get one question: did you run it against anything real?**
-
 ---
 
 ## What is honestly not solved

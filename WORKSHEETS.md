@@ -287,11 +287,6 @@ Pick exactly one. Name it. Date it.
  BY     ______________________________________________________
 ```
 
-```
- In seven days you get one question:
- did you run it against anything real?
-```
-
 ### Where to start on Monday
 
 ```

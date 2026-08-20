@@ -115,7 +115,7 @@ def test_sections_and_page_split(page):
     # because the chapter's own title is the page h1: see the outline test.
     for section in ("Provision the service", "The first recovery point",
                     "The gate answers twice", "Verify it is gone",
-                    "What you proved", "The question you will be asked"):
+                    "What you proved", "ResOps in the real world"):
         assert f'<h2 class="section">{section}</h2>' in page
     # the closing page takes its title from its first h2. TITLE CASE, because
     # the Commvault editorial guide requires it for primary headings and
@@ -924,10 +924,11 @@ def test_the_concepts_sit_with_the_commands_that_prove_them():
         "the planes are back on the Overview"
     assert "SHIFTED LEFT ALREADY" in ch6, "the shift-left table left chapter 6"
     assert "SHIFTED LEFT ALREADY" not in overview
-    # The portability caveat merged into the judgment section on 2026-08-20,
+    # The portability caveat merged into the pipeline section on 2026-08-20,
     # when the Wrap-Up was restructured around a stated conclusion.
-    assert "Where the gate earns its place" in wrap
-    assert "vendor-neutral" in wrap, "the portability statement left the Wrap-Up"
+    assert "Wiring the gate into your pipeline" in wrap
+    assert "transfers to any backup platform" in wrap, \
+        "the portability statement left the Wrap-Up"
     assert "portable" not in overview, "the portability caveat is back on the Overview"
 
     # PROSE words, fences excluded, measured the way the 771 -> 468 figure was
