@@ -173,6 +173,10 @@ facilitator retires the lab.
  $ at the start     A command for you to run. The `$` is the prompt and is
                     not part of the command; the copy button gives you the
                     command without it.
+ op                 Shorthand for the write lane. Run it as
+                    `python3 -m resops.operator.op` with `infra/workloads`
+                    as the final argument, the way every runnable block on
+                    this page prints it.
  no $               Output from the machine. You do not type these lines.
  angle brackets     A placeholder, carrying your own workload name. It
                     appears in expected output, never inside a command, so
@@ -234,12 +238,9 @@ error, verbatim.
 need no token.
 
 ```
- python3 -m resops.operator.op validate  infra/workloads
-     does your config parse, and are the ids present?
- python3 -m resops.operator.op preflight infra/workloads
-     can this machine reach Azure and the tenant?
- python3 -m resops.operator.op status    infra/workloads
-     what does the platform currently believe about your workload?
+ op validate     Does your config parse, and are the ids present?
+ op preflight    Can this machine reach Azure and the tenant?
+ op status       What does the platform currently believe about your workload?
 ```
 
 ### Three questions, before anything runs
