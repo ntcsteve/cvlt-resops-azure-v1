@@ -67,18 +67,9 @@ It is an operating model, not a product.
                 within tolerance, on demand?
 ```
 
-Each era bolted its answer onto the last: backup, then disaster recovery,
-then cyber resilience, each arriving as a separate tool and a separate
-team. The first three all describe intent. Only the fourth insists on
-evidence, and the difference is the whole subject of this workshop.
-
-```
- From assumption-based resilience
-   to evidence-based, measurable, predictable recoverability.
-```
-
-By the end of this workshop you will have done it to a real service,
-with your own hands, and you will have the output to show for it.
+The first three questions can be answered from a document. The fourth can
+only be answered by opening a recovery point and reading what is inside it,
+which is what you spend the next two hours doing to a real service.
 
 ## Who this is for
 
@@ -108,76 +99,6 @@ You gate on security scans.
 You have taken a whole class of failure and moved it from *we find out in
 production* to *we find out at the pull request*, three times over.
 
-```
- SHIFTED LEFT ALREADY              STILL ON THE RIGHT
- tests       -> CI gate            recoverability -> a ticket,
- security    -> scanner gate                        after an outage
- infra       -> plan gate
- lint        -> merge blocker
-```
-
-Each time it was the same fight. Each time nobody argued after the first
-year. This workshop is about the fourth one.
-
-## The lab you are standing in
-
-```
- PRODUCTION PLANE          RECOVERY PLANE            ISOLATED PLANE
- ┌───────────────┐         ┌────────────────────┐    ┌───────────────┐
- │ your VM       │ agent   │ AIR-GAP POOL       │    │ restored copy │
- │ no public IP  │──────▸  │ immutable copies   │──▸ │ verified from │
- │ no open ports │ snapshot│ service-held keys  │    │ the inside,   │
- └───────────────┘         └────────────────────┘    │ then deleted  │
-        ▲                            ▲               └───────────────┘
-   attacker ──✗── no path from the VM to the copies, ever
-```
-
-The production plane is an Azure VM running a live service, locked down
-the way production should be: no public IP, no inbound rules, no
-interactive access. All operations flow through managed control planes,
-the Azure guest agent and the Commvault Cloud API, which is exactly how
-the workshop's commands, and a real incident response, reach it.
-
-Commvault Cloud protects that service into an air-gapped, immutable
-storage pool: the recovery plane. Nothing running on the VM can reach that
-pool, including anything an attacker plants there. Restore drills rebuild a
-copy of the service in isolation, verify it from the inside, and remove it.
-
-Three planes, and trust flows one way. Every verdict in this workshop is
-read from the copy rather than from the machine that produced it, because a
-compromised machine can only report on itself.
-
-If you have not used Commvault before, this is what you are about to touch:
-
-```list
-@cloud-server PRODUCTION PLANE   An Azure VM, built by Terraform, running a
-                    small service.
-@secure-storage RECOVERY PLANE   Commvault Cloud, protecting that VM into an
-                    immutable copy held in its own security domain, with
-                    credentials the VM never has.
-@ransomware DETECTION            A scan that opens a recovery point in the
-                    recovery plane and reads it there, without touching
-                    production.
-@vm-restore ISOLATED PLANE       An out-of-place restore: a new VM built from
-                    one recovery point, verified from the inside, then deleted.
-@command-center THE CONSOLE      Command Center, the web console the platform
-                    is operated from. You open it once in this workshop, on
-                    purpose. Everything else is API, and that is the whole
-                    argument of the day.
-```
-
-**What is portable here, and what is not.** The lab runs on
-Commvault® Cloud, powered by Metallic® AI. The discipline is the point,
-though, and it transfers to any backup platform: declare a bar per tier, open a recovery
-point and read it, gate on the result, keep the evidence. The lab is built
-on Azure and Commvault Cloud because a lab has to run on something real. In the
-toolkit itself the gate, the evidence chain, the control crosswalk and the
-metrics are vendor-neutral; the layer that reads a workload's state is not,
-and there is no second adapter today. That is stated plainly so nobody has
-to discover it later.
-
-When a concept deserves the fuller story, look for the HOW IT WORKS notes
-as you go.
 
 ## What you will walk
 
@@ -360,10 +281,67 @@ than a confident one.
             even discovered it. Read-only. Today.
 ```
 
-One `terraform apply` gives you a real service: a VM with no public IP, no
-inbound rules and no interactive access. Every command from here reaches it
-through the Azure guest agent or the Commvault Cloud API, and each one prints
-what it did so you can compare it against the box below.
+This chapter builds three environments and moves a workload through all of
+them. They are worth seeing before you start, because every verdict in this
+workshop depends on which one produced it.
+
+### The three planes you are about to build
+
+```
+ PRODUCTION PLANE          RECOVERY PLANE            ISOLATED PLANE
+ ┌───────────────┐         ┌────────────────────┐    ┌───────────────┐
+ │ your VM       │ agent   │ AIR-GAP POOL       │    │ restored copy │
+ │ no public IP  │──────▸  │ immutable copies   │──▸ │ verified from │
+ │ no open ports │ snapshot│ service-held keys  │    │ the inside,   │
+ └───────────────┘         └────────────────────┘    │ then deleted  │
+        ▲                            ▲               └───────────────┘
+   attacker ──✗── no path from the VM to the copies, ever
+```
+
+The production plane is an Azure VM running a live service, locked down
+the way production should be: no public IP, no inbound rules, no
+interactive access. All operations flow through managed control planes,
+the Azure guest agent and the Commvault Cloud API, which is exactly how
+the workshop's commands, and a real incident response, reach it.
+
+Commvault Cloud copies that service into the recovery plane: immutable
+storage held in the platform's own security domain. The isolation here is not
+a disconnected network. It is that the credentials for that storage belong to
+the service and never to the workload, so nothing running on the VM can reach
+the copies, including anything an attacker puts there. Restore drills rebuild
+a copy of the service in the third plane, verify it from the inside, and
+remove it.
+
+Three planes, and trust flows one way. Every verdict in this workshop is
+read from the copy rather than from the machine that produced it, because a
+compromised machine can only report on itself.
+
+If you have not used Commvault before, this is what you are about to touch:
+
+```list
+@cloud-server PRODUCTION PLANE   An Azure VM, built by Terraform, running a
+                    small service.
+@secure-storage RECOVERY PLANE   Commvault Cloud, protecting that VM into an
+                    immutable copy held in its own security domain, with
+                    credentials the VM never has.
+@ransomware DETECTION            A scan that opens a recovery point in the
+                    recovery plane and reads it there, without touching
+                    production.
+@vm-restore ISOLATED PLANE       An out-of-place restore: a new VM built from
+                    one recovery point, verified from the inside, then deleted.
+@command-center THE CONSOLE      Command Center, the web console the platform
+                    is operated from. You open it once, for the one step that
+                    has to be done by hand. Every other step in this workshop
+                    is an API call, which is what makes it repeatable.
+```
+
+When a concept deserves the fuller story, look for the HOW IT WORKS notes
+as you go.
+
+One `terraform apply` gives you the first of the three: a VM with no public
+IP, no inbound rules and no interactive access. Every command from here
+reaches it through the Azure guest agent or the Commvault Cloud API, and each
+one prints what it did so you can compare it against the box below.
 
 ### Provision the service
 
@@ -491,8 +469,8 @@ python3 -m resops.operator.op restore infra/workloads
  ✦ WHAT YOU JUST BUILT
    A sealed production service, a recovery point in a vault the
    service itself cannot touch, and a drill that proved the point
-   restores clean. You did in twenty minutes what most estates have
-   never done once: recovery, demonstrated.
+   restores clean. That is recovery demonstrated rather than
+   assumed, which is the step most estates have never taken.
 ```
 
 ## Chapter 2 · Reading the Proof
@@ -1030,6 +1008,20 @@ its numbers, and puts it on a pull request as a required check. One workload
 proving itself is a demonstration; an estate doing it on every change is the
 discipline.
 
+Your team has already done this three times, for three other classes of
+failure:
+
+```
+ SHIFTED LEFT ALREADY              STILL ON THE RIGHT
+ tests       -> CI gate            recoverability -> a ticket,
+ security    -> scanner gate                        after an outage
+ infra       -> plan gate
+ lint        -> merge blocker
+```
+
+Each time it was the same fight. Each time nobody argued after the first
+year. This workshop is about the fourth one.
+
 ### The estate
 
 ```bash
@@ -1263,13 +1255,13 @@ terraform -chdir=infra/workloads state list | wc -l
 ```
 
 ```
- ✦ WHAT YOU JUST CLOSED
+ ✦ WHAT YOU JUST RETIRED
    A lab that costs nothing to leave behind, retired and verified
    empty by command rather than by report.
 
-   Recovery drills only happen on a schedule if they are cheap to
-   start and cheap to end. That is not an operational detail. It is
-   the difference between a discipline and an annual exercise.
+   A drill only runs on a schedule if it is cheap to start and cheap
+   to end. Cost is what decides whether recovery testing becomes a
+   routine or stays an annual exercise.
 ```
 
 ---
@@ -1400,6 +1392,18 @@ Most teams live in the first row. They have read the model, they believe they
 could recover, and they have never once demonstrated it on a workload that
 matters. You spent two hours in the second row. The rest of this page is
 how to reach the third.
+
+### What transfers, and what does not
+
+**What is portable here, and what is not.** The lab runs on
+Commvault® Cloud, powered by Metallic® AI. The discipline is the point,
+though, and it transfers to any backup platform: declare a bar per tier, open a recovery
+point and read it, gate on the result, keep the evidence. The lab is built
+on Azure and Commvault Cloud because a lab has to run on something real. In the
+toolkit itself the gate, the evidence chain, the control crosswalk and the
+metrics are vendor-neutral; the layer that reads a workload's state is not,
+and there is no second adapter today. That is stated plainly so nobody has
+to discover it later.
 
 ### What this workshop does not solve
 

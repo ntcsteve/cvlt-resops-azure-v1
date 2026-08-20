@@ -791,6 +791,50 @@ def test_every_chapter_strip_actually_RENDERS_as_a_strip(page):
         assert f"<span>{label}</span>" in page, f"{label} is not a strip label"
 
 
+def test_every_checkpoint_title_is_distinct():
+    """Each chapter ends on a ✦ card naming what the reader just did.
+    Chapters 5 and 7 both said WHAT YOU JUST CLOSED until 2026-08-20, which
+    reads as a copy-paste rather than as a summary of two different things."""
+    import re
+    md = MD.read_text(encoding="utf-8")
+    titles = re.findall(r"✦ (WHAT YOU JUST [A-Z]+)", md)
+    assert len(titles) == 7, f"expected 7 checkpoints, found {len(titles)}"
+    dupes = [x for x in set(titles) if titles.count(x) > 1]
+    assert not dupes, f"duplicate checkpoint titles: {dupes}"
+
+
+def test_the_concepts_sit_with_the_commands_that_prove_them():
+    """Moved on 2026-08-20. The Overview used to carry three arguments a
+    reader could not evaluate yet: the three planes, the shift-left table and
+    the portability caveat. It ran to 771 words with nothing to do in it,
+    against 203 words and five commands in chapter 1.
+
+    Each now sits where it is earned. The planes open chapter 1, which builds
+    them. The shift-left table opens chapter 6, which performs the fourth
+    one. Portability sits in the Wrap-Up, where it becomes a decision."""
+    md = MD.read_text(encoding="utf-8")
+    overview = md[:md.index("## Setup")]
+    ch1 = md[md.index("## Chapter 1"):md.index("## Chapter 2")]
+    ch6 = md[md.index("## Chapter 6"):md.index("## Chapter 7")]
+    wrap = md[md.index("## Wrap-Up"):]
+
+    assert "PRODUCTION PLANE" in ch1, "the planes diagram left chapter 1"
+    assert "PRODUCTION PLANE" not in overview, "the planes are back on the Overview"
+    assert "SHIFTED LEFT ALREADY" in ch6, "the shift-left table left chapter 6"
+    assert "SHIFTED LEFT ALREADY" not in overview
+    assert "What transfers, and what does not" in wrap
+    assert "portable" not in overview, "the portability caveat is back on the Overview"
+
+    # PROSE words, fences excluded, measured the way the 771 -> 468 figure was
+    prose = re.sub(r"```.*?```", "", overview, flags=re.S)
+    prose = "\n".join(l for l in prose.split("\n") if not l.startswith(("#", ">")))
+    words = len(prose.split())
+    assert words < 560, (
+        f"the Overview is back up to {words} prose words, from 468; it is the "
+        f"one page with nothing to do in it, so it is the one that must stay "
+        f"short. Put the argument next to the command that proves it.")
+
+
 def test_every_chapter_carries_the_same_five_row_unit():
     """THE PATTERN. Every chapter head is STAGE / DO / LEARN / CLAIM / NEXT,
     in that order, with no exceptions.
