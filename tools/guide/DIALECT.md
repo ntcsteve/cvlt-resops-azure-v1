@@ -43,7 +43,7 @@ intro prose, blockquote          the blockquote renders as the landing
    last chapter                  page's title and sidebar name
 ```
 
-Every chapter follows one fixed order: DO/LEARN/CLAIM strip, lead prose,
+Every chapter follows one fixed order: the five-row strip, lead prose,
 ### sections carrying the steps and asides, ✦ checkpoint, pager.
 Predictability is the reader's second facilitator. In diagnostic
 rows the LABEL LINE is description and flows to the full content width;
@@ -89,10 +89,23 @@ parser, never hand-edit the HTML.
 ``` starting ✦     a checkpoint card (WHAT YOU JUST …): the chapter's
                    consolidation, and the summary a room inherits when the
                    chapter itself is not rendered
-``` starting DO    the DO/LEARN/CLAIM strip: UPPERCASE label, two+ spaces,
-                   text. Opens every chapter. DO is what their hands do,
-                   LEARN is the mechanism, CLAIM is the sentence they can
-                   use in a design review afterwards
+``` starting STAGE the chapter strip: UPPERCASE label, two+ spaces, text.
+                   Opens every chapter, five rows, always in this order:
+
+                     STAGE     which of the engine's own six stages this
+                               chapter moves, in the words the tool prints
+                     EXERCISE  what their hands do
+                     LEARN     the mechanism
+                     RULE      the invariant that follows, which they can
+                               apply afterwards. It must be true and
+                               applicable, not merely quotable
+                     NEXT      the one thing to do in their own estate
+
+                   THE PARSER IDENTIFIES THIS BLOCK BY ITS FIRST LABEL. It
+                   used to be DO; STAGE was added above it on 2026-08-20,
+                   the match stopped firing, and seven strips silently
+                   rendered as plain panels for two commits. If you rename
+                   the first row, change parser.py in the same commit
 ```list            a definition list: `label  text` rows, label in a mono
                    column, text as PROSE that flows and rewraps. Use it for
                    anything that is a label beside a sentence; a plain fence
@@ -180,7 +193,50 @@ An unknown `@name` fails the build; an unreferenced icon warns.
 - Zero external references: the file works offline or does not build.
 - No facilitator material: the guide renders participant content only.
 
-## 9. What the build does NOT check, and the suite does
+## 9. How to write it
+
+The dialect decides the shape. This decides the prose, and it exists because
+the guide was rewritten three times in one day before anyone wrote it down.
+
+MEASURED AGAINST TWO REAL CORPORA, not against taste. AWS lab bodies
+(disaster-recovery.workshop.aws, eksworkshop.com) run a mean of 20.7 words
+per sentence, median 19. Google Codelabs runs 18.9 and 16. In both, roughly
+18% of sentences are under ten words. Neither has a long-then-punchy rhythm;
+both are a flat band. Ours was at 30% and read as an essay.
+
+```
+ TARGET             mean 17-19 words, median 16, about 18% under ten
+ A SHORT SENTENCE   appears when the thought is short, never when the
+                    paragraph needs a beat
+ NO METAPHOR        Google's style guide is categorical: "Don't use
+                    metaphors, and don't use a term in a metaphorical
+                    sense." Not soften. Delete
+ NO APHORISM        neither corpus contains a single sentence written to be
+                    remembered. The RULE row is the ONE exception, because
+                    being carried away is its job
+ NO STAGE DIRECTION "Now look at", "Then read", "Now ask" - the reader is
+                    already looking
+ NO PREDICTION      "you will find", "you will be asked" - unverifiable, and
+                    it tells someone what they are about to feel
+ NO SELF-NARRATION  "this part is deliberately calm" describes our pacing to
+                    a reader who came to prove a workload recovers
+ WHY IS A CLAUSE    weld it to the instruction with because / so that / this
+                    means. Never a paragraph of build-up. Anything longer
+                    goes in a ? aside
+ OPEN WITH EITHER   a definition, or a state transition ("now that X, it is
+                    time to Y"). AWS reuses one frame across unrelated labs
+                    rather than crafting each opening
+ REPEAT YOUR STOCK  "Run the following command", "You should see". Both
+   PHRASES          corpora treat consistent repetition as a feature
+```
+
+Chapter 5 is the house model: 45 words of prose for four commands, section
+headings that are plain verbs, one paragraph of context. Edit toward it.
+
+BANNED WORDS, from Google's word list: simply, simple, easily, just, please,
+leverage, utilize. Also no exclamation marks.
+
+## 9b. What the build does NOT check, and the suite does
 
 Two editorial rules hold over everything this repo ships, including your
 markdown. The BUILD does not enforce them, so a page with either will build

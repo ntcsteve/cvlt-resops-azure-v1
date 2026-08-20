@@ -825,6 +825,45 @@ def test_every_console_step_is_verifiable():
         "to be marked as ours, with its date")
 
 
+def test_dialect_describes_the_dialect_the_parser_actually_speaks():
+    """DIALECT.md is the authoring contract for every future workshop, so a
+    claim in it that the parser does not honour is worse than no claim.
+
+    This has already cost us twice in one day. DIALECT documented
+    ```attestation after the fence was removed, and it documented the chapter
+    strip as "``` starting DO" after the parser had been changed to detect on
+    STAGE -- so an author following the contract would have written a strip
+    that silently rendered as a plain <pre> panel, which is exactly the
+    regression that shipped in two commits this morning.
+
+    Checked mechanically, in both directions: every fence language DIALECT
+    names must be one the parser recognises, and every fence language the
+    parser recognises must be named in DIALECT."""
+    import re
+    dialect = (REPO / "tools" / "guide" / "DIALECT.md").read_text(encoding="utf-8")
+    parser_src = (REPO / "tools" / "guide" / "parser.py").read_text(encoding="utf-8")
+
+    known = set(re.findall(r'lang == "([a-z ]+)"', parser_src))
+    known |= set(re.findall(r'lang in \("([a-z]+)", "([a-z ]+)"\)', parser_src)[0]
+                 if re.findall(r'lang in \("([a-z]+)", "([a-z ]+)"\)', parser_src) else [])
+    documented = set(re.findall(r"^```([a-z][a-z ]*?)\s{2,}", dialect, re.M))
+    documented |= set(re.findall(r"```([a-z]+)\s", dialect))
+    documented = {d.strip() for d in documented if d.strip()}
+
+    undocumented = {k for k in known if k not in documented}
+    assert not undocumented, (
+        f"the parser accepts {undocumented} and DIALECT never mentions it")
+
+    # the strip's first label is what the parser matches on
+    m = re.search(r'if re\.match\(r"\^([A-Z]+)\\s\{2,\}", first\)', parser_src)
+    assert m, "the strip detection changed shape; update this guard"
+    first_label = m.group(1)
+    assert f"``` starting {first_label}" in dialect, (
+        f"the parser detects the chapter strip on {first_label!r} and DIALECT "
+        f"documents a different first label; an author following DIALECT would "
+        f"write a strip that renders as a plain panel")
+
+
 def test_every_checkpoint_title_is_distinct():
     """Each chapter ends on a ✦ card naming what the reader just did.
     Chapters 5 and 7 both said WHAT YOU JUST CLOSED until 2026-08-20, which

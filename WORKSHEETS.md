@@ -126,7 +126,7 @@ Starters: a test filter that matched 0 tests · a scanner with no ruleset for th
 
 # Worksheet 4 · Your verify contract
 
-**M4.2 · 35 minutes · TAKE THIS HOME – it is L2 of the adoption ladder**
+**M4.2 · 35 minutes · TAKE THIS HOME – it is step 5 of the adoption order**
 
 **My workload shape:** ☐ VM ☐ managed DB ☐ object storage ☐ kubernetes ☐ other ______
 
@@ -295,9 +295,19 @@ Pick exactly one. Name it. Date it.
 ### Where to start on Monday
 
 ```
- L1  SEE       resops gate – read-only, cannot mutate anything     day 1
- L2  DECLARE   verify.sh for ONE tier-1 workload (worksheet 4)     week 1
- L3  PROVE     one scheduled drill. one attestation.               week 2
- L4  GATE      required check on that ONE workload. ratchet.       month 1
- L5  PUBLISH   % provably recoverable, on a wall.                  quarter 1
+ 1  Read one workload's real state                    read-only   today
+ 2  Read the bar it is judged against                 read-only   today
+ 3  Scan one existing backup                          read-only   this week
+ 4  Ask which recovery point you would pick           a conversation
+ ────────── above this line you need nobody's permission ──────────
+ 5  Run one drill that produces an attestation        needs the app team
+ 6  Add one required check, with a ratchet            needs CI
 ```
+
+Steps one to four you can do this week, alone, against a workload you already
+own, without changing anything and without asking anyone for a budget.
+
+The L-prefix was dropped on 2026-08-20. Commvault's own ResOps maturity model
+runs Level 0 to Level 3, and an L1-to-L5 ladder beside it invited a reader to
+reconcile two things that are not the same. This is an adoption order, not a
+maturity assessment.
