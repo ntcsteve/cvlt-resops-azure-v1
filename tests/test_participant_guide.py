@@ -791,6 +791,40 @@ def test_every_chapter_strip_actually_RENDERS_as_a_strip(page):
         assert f"<span>{label}</span>" in page, f"{label} is not a strip label"
 
 
+def test_every_console_step_is_verifiable():
+    """A step the reader performs in the console gets the same treatment as a
+    command: numbered actions, an expected result, and a failure path.
+
+    The build ENFORCES this for ```bash and cannot for a console step, since
+    a console step is a ```list rather than a command. A parser change was
+    considered and rejected: the only thing it bought over ```list plus a ✓
+    box was a number in the step rail, which does not justify a new fence
+    type across six files. This test buys the enforcement instead.
+
+    Before 2026-08-20 the one console step in the guide -- Azure discovery --
+    was bare prose with no expected result, so the design relied on
+    `op preflight` failing to tell the reader the job had not finished."""
+    md = MD.read_text(encoding="utf-8")
+    for heading in ("### Connect the platform",
+                    "### See it the way your security team sees it"):
+        assert heading in md, f"console step {heading!r} is gone"
+        section = md[md.index(heading):]
+        section = section[:section.index("\n### ", 10)]
+        assert "```list" in section, f"{heading}: actions are not a numbered list"
+        assert "✓ YOU SHOULD SEE" in section, f"{heading}: no expected result"
+        assert "✗ IF NOT" in section, f"{heading}: no failure path"
+
+    # the window-not-a-ledger fact must reach a ROOM reader, who never runs
+    # the clean rescan in chapter 5 and so never sees the count return to 0
+    ch3 = md[md.index("## Chapter 3"):md.index("## Chapter 4")]
+    assert "window, not a ledger" in ch3, (
+        "the room build only gets chapter 3, so the fact that the count is "
+        "not cumulative has to be STATED there, not saved for chapter 5")
+    assert "Observed on 2026-08-18" in ch3, (
+        "Commvault does not document how the counts age out; the claim has "
+        "to be marked as ours, with its date")
+
+
 def test_every_checkpoint_title_is_distinct():
     """Each chapter ends on a ✦ card naming what the reader just did.
     Chapters 5 and 7 both said WHAT YOU JUST CLOSED until 2026-08-20, which

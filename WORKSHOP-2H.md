@@ -330,9 +330,10 @@ If you have not used Commvault before, this is what you are about to touch:
 @vm-restore ISOLATED PLANE       An out-of-place restore: a new VM built from
                     one recovery point, verified from the inside, then deleted.
 @command-center THE CONSOLE      Command Center, the web console the platform
-                    is operated from. You open it once, for the one step that
-                    has to be done by hand. Every other step in this workshop
-                    is an API call, which is what makes it repeatable.
+                    is operated from. Every OPERATION here is an API call,
+                    which is what makes it repeatable. You open the console
+                    once to do the one thing that cannot be scripted, and
+                    twice more to read what your security colleague reads.
 ```
 
 When a concept deserves the fuller story, look for the HOW IT WORKS notes
@@ -371,15 +372,44 @@ terraform -chdir=infra/workloads apply -auto-approve
 
 ### Connect the platform
 
-**The one manual step, and the only time you open the console.** Sign in to
-**Command Center**, the Commvault Cloud web console. Go to your **hypervisor
-connection**, which is the link between Commvault Cloud and your Azure
-subscription, and trigger Azure discovery on it. Wait for the Cloud Discovery
-job to finish, about two minutes.
+Bringing new cloud resources under protection is an operation the platform
+keeps behind its own controls, so this step happens in **Command Center**, the
+Commvault Cloud web console. It is the only operation in this workshop that is
+not an API call.
 
-This is a decision rather than a workaround: bringing new cloud resources
-under protection is an operation the platform keeps behind its own controls.
-Every step after this one is an API call.
+```list
+ 1   Sign in to Command Center and open your Azure connection. Its name is in
+     your session instructions, or in your own config as
+     `platform.hypervisor.name`.
+ 2   Click **Start discovery**.
+ 3   Wait for **Last update**, at the top of the page, to change to the
+     current time with a green check beside it.
+ 4   Open the **Resources** tab and filter by your connection.
+```
+
+```
+ ✓ YOU SHOULD SEE   three resources, and your VM among them
+                    <your-codename>   Azure VM   30 GB   Not protected
+ ⏱ HOW LONG         about two minutes. The page does not refresh itself, so
+                    `Last update` is what tells you the job finished.
+ ✗ IF NOT           if your VM is missing, discovery ran before `terraform
+                    apply` finished. Click **Start discovery** again.
+```
+
+```
+ ? HOW IT WORKS: THREE RESOURCES, AND WHY NONE IS PROTECTED
+   Your `terraform apply` created a VM, a storage account used for restore
+   staging, and the table storage inside it. Discovery lists all three
+   because all three are Azure resources in the subscription. Only the VM is
+   your workload.
+
+   All three read Not protected, which is correct here. Discovery makes a
+   resource visible to the platform. Protection is a separate decision, and
+   it is what the next chapter's `op protect` does.
+
+   That Resources tab is the same view `op preflight` reads. The next command
+   asks the API the question you just answered by eye.
+```
 
 ```bash
 python3 -m resops.operator.op preflight infra/workloads
@@ -388,7 +418,7 @@ python3 -m resops.operator.op preflight infra/workloads
 ```
  ✓ YOU SHOULD SEE   five PASS lines. The one that matters names your workload as discovered by the platform.
                     <your-codename> discovered (cloud-native inventory)
- ✗ IF NOT           a FAIL line names its own fix. "not discovered" means the discovery job has not finished yet; wait a minute and run it again.
+ ✗ IF NOT           a FAIL line names its own fix. "not discovered" should not happen now that you have seen your VM in the Resources tab; if it does, the console and the API disagree and the facilitator wants to know.
 ```
 
 ### The first recovery point
@@ -774,6 +804,44 @@ python3 -m resops.operator.op threatscan infra/workloads
    itself, and the copy lives where nothing from the VM can reach it.
 ```
 
+### See it the way your security team sees it
+
+The command gave you a verdict. The console shows the same finding to whoever
+watches threats across the estate.
+
+```list
+ 1   Open **Secure** in the navigation pane, then **Threat scan**.
+ 2   Select your workload.
+ 3   Stay on the **Overview** tab.
+```
+
+```
+ ✓ YOU SHOULD SEE   two cards, and a malware count matching the scan you just ran
+                    Malware      2
+                    Encryption   0
+ ✗ IF NOT           if Malware reads 0, a later clean scan has replaced this one. The chart shows the most recent scan, not a history.
+```
+
+```
+ ? HOW IT WORKS: WHAT THESE TWO NUMBERS DO AND DO NOT TELL YOU
+   The count is a window, not a ledger. Observed on 2026-08-18: it read 2
+   after this scan and 0 again fifteen minutes later, once a clean scan had
+   run. Commvault does not document how the counts age out, so treat the
+   chart as a view of the latest scan, and do not build an alert on the
+   assumption that it accumulates.
+
+   Encryption reads 0, and that is correct. The `.locked` files are renamed,
+   not encrypted, and encryption detection reads file content for entropy
+   rather than reading filenames. The malware count is the only signal that
+   fired here, and it is the only one you may claim.
+
+   The other tabs are worth knowing. Anomalies covers file activity, MIME
+   type, extension and backup size deviations, measured against statistical
+   baselines. Threats lists the malware and encryption findings themselves.
+   Partner signals carries findings from integrated third-party security
+   tools.
+```
+
 ```
  ? WHY THIS MATTERS
    Two HOLDs, two different reasons. The first said "nothing has looked
@@ -956,6 +1024,27 @@ python3 -m resops.operator.op threatscan infra/workloads
    Absence of evidence is never a pass. What clears the Scan rung is
    the drill: something must OPEN the point and verify it from the
    inside.
+```
+
+Open **Secure**, then **Threat scan**, and select your workload again.
+
+```
+ ✓ YOU SHOULD SEE   Malware back to 0, and Encryption unchanged
+                    Malware      0
+                    Encryption   0
+ ✗ IF NOT           if Malware still reads 2, the scan above has not finished writing its result. Give it a minute and reload.
+```
+
+```
+ ? HOW IT WORKS: THE NUMBER WENT BACK TO ZERO
+   Chapter 3 said this would happen, and here it is. The chart reports the
+   most recent scan, so a clean scan replaces a dirty one and the estate
+   view shows no trace of what you planted.
+
+   Two consequences worth carrying back. A dashboard that reads zero does
+   not mean nothing was ever found, and the recovery point that contained
+   the compromise still exists and is still restorable. The gate is what
+   remembers; the chart is not.
 ```
 
 ### Prove it
@@ -1318,9 +1407,10 @@ Four ResOps ideas are below. These are the Commvault Cloud capabilities that
 carried them, so you can name them to a colleague or look them up later.
 
 ```list
-@command-center Command Center    The web console. You opened it once, to
-                   bring a new Azure workload under protection. Everything
-                   else in this workshop was API.
+@command-center Command Center    The web console. You opened it once to
+                   bring a new Azure workload under protection, and twice
+                   more to read the threat view. Every operation you
+                   performed was an API call.
 @data-protection Protection plan   The policy: how often to back up, how long
                    to keep it, and to which storage. A workload picks a plan.
                    It does not configure recoverability itself.
