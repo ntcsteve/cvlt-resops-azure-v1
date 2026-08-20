@@ -422,6 +422,7 @@ python3 -m resops.operator.op protect infra/workloads
 ```
  ✓ YOU SHOULD SEE   a VM group created, with your VM's id attached to it. A VM group is what Commvault Cloud protects: a named set of machines with one protection plan applied to all of them.
                     protected: group resops-<your-codename>-vg
+ ✗ IF NOT           a failure naming discovery means the platform cannot see your VM yet: click Start discovery in Command Center again, wait for Last update to change, then re-run this.
 ```
 
 ```bash
@@ -1004,6 +1005,7 @@ python3 -m resops.operator.op backup infra/workloads
  ✓ YOU SHOULD SEE   the same green result, from a VM that is now clean
                     backup Completed
  ⏱ HOW LONG         about two minutes
+ ✗ IF NOT           if it sits on "Waiting", it is queued for a media agent: the shared worker that moves the data. Waiting for one is normal and not a failure. DO NOT KILL IT.
 ```
 
 ### Scan it
@@ -1020,6 +1022,7 @@ python3 -m resops.operator.op threatscan infra/workloads
                     straight away, then the client polls every twenty
                     seconds until the scan finishes. Silence in between is
                     the poll interval, not a hang.
+ ✗ IF NOT           if it stops and asks for scan_plan_id, set it in config/workshop.yaml and run it again.
 ```
 
 ```
@@ -1062,6 +1065,7 @@ python3 -m resops.operator.op restore infra/workloads
                     OK: code intact, baseline present, 3 customer records,
                         no encryption markers, write/read verified
  ⏱ HOW LONG         about five minutes
+ ✗ IF NOT           a guest-agent-not-ready failure on a fresh restore is transient: run it again. Any FAIL: line is the attester doing its job, so read it before you retry.
 ```
 
 ```bash
@@ -1072,6 +1076,7 @@ python3 -m resops.operator.op gate infra/workloads
  ✓ YOU SHOULD SEE   the verdict back where it started, on new evidence rather than on time passing
                     ●●●●●●  VALIDATED
                     PROMOTE  recoverability proven · exit 0
+ ✗ IF NOT           if it says HOLD and names coverage, a backup ran after your drill: run the drill again, then re-gate.
 ```
 
 ```
