@@ -11,7 +11,21 @@
     "the HEAD you walked. Do not bump the SHA to make a red test go green."
   ],
   "walked_at": "2026-08-19",
-  "walked_commit": "32b870b",
+  "walked_commit": "d76a61b",
+  "reviewed_not_re_walked_at_d76a61b": {
+    "_why": [
+      "d76a61b changes ONE printed string in resops/operator/op.py: the",
+      "remediate guest script's 'removed the planted artefacts' becomes",
+      "'artifacts' (AP spelling). Proven by parsing every string constant on",
+      "both sides of the commit: 542 literals at HEAD~1 and at HEAD, exactly",
+      "one differs, and the diff inside it is that single word. No guide box",
+      "quotes that line: grep for 'planted artefacts' and 'planted artifacts'",
+      "returns zero hits in WORKSHOP.md, WORKSHOP-2H.md and both built",
+      "previews. The remediate ✓ box describes the output; it does not quote",
+      "it. walked_commit moves forward on that proof; the 08-19 live walk",
+      "remains the last time these boxes were run."
+    ]
+  },
   "verified": {
     "M4.1  op gate -> ●●●●●● VALIDATED / PROMOTE exit 0": "loop-pass1 + loop-pass2",
     "M5.2  op incident -> planted: 2 EICAR files, 14 .locked files, 1 note": "loop passes + live walk",
