@@ -965,25 +965,6 @@ def test_every_chapter_carries_the_same_five_row_unit():
             f"chapter {i} strip is {labels}, not the five-row unit")
 
 
-def test_the_next_rows_and_the_closing_path_are_the_same_promises():
-    """The six steps in "What you do next" must be the NEXT rows the reader
-    already met, not a fresh list invented at the end. If a NEXT row changes
-    and the closing path does not, the workshop promises one thing per
-    chapter and a different thing at the close."""
-    md = MD.read_text(encoding="utf-8")
-    close = md[md.index("### What you do next"):]
-    for phrase in ("Read one workload's real state",
-                   "Read the bar it is judged against",
-                   "Scan one existing backup",
-                   "Ask which recovery point you would pick",
-                   "Run one drill that produces an attestation",
-                   "Add one required check, with a ratchet"):
-        assert phrase in close, f"the closing path lost {phrase!r}"
-    assert "above this line" not in close  # the permission line is prose now
-    assert "Steps one to four you can do this week, alone" in close, (
-        "the closing path no longer says where the free part stops")
-
-
 def test_the_domains_use_commvault_canon(page):
     """Commvault's framework papers say Recovery assurance and Resilience
     measurement. Their marketing pages say Resilience assurance and

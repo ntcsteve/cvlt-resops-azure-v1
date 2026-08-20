@@ -157,8 +157,15 @@ Participants compare, they never guess.
 
 ## 5. The closing page must carry
 
-- What is honestly not solved. Admitting the gaps is part of the method.
-- One next action. One, not three.
+- What was proven, recapped against executed output.
+- The workshop's conclusion: what the day means for how the reader
+  already works. A recap that never concludes is scrollback.
+
+Two earlier requirements were removed on 2026-08-20: the honest-limits
+section and the one-next-action prompt. Scope honesty lives in the
+toolkit's public docs (README, RESOPS.md); adoption steps live in each
+chapter's NEXT row, in RESOPS.md, and on worksheet 6 for a room. Do not
+reintroduce either on the closing page from memory.
 
 ## 6. Per-participant builds
 
